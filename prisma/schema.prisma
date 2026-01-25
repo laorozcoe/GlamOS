@@ -10,6 +10,209 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url  	    = env("DATABASE_URL")
+  provider = "postgresql"
+}
+
+//////////////////////
+// 🏢 NEGOCIOS (SALONES)
+//////////////////////
+model Business {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  phone     String?
+  email     String?
+  address   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  users         User[]
+  clients       Client[]
+  manicurists   Manicurist[]
+  services      Service[]
+  appointments  Appointment[]
+  payments      Payment[]
+  reviews       Review[]
+  loyaltyPoints LoyaltyPoint[]
+}
+
+//////////////////////
+// 👤 USUARIOS
+//////////////////////
+model User {
+  id         String   @id @default(uuid())
+  businessId String
+  name       String
+  email      String
+  password   String
+  role       Role     @default(RECEPTION)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business   Business    @relation(fields: [businessId], references: [id])
+  manicurist Manicurist?
+
+  @@unique([businessId, email])
+}
+
+enum Role {
+  ADMIN
+  RECEPTION
+  MANICURIST
+}
+
+//////////////////////
+// 👩‍🎨 MANICURISTAS
+//////////////////////
+model Manicurist {
+  id         String   @id @default(uuid())
+  businessId String
+  userId     String   @unique
+  phone      String?
+  bio        String?
+  commission Float    @default(0.0)
+  rating     Float    @default(0.0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  business     Business      @relation(fields: [businessId], references: [id])
+  user         User          @relation(fields: [userId], references: [id])
+  appointments Appointment[]
+  reviews      Review[]
+}
+
+//////////////////////
+// 👥 CLIENTES
+//////////////////////
+model Client {
+  id         String   @id @default(uuid())
+  businessId String
+  name       String
+  phone      String?
+  email      String?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  business      Business       @relation(fields: [businessId], references: [id])
+  appointments  Appointment[]
+  reviews       Review[]
+  loyaltyPoints LoyaltyPoint[]
+
+  @@unique([businessId, phone])
+}
+
+//////////////////////
+// 💅 SERVICIOS
+//////////////////////
+model Service {
+  id          String   @id @default(uuid())
+  businessId  String
+  name        String
+  description String?
+  duration    Int // minutos
+  price       Float
+  category    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  business            Business             @relation(fields: [businessId], references: [id])
+  appointmentServices AppointmentService[]
+}
+
+//////////////////////
+// 📅 CITAS
+//////////////////////
+model Appointment {
+  id           String            @id @default(uuid())
+  businessId   String
+  clientId     String
+  manicuristId String
+  date         DateTime
+  status       AppointmentStatus @default(PENDING)
+  notes        String?
+  createdAt    DateTime          @default(now())
+
+  business   Business   @relation(fields: [businessId], references: [id])
+  client     Client     @relation(fields: [clientId], references: [id])
+  manicurist Manicurist @relation(fields: [manicuristId], references: [id])
+
+  services AppointmentService[]
+  payments Payment[]
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+//////////////////////
+// 🔗 CITA - SERVICIOS
+//////////////////////
+model AppointmentService {
+  id            String @id @default(uuid())
+  appointmentId String
+  serviceId     String
+  price         Float
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+  service     Service     @relation(fields: [serviceId], references: [id])
+
+  @@unique([appointmentId, serviceId])
+}
+
+//////////////////////
+// 💰 PAGOS
+//////////////////////
+model Payment {
+  id            String        @id @default(uuid())
+  businessId    String
+  appointmentId String
+  amount        Float
+  method        PaymentMethod
+  paidAt        DateTime      @default(now())
+
+  business    Business    @relation(fields: [businessId], references: [id])
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+}
+
+//////////////////////
+// ⭐ RESEÑAS
+//////////////////////
+model Review {
+  id           String   @id @default(uuid())
+  businessId   String
+  clientId     String
+  manicuristId String
+  rating       Int
+  comment      String?
+  createdAt    DateTime @default(now())
+
+  business   Business   @relation(fields: [businessId], references: [id])
+  client     Client     @relation(fields: [clientId], references: [id])
+  manicurist Manicurist @relation(fields: [manicuristId], references: [id])
+}
+
+//////////////////////
+// 🎁 PUNTOS DE LEALTAD
+//////////////////////
+model LoyaltyPoint {
+  id         String   @id @default(uuid())
+  businessId String
+  clientId   String
+  points     Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id])
+  client   Client   @relation(fields: [clientId], references: [id])
+
+  @@unique([businessId, clientId])
 }
