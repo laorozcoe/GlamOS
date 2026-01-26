@@ -13,3 +13,14 @@ export async function seed() {
         },
     })
 }
+
+export async function getBusinessPrisma(slug) {
+
+    const business = await prisma.business.findUnique({
+        where: { slug },
+    })
+
+    return business
+}
+
+
