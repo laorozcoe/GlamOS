@@ -23,8 +23,10 @@
     "@tailwindcss/postcss": "^4.1.17",
     "apexcharts": "^4.7.0",
     "autoprefixer": "^10.4.22",
+    "bcrypt": "^6.0.0",
     "flatpickr": "^4.6.13",
     "next": "16.0.10",
+    "next-auth": "^4.24.13",
     "pg": "^8.17.2",
     "prisma": "^5.22.0",
     "react": "^19.2.0",
@@ -39,6 +41,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@svgr/webpack": "^8.1.0",
+    "@types/bcrypt": "^6.0.0",
     "@types/node": "^20.19.30",
     "@types/pg": "^8.16.0",
     "@types/react": "^19.2.1",
