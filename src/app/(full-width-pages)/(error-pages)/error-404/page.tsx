@@ -35,7 +35,8 @@ export default function Error404() {
         />
 
         <p className="mt-10 mb-6 text-base text-gray-700 dark:text-gray-400 sm:text-lg">
-          We can’t seem to find the page you are looking for!
+          No se encontro la pagina que estas buscando!
+          {/* We can’t seem to find the page you are looking for! */}
         </p>
 
         <Link

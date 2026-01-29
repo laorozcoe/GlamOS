@@ -168,7 +168,6 @@
 //   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 // }
 
-
 import { NextRequest, NextResponse } from "next/server"
 import { getToken } from "next-auth/jwt"
 
@@ -182,7 +181,7 @@ const roleRules: Record<string, string[]> = {
 }
 
 // 🌍 rutas públicas
-const publicRoutes = ["/signin", "/signup", "/api/auth"]
+const publicRoutes = ["/signin", "/signup", "/api/auth", "/not-found", "/error-404"]
 
 // 📦 archivos públicos (no bloquear)
 function isPublicFile(pathname: string) {
@@ -244,18 +243,26 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/signin", req.url))
   }
 
+  if (isPublicRoute) {
+  return NextResponse.next({
+    request: { headers },
+  })
+}
+
+
   // 🧑‍💻 roles
   if (token) {
     const userRole = token.role as string
     const matchedRoute = Object.keys(roleRules).find((route) =>
       pathname.startsWith(route)
-    )
+    ) 
 
     if (matchedRoute) {
       const allowedRoles = roleRules[matchedRoute]
 
       if (!allowedRoles.includes(userRole)) {
-        return NextResponse.redirect(new URL("/403", req.url))
+        //AL NAVEGAR A ESTA RUTA SIN PERMISO NO ME CARGA NADA
+        return NextResponse.redirect(new URL("/not-found", req.url))
       }
     }
   }
