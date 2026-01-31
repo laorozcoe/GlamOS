@@ -28,7 +28,6 @@
 // // //     })
 // // // }
 
-
 // // import { NextRequest, NextResponse } from "next/server"
 // // import { getToken } from "next-auth/jwt"
 
@@ -171,17 +170,19 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getToken } from "next-auth/jwt"
 
+
+
 // 🔐 roles permitidos por ruta
 const roleRules: Record<string, string[]> = {
-  "/admin": ["ADMIN", "OWNER"],
-  "/dashboard": ["ADMIN", "OWNER", "STAFF"],
-  "/": ["ADMIN", "OWNER", "STAFF"],
-  "/ventas": ["ADMIN", "OWNER", "STAFF"],
-  "/config": ["OWNER"],
+  "/admin": ["ADMIN", "RECEPTION", "MANICURIST"],
+  "/dashboard": ["ADMIN", "RECEPTION", "MANICURIST"],
+  "/": ["ADMIN", "RECEPTION", "MANICURIST"],
+  "/ventas": ["ADMIN", "RECEPTION", "MANICURIST"],
+  "/config": ["ADMIN", "RECEPTION", "MANICURIST"],
 }
 
 // 🌍 rutas públicas
-const publicRoutes = ["/signin", "/signup", "/api/auth", "/not-found", "/error-404"]
+const publicRoutes = ["/signin", "/signup", "/api/auth", "/not-found", "/error-404", "/schedule"]
 
 // 📦 archivos públicos (no bloquear)
 function isPublicFile(pathname: string) {
@@ -244,10 +245,10 @@ export async function middleware(req: NextRequest) {
   }
 
   if (isPublicRoute) {
-  return NextResponse.next({
-    request: { headers },
-  })
-}
+    return NextResponse.next({
+      request: { headers },
+    })
+  }
 
 
   // 🧑‍💻 roles
@@ -255,7 +256,7 @@ export async function middleware(req: NextRequest) {
     const userRole = token.role as string
     const matchedRoute = Object.keys(roleRules).find((route) =>
       pathname.startsWith(route)
-    ) 
+    )
 
     if (matchedRoute) {
       const allowedRoles = roleRules[matchedRoute]

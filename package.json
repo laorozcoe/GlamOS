@@ -10,6 +10,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
     "@fullcalendar/core": "^6.1.19",
     "@fullcalendar/daygrid": "^6.1.19",
     "@fullcalendar/interaction": "^6.1.19",
@@ -25,7 +26,7 @@
     "autoprefixer": "^10.4.22",
     "bcrypt": "^6.0.0",
     "flatpickr": "^4.6.13",
-    "next": "16.0.10",
+    "next": "^16.1.6",
     "next-auth": "^4.24.13",
     "pg": "^8.17.2",
     "prisma": "^5.22.0",
