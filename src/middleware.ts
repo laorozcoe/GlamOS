@@ -182,7 +182,7 @@ const roleRules: Record<string, string[]> = {
 }
 
 // 🌍 rutas públicas
-const publicRoutes = ["/signin", "/signup", "/api/auth", "/not-found", "/error-404", "/schedule"]
+const publicRoutes = ["/signin", "/signup", "/api/auth", "/not-found", "/error-404", "/schedule", "/seed"]
 
 // 📦 archivos públicos (no bloquear)
 function isPublicFile(pathname: string) {

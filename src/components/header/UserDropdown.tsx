@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { useSession } from "next-auth/react"
+import { signOut } from "next-auth/react";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,14 +25,14 @@ export default function UserDropdown() {
         onClick={toggleDropdown}
         className="flex items-center text-gray-700 dark:text-gray-400 dropdown-toggle"
       >
-        <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
+        {/* <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
           <Image
             width={44}
             height={44}
             src="/images/user/owner.jpg"
             alt="User"
           />
-        </span>
+        </span> */}
 
         <span className="block mr-1 font-medium text-theme-sm">{session?.user?.name}</span>
 
@@ -91,7 +92,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Edit profile
+              Editar Cuenta
             </DropdownItem>
           </li>
           <li>
@@ -116,7 +117,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Account settings
+              Configuración
             </DropdownItem>
           </li>
           <li>
@@ -141,12 +142,12 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Support
+              Ayuda
             </DropdownItem>
           </li>
         </ul>
-        <Link
-          href="/signin"
+        <button
+          onClick={() => signOut()}
           className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
         >
           <svg
@@ -164,8 +165,8 @@ export default function UserDropdown() {
               fill=""
             />
           </svg>
-          Sign out
-        </Link>
+          Cerrar Sesión
+        </button>
       </Dropdown>
     </div>
   );

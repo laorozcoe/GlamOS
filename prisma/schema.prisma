@@ -129,7 +129,9 @@ model Appointment {
   businessId   String
   clientId     String
   manicuristId String
-  date         DateTime
+  start        DateTime
+  end          DateTime
+  allDay       Boolean           @default(false)
   status       AppointmentStatus @default(PENDING)
   notes        String?
   createdAt    DateTime          @default(now())

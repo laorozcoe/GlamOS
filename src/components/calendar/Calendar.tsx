@@ -10,8 +10,14 @@ import {
   EventClickArg,
   EventContentArg,
 } from "@fullcalendar/core";
+import { DateClickArg } from '@fullcalendar/interaction'; // <--- Importa esto
+import esLocale from '@fullcalendar/core/locales/es'; // <--- 1. IMPORTAR ESTO
 import { useModal } from "@/hooks/useModal";
 import { Modal } from "@/components/ui/modal";
+import Select from "@/components/form/Select";
+
+import { getManicuristsPrisma, getServicesPrisma } from "@/lib/prisma";
+import { useBusiness } from "@/context/BusinessContext";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -31,12 +37,30 @@ const Calendar: React.FC = () => {
   const calendarRef = useRef<FullCalendar>(null);
   const { isOpen, openModal, closeModal } = useModal();
 
+  const business = useBusiness();
+
+  const [manicurists, setManicurists] = useState<any>([]);
+  const [services, setServices] = useState<any>([]);
+
   const calendarsEvents = {
     Danger: "danger",
     Success: "success",
     Primary: "primary",
     Warning: "warning",
   };
+
+  useEffect(() => {
+    const loadCatalogs = async () => {
+      //ARREGLAR ESTAS 2 FUNCIONES
+      const res: any = await getManicuristsPrisma(business?.id);
+      const res2: any = await getServicesPrisma(business?.id);
+
+      setManicurists(res);
+      setServices(res2);
+    };
+
+    loadCatalogs();
+  }, []);
 
   useEffect(() => {
     // Initialize with some events
@@ -80,6 +104,42 @@ const Calendar: React.FC = () => {
     openModal();
   };
 
+
+
+
+
+
+
+  // Función para cuando das clic en un hueco VACÍO (Crear)
+  const handleDateClick = (arg: DateClickArg) => {
+    // arg.date contiene la fecha y hora donde hiciste clic
+    // arg.dateStr es la fecha en string
+    openModal();
+
+  };
+
+  // Función para cuando das clic en una CITA EXISTENTE (Editar)
+  const handleEventClick2 = (clickInfo: EventClickArg) => {
+    // arg.event contiene los datos de la cita real
+    const event = clickInfo.event;
+    setSelectedEvent(event as unknown as CalendarEvent);
+    setEventTitle(event.title);
+    setEventStartDate(event.start?.toISOString().split("T")[0] || "");
+    setEventEndDate(event.end?.toISOString().split("T")[0] || "");
+    setEventLevel(event.extendedProps.calendar);
+    openModal();
+
+  };
+
+
+
+
+
+
+
+
+
+
   const handleAddOrUpdateEvent = () => {
     if (selectedEvent) {
       // Update existing event
@@ -87,12 +147,12 @@ const Calendar: React.FC = () => {
         prevEvents.map((event) =>
           event.id === selectedEvent.id
             ? {
-                ...event,
-                title: eventTitle,
-                start: eventStartDate,
-                end: eventEndDate,
-                extendedProps: { calendar: eventLevel },
-              }
+              ...event,
+              title: eventTitle,
+              start: eventStartDate,
+              end: eventEndDate,
+              extendedProps: { calendar: eventLevel },
+            }
             : event
         )
       );
@@ -121,25 +181,32 @@ const Calendar: React.FC = () => {
   };
 
   return (
-    <div className="rounded-2xl border  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+    <div className="rounded-2xl border  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3">
       <div className="custom-calendar">
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
+          initialView="timeGridDay"
           headerToolbar={{
             left: "prev,next addEventButton",
             center: "title",
-            right: "dayGridMonth,timeGridWeek,timeGridDay",
+            right: "timeGridDay,timeGridWeek",
           }}
+          height="auto"
+          allDaySlot={false}
+          longPressDelay={100}
           events={events}
-          selectable={true}
-          select={handleDateSelect}
-          eventClick={handleEventClick}
+          slotMinTime="09:00:00" // Empieza a las 9 AM
+          slotMaxTime="18:00:00" // Termina a las 6 PM
+          // selectable={true}
+          // select={handleDateSelect}
+          dateClick={handleDateClick}
+          eventClick={handleEventClick2}
           eventContent={renderEventContent}
+          locale={esLocale} // <--- 2. AÑADIR ESTO
           customButtons={{
             addEventButton: {
-              text: "Add Event +",
+              text: "Nueva Cita",
               click: openModal,
             },
           }}
@@ -153,13 +220,28 @@ const Calendar: React.FC = () => {
         <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
           <div>
             <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-              {selectedEvent ? "Edit Event" : "Add Event"}
+              {selectedEvent ? "Edit Event" : "Nueva Cita"}
             </h5>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Plan your next big moment: schedule or edit an event to stay on
               track
             </p>
           </div>
+          <Select options={services.map((service: any) => ({
+            value: service.id,
+            label: service.name,
+          }))} placeholder="Selecciona un servicio" onChange={function (value: string): void {
+            throw new Error("Function not implemented.");
+          }}>
+          </Select>
+
+          <Select options={manicurists.map((manicurist: any) => ({
+            value: manicurist.id,
+            label: manicurist.name,
+          }))} placeholder="Selecciona un servicio" onChange={function (value: string): void {
+            throw new Error("Function not implemented.");
+          }}>
+          </Select>
           <div className="mt-8">
             <div>
               <div>
@@ -201,9 +283,8 @@ const Calendar: React.FC = () => {
                           />
                           <span className="flex items-center justify-center w-5 h-5 mr-2 border border-gray-300 rounded-full box dark:border-gray-700">
                             <span
-                              className={`h-2 w-2 rounded-full bg-white ${
-                                eventLevel === key ? "block" : "hidden"
-                              }`}  
+                              className={`h-2 w-2 rounded-full bg-white ${eventLevel === key ? "block" : "hidden"
+                                }`}
                             ></span>
                           </span>
                         </span>
@@ -249,7 +330,7 @@ const Calendar: React.FC = () => {
             <button
               onClick={closeModal}
               type="button"
-              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 sm:w-auto"
             >
               Close
             </button>

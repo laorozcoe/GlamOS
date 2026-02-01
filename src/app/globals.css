@@ -629,9 +629,9 @@ span.flatpickr-weekday,
   border: none;
   color: black;
 }
-.fc.fc-media-screen {
+/* .fc.fc-media-screen {
   @apply min-h-screen;
-}
+} */
 
 .input-date-icon::-webkit-inner-spin-button,
 .input-date-icon::-webkit-calendar-picker-indicator {
