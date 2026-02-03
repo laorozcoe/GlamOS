@@ -174,11 +174,11 @@ import { getToken } from "next-auth/jwt"
 
 // 🔐 roles permitidos por ruta
 const roleRules: Record<string, string[]> = {
-  "/admin": ["ADMIN", "RECEPTION", "MANICURIST"],
-  "/dashboard": ["ADMIN", "RECEPTION", "MANICURIST"],
-  "/": ["ADMIN", "RECEPTION", "MANICURIST"],
-  "/ventas": ["ADMIN", "RECEPTION", "MANICURIST"],
-  "/config": ["ADMIN", "RECEPTION", "MANICURIST"],
+  "/admin": ["ADMIN", "RECEPTION", "EMPLOYEE"],
+  "/dashboard": ["ADMIN", "RECEPTION", "EMPLOYEE"],
+  "/": ["ADMIN", "RECEPTION", "EMPLOYEE"],
+  "/ventas": ["ADMIN", "RECEPTION", "EMPLOYEE"],
+  "/config": ["ADMIN", "RECEPTION", "EMPLOYEE"],
 }
 
 // 🌍 rutas públicas

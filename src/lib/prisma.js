@@ -2,8 +2,49 @@
 
 import { prisma } from '@/lib/prisma2'
 import { hashPassword } from '@/lib/hashPassword'
+import { revalidatePath } from "next/cache";
+// import { auth } from "@/lib/auth"; // Tu configuración de Auth.js
 
+//--------------------------------------------------------------------------------
+//-------------------------Appointment-------------------------------------
+//--------------------------------------------------------------------------------
 
+export async function createAppointment(data) {
+    // const session = await auth();
+    // if (!session?.user) throw new Error("No autenticado");
+
+    await prisma.appointment.create({
+        data: {
+            title: data.title,
+            start: data.start,
+            end: data.end,
+            userId: "7bb16997-9054-4956-b001-47088536935e", // Ajusta según tu auth
+        },
+    });
+
+    revalidatePath("/admin/calendario"); // <-- Pon aquí la ruta de tu página de calendario
+}
+
+export async function getAppointments() {
+    // const session = await auth();
+    // if (!session?.user?.email) return [];
+    // return []
+    // // Buscamos appointmentos solo de este usuario (opcional, según tu lógica)
+    // const appointments = await prisma.appointment.findMany({
+    //     where: { userId: "7bb16997-9054-4956-b001-47088536935e" },
+    // });
+
+    // // IMPORTANTE: Convertir fechas a String para evitar error de serialización en Client Components
+    // return appointments.map(appointment => ({
+    //     ...appointment,
+    //     start: appointment.start.toISOString(),
+    //     end: appointment.end.toISOString(),
+    // }));
+}
+
+//--------------------------------------------------------------------------------
+//-------------------------Seed-------------------------------------
+//--------------------------------------------------------------------------------
 
 export async function seed() {
     return await prisma.business.create({
@@ -17,6 +58,10 @@ export async function seed() {
     })
 }
 
+//--------------------------------------------------------------------------------
+//-------------------------Business-------------------------------------
+//--------------------------------------------------------------------------------
+
 export async function getBusinessPrisma(slug) {
 
     const business = await prisma.business.findUnique({
@@ -27,18 +72,85 @@ export async function getBusinessPrisma(slug) {
 }
 
 //--------------------------------------------------------------------------------
-//-------------------------Service-------------------------------------
+//-------------------------ServiceCategory-------------------------------------
 //--------------------------------------------------------------------------------
 
-export async function createServicePrisma(businessId, name, description, duration, price, category) {
-    const service = await prisma.service.create({
+
+export async function createServiceCategoryPrisma(businessId, name, order, active) {
+    const serviceCategory = await prisma.serviceCategory.create({
         data: {
             businessId,
             name,
+            order,
+            active
+        },
+    })
+
+    return serviceCategory
+}
+
+export async function getServiceCategoryPrisma(businessId, name) {
+    const serviceCategory = await prisma.serviceCategory.findFirst({
+        where: {
+            businessId: businessId,
+            name: name,
+        },
+    })
+
+    return serviceCategory
+}
+
+export async function getServicesCategoriesPrisma(businessId) {
+    const serviceCategories = await prisma.serviceCategory.findMany({
+        where: {
+            businessId: businessId,
+        },
+    })
+
+    return serviceCategories
+}
+
+export async function updateServiceCategoryPrisma(id, businessId, name, order, active) {
+    const serviceCategory = await prisma.serviceCategory.update({
+        where: {
+            id: id,
+            businessId: businessId,
+        },
+        data: {
+            name,
+            order,
+            active
+        },
+    })
+
+    return serviceCategory
+}
+
+export async function deleteServiceCategoryPrisma(id, businessId) {
+    const serviceCategory = await prisma.serviceCategory.delete({
+        where: {
+            id: id,
+            businessId: businessId,
+        },
+    })
+
+    return serviceCategory
+}
+
+
+//--------------------------------------------------------------------------------
+//-------------------------Service-------------------------------------
+//--------------------------------------------------------------------------------
+
+export async function createServicePrisma(businessId, categoryId, name, description, duration, price) {
+    const service = await prisma.service.create({
+        data: {
+            businessId,
+            categoryId,
+            name,
             description,
             duration,
-            price,
-            category
+            price
         },
     })
 
@@ -68,18 +180,30 @@ export async function getServicesPrisma(businessId) {
     return services
 }
 
-export async function updateServicePrisma(id, businessId, name, description, duration, price, category) {
+export async function getServicesByCategoryPrisma(businessId, categoryId) {
+
+    const servicesCategories = await prisma.service.findMany({
+        where: {
+            businessId: businessId,
+            categoryId: categoryId,
+        },
+    })
+
+    return servicesCategories
+}
+
+export async function updateServicePrisma(id, businessId, categoryId, name, description, duration, price) {
     const service = await prisma.service.update({
         where: {
             id: id,
             businessId: businessId,
+            categoryId: categoryId,
         },
         data: {
             name,
             description,
             duration,
-            price,
-            category
+            price
         },
     })
 
@@ -98,9 +222,9 @@ export async function deleteServicePrisma(id, businessId) {
 }
 
 //--------------------------------------------------------------------------------
-//-------------------------Manicurist-------------------------------------
+//-------------------------Employee-------------------------------------
 //--------------------------------------------------------------------------------
-// model Manicurist {
+// model Employee {
 //   id         String   @id @default(uuid())
 //   businessId String
 //   userId     String   @unique
@@ -117,7 +241,7 @@ export async function deleteServicePrisma(id, businessId) {
 //   reviews      Review[]
 // }
 
-export async function createManicuristPrisma(businessId, userId, phone, bio, commission, rating) {
+export async function createEmployeePrisma(businessId, userId, phone, bio, commission, rating) {
 
     // commission = parseFloat(commission);
     // rating = parseFloat(rating);
@@ -126,7 +250,7 @@ export async function createManicuristPrisma(businessId, userId, phone, bio, com
     //     throw new Error("Commission o rating inválido");
     // }
 
-    const manicurist = await prisma.manicurist.create({
+    const employee = await prisma.employee.create({
         data: {
             businessId,
             userId,
@@ -137,32 +261,48 @@ export async function createManicuristPrisma(businessId, userId, phone, bio, com
         },
     })
 
-    return manicurist
+    return employee
 }
 
-export async function getManicuristPrisma(businessId, userId) {
-    const manicurist = await prisma.manicurist.findFirst({
+export async function getEmployeePrisma(businessId, userId) {
+    const employee = await prisma.employee.findFirst({
         where: {
             businessId: businessId,
             userId: userId,
         },
     })
 
-    return manicurist
+    return employee
 }
 
-export async function getManicuristsPrisma(businessId) {
-    const manicurists = await prisma.manicurist.findMany({
+export async function getEmployeesPrisma(businessId) {
+    // const employees = await prisma.employee.findMany({
+    //     where: {
+    //         businessId: businessId,
+    //     },
+    // })
+
+    const employees = await prisma.employee.findMany({
         where: {
-            businessId: businessId,
+            businessId,
+            active: true,
+        },
+        include: {
+            user: {
+                select: {
+                    name: true,
+                    lastName: true,
+                    email: true,
+                },
+            },
         },
     })
+    return employees
 
-    return manicurists
 }
 
-export async function updateManicuristPrisma(id, businessId, userId, phone, bio, commission, rating) {
-    const manicurist = await prisma.manicurist.update({
+export async function updateEmployeePrisma(id, businessId, userId, phone, bio, commission, rating) {
+    const employee = await prisma.employee.update({
         where: {
             id: id,
             businessId: businessId,
@@ -176,25 +316,25 @@ export async function updateManicuristPrisma(id, businessId, userId, phone, bio,
         },
     })
 
-    return manicurist
+    return employee
 }
 
-export async function deleteManicuristPrisma(id, businessId) {
-    const manicurist = await prisma.manicurist.delete({
+export async function deleteEmployeePrisma(id, businessId) {
+    const employee = await prisma.employee.delete({
         where: {
             id: id,
             businessId: businessId,
         },
     })
 
-    return manicurist
+    return employee
 }
 
 //--------------------------------------------------------------------------------
 //-------------------------User-------------------------------------
 //--------------------------------------------------------------------------------
 
-export async function createUserPrisma(email, businessId, name, lastName, password, role) {
+export async function createUserPrisma(businessId, name, lastName, email, password, role) {
     const passwordHash = await hashPassword(password)
 
     const user = await prisma.user.create({
@@ -265,7 +405,7 @@ export async function deleteUserPrisma(id, businessId) {
 //   updatedAt  DateTime @updatedAt
 
 //   business   Business    @relation(fields: [businessId], references: [id])
-//   manicurist Manicurist?
+//   employee Employee?
 
 //   @@unique([businessId, email])
 // }
@@ -273,5 +413,5 @@ export async function deleteUserPrisma(id, businessId) {
 // enum Role {
 //   ADMIN
 //   RECEPTION
-//   MANICURIST
+//   EMPLOYEE
 // }

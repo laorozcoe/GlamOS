@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
+import { getAppointments } from "@/lib/prisma";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -16,8 +17,9 @@ import { useModal } from "@/hooks/useModal";
 import { Modal } from "@/components/ui/modal";
 import Select from "@/components/form/Select";
 
-import { getManicuristsPrisma, getServicesPrisma } from "@/lib/prisma";
+import { getEmployeesPrisma, getServicesPrisma, createAppointment, getServicesCategoriesPrisma } from "@/lib/prisma";
 import { useBusiness } from "@/context/BusinessContext";
+import { setServers } from "dns/promises";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -26,6 +28,7 @@ interface CalendarEvent extends EventInput {
 }
 
 const Calendar: React.FC = () => {
+
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
   );
@@ -36,11 +39,21 @@ const Calendar: React.FC = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const calendarRef = useRef<FullCalendar>(null);
   const { isOpen, openModal, closeModal } = useModal();
+  const [selectedDate, setSelectedDate] = useState<{ start: Date; end: Date } | null>(null);
 
   const business = useBusiness();
 
-  const [manicurists, setManicurists] = useState<any>([]);
+  const [employees, setEmployees] = useState<any>([]);
+  const [servicesCategories, setServicesCategories] = useState<any>([]);
   const [services, setServices] = useState<any>([]);
+  const [appointments, setAppointments] = useState<any>([]);
+
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<any>(null);
+
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
+  const [flashCategory, setFlashCategory] = useState<string | null>(null);
 
   const calendarsEvents = {
     Danger: "danger",
@@ -51,12 +64,15 @@ const Calendar: React.FC = () => {
 
   useEffect(() => {
     const loadCatalogs = async () => {
+      debugger
       //ARREGLAR ESTAS 2 FUNCIONES
-      const res: any = await getManicuristsPrisma(business?.id);
+      const res: any = await getEmployeesPrisma(business?.id);
       const res2: any = await getServicesPrisma(business?.id);
+      const res3: any = await getServicesCategoriesPrisma(business?.id);
 
-      setManicurists(res);
+      setEmployees(res);
       setServices(res2);
+      setServicesCategories(res3);
     };
 
     loadCatalogs();
@@ -64,27 +80,32 @@ const Calendar: React.FC = () => {
 
   useEffect(() => {
     // Initialize with some events
-    setEvents([
-      {
-        id: "1",
-        title: "Event Conf.",
-        start: new Date().toISOString().split("T")[0],
-        extendedProps: { calendar: "Danger" },
-      },
-      {
-        id: "2",
-        title: "Meeting",
-        start: new Date(Date.now() + 86400000).toISOString().split("T")[0],
-        extendedProps: { calendar: "Success" },
-      },
-      {
-        id: "3",
-        title: "Workshop",
-        start: new Date(Date.now() + 172800000).toISOString().split("T")[0],
-        end: new Date(Date.now() + 259200000).toISOString().split("T")[0],
-        extendedProps: { calendar: "Primary" },
-      },
-    ]);
+    const loadEvents = async () => {
+      const resEvents: any = await getAppointments();
+      setEvents(resEvents);
+    }
+    loadEvents();
+    // setEvents([
+    //   {
+    //     id: "1",
+    //     title: "Event Conf.",
+    //     start: new Date().toISOString().split("T")[0],
+    //     extendedProps: { calendar: "Danger" },
+    //   },
+    //   {
+    //     id: "2",
+    //     title: "Meeting",
+    //     start: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+    //     extendedProps: { calendar: "Success" },
+    //   },
+    //   {
+    //     id: "3",
+    //     title: "Workshop",
+    //     start: new Date(Date.now() + 172800000).toISOString().split("T")[0],
+    //     end: new Date(Date.now() + 259200000).toISOString().split("T")[0],
+    //     extendedProps: { calendar: "Primary" },
+    //   },
+    // ]);
   }, []);
 
   const handleDateSelect = (selectInfo: DateSelectArg) => {
@@ -105,15 +126,53 @@ const Calendar: React.FC = () => {
   };
 
 
+  // 2. Guardar en Base de Datos
+  const handleSaveEvent = async () => {
+    alert(JSON.stringify(appointments));
+    return
+    debugger
+    if (!selectedDate) return;
+    const title = 'test';
+    try {
+      // Llamamos a la Server Action
+      await createAppointment({
+        title,
+        start: selectedDate.start,
+        end: selectedDate.end,
+      });
 
+      // Cerramos modal
+      // setIsModalOpen(false);
 
+      // Opcional: mostrar toast de éxito
+      // alert("Evento guardado"); 
 
+    } catch (error) {
+      console.error("Error al guardar", error);
+    }
+  };
 
 
   // Función para cuando das clic en un hueco VACÍO (Crear)
   const handleDateClick = (arg: DateClickArg) => {
+    debugger
     // arg.date contiene la fecha y hora donde hiciste clic
     // arg.dateStr es la fecha en string
+    const start = arg.date;
+
+    const yyyy = start.getFullYear();
+    const mm = String(start.getMonth() + 1).padStart(2, '0');
+    const dd = String(start.getDate()).padStart(2, '0');
+
+    const hh = String(start.getHours()).padStart(2, '0');
+    const min = String(start.getMinutes()).padStart(2, '0');
+
+    setDate(`${yyyy}-${mm}-${dd}`); // para <input type="date">
+    setTime(`${hh}:${min}`);        // para <input type="time">
+    const end = new Date(arg.date.getTime() + 60 * 60 * 1000); // 1 hora por defecto
+
+    setSelectedDate({ start, end });
+    // setIsModalOpen(true);
     openModal();
 
   };
@@ -131,14 +190,21 @@ const Calendar: React.FC = () => {
 
   };
 
+  const addAppointment = (service: any) => {
+    const newAppointment = service;
+    setAppointments([...appointments, newAppointment]);
+    setSelectedService(service);
 
+    setFlashCategory(service.id);
 
+    setTimeout(() => {
+      setFlashCategory(null); // solo quita el flash
+    }, 600);
 
-
-
-
-
-
+    setTimeout(() => {
+      setSelectedService(null); // quita selección después
+    }, 1200);
+  };
 
   const handleAddOrUpdateEvent = () => {
     if (selectedEvent) {
@@ -202,7 +268,7 @@ const Calendar: React.FC = () => {
           // select={handleDateSelect}
           dateClick={handleDateClick}
           eventClick={handleEventClick2}
-          eventContent={renderEventContent}
+          // eventContent={renderEventContent}
           locale={esLocale} // <--- 2. AÑADIR ESTO
           customButtons={{
             addEventButton: {
@@ -222,41 +288,82 @@ const Calendar: React.FC = () => {
             <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
               {selectedEvent ? "Edit Event" : "Nueva Cita"}
             </h5>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            {/* <p className="text-sm text-gray-500 dark:text-gray-400">
               Plan your next big moment: schedule or edit an event to stay on
               track
-            </p>
+            </p> */}
           </div>
-          <Select options={services.map((service: any) => ({
+          {/* <Select options={services.map((service: any) => ({
             value: service.id,
             label: service.name,
           }))} placeholder="Selecciona un servicio" onChange={function (value: string): void {
             throw new Error("Function not implemented.");
           }}>
-          </Select>
-
-          <Select options={manicurists.map((manicurist: any) => ({
-            value: manicurist.id,
-            label: manicurist.name,
-          }))} placeholder="Selecciona un servicio" onChange={function (value: string): void {
-            throw new Error("Function not implemented.");
-          }}>
-          </Select>
+          </Select> */}
           <div className="mt-8">
             <div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Event Title
-                </label>
-                <input
+              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Empleado:
+              </label>
+              <Select options={employees.map((employee: any) => ({
+                value: employee.id,
+                label: employee.user.name + " " + employee.user.lastName,
+              }))} placeholder="Selecciona una persona" onChange={function (value: string): void {
+                throw new Error("Function not implemented.");
+              }}>
+              </Select>
+              {/* <input
                   id="event-title"
                   type="text"
                   value={eventTitle}
                   onChange={(e) => setEventTitle(e.target.value)}
                   className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                />
-              </div>
+                /> */}
+
             </div>
+
+            <div className="mt-6">
+              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Empleado:
+              </label>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {servicesCategories.map((cat: any) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-4 py-2 rounded-full border
+                    ${selectedCategory === cat.id
+                        ? 'bg-black text-white'
+                        : 'bg-white text-black'}
+                  `}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+              <div className="h-52 overflow-y-auto custom-scrollbar">
+                <div className="grid grid-cols-2 gap-3 box-content p-2">
+                  {services.filter((s: any) => s.categoryId === selectedCategory).map((ss: any) => (
+                    <button
+                      key={ss.id}
+                      onClick={() => addAppointment(ss)}
+                      className={`p-3 border rounded-lg text-left  transition-all duration-100 ease-in-out box-content
+                        ${selectedService?.id === ss.id ? 'bg-black text-white' : 'bg-white text-black'}
+                  ${flashCategory === ss.id ? 'outline outline-black shadow-lg'
+                          : 'outline-none shadow-none'}
+                      `}
+                    >
+                      <div className="font-medium">{ss.name}</div>
+                      <div className="text-sm text-gray-500">
+                        ${ss.price}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+            {/* 
             <div className="mt-6">
               <label className="block mb-4 text-sm font-medium text-gray-700 dark:text-gray-400">
                 Event Color
@@ -294,36 +401,53 @@ const Calendar: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
+            <div className="flex flex-row">
 
-            <div className="mt-6">
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Enter Start Date
-              </label>
-              <div className="relative">
-                <input
-                  id="event-start-date"
-                  type="date"
-                  value={eventStartDate}
-                  onChange={(e) => setEventStartDate(e.target.value)}
-                  className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                />
+              <div className="mt-6">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Fecha
+                </label>
+                <div className="relative">
+                  <input
+                    id="event-start-date"
+                    type="date"
+                    value={date}
+                    onChange={e => setDate(e.target.value)}
+                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="mt-6">
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Enter End Date
-              </label>
-              <div className="relative">
-                <input
-                  id="event-end-date"
-                  type="date"
-                  value={eventEndDate}
-                  onChange={(e) => setEventEndDate(e.target.value)}
-                  className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                />
+              <div className="mt-6">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Hora
+                </label>
+                <div className="relative">
+                  <input
+                    id="event-start-date"
+                    type="time"
+                    value={time}
+                    onChange={e => setTime(e.target.value)}
+                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                  />
+                </div>
               </div>
+              {/* 
+              <div className="mt-6">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Enter End Date
+                </label>
+                <div className="relative">
+                  <input
+                    id="event-end-date"
+                    type="date"
+                    value={eventEndDate}
+                    onChange={(e) => setEventEndDate(e.target.value)}
+                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                  />
+                </div>
+              </div> */}
             </div>
           </div>
           <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
@@ -332,27 +456,30 @@ const Calendar: React.FC = () => {
               type="button"
               className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 sm:w-auto"
             >
-              Close
+              Cancelar
             </button>
             <button
-              onClick={handleAddOrUpdateEvent}
+              // onClick={handleAddOrUpdateEvent}
+              onClick={handleSaveEvent}
               type="button"
               className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
             >
-              {selectedEvent ? "Update Changes" : "Add Event"}
+              {selectedEvent ? "Actualizar" : "Guardar"}
             </button>
           </div>
         </div>
-      </Modal>
-    </div>
+      </Modal >
+    </div >
   );
 };
 
 const renderEventContent = (eventInfo: EventContentArg) => {
-  const colorClass = `fc-bg-${eventInfo.event.extendedProps.calendar.toLowerCase()}`;
+  debugger
+  // const colorClass = `fc-bg-${eventInfo.event.extendedProps.calendar.toLowerCase()}`;
   return (
     <div
-      className={`event-fc-color flex fc-event-main ${colorClass} p-1 rounded-sm`}
+      // className={`event-fc-color flex fc-event-main ${colorClass} p-1 rounded-sm`}
+      className={`event-fc-color flex fc-event-main p-1 rounded-sm`}
     >
       <div className="fc-daygrid-event-dot"></div>
       <div className="fc-event-time">{eventInfo.timeText}</div>

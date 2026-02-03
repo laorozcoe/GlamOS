@@ -11,6 +11,6 @@ export const metadata: Metadata = {
 
 export default async function SignIn() {
   // const business = await getBusiness()
-  // createUserPrisma("laorozcoe@gmail.com", business?.id, "Luis Alejandro Orozco Estrada", "password", "MANICURIST")
+  // createUserPrisma("laorozcoe@gmail.com", business?.id, "Luis Alejandro Orozco Estrada", "password", "EMPLOYEE")
   return <SignInForm />;
 }

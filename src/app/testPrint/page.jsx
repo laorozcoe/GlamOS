@@ -89,7 +89,7 @@ export default function WebUsbPrinter() {
 
                 if (devices.length > 0) {
                     console.log("Dispositivo conocido encontrado, reconectando...");
-                    const savedDevice = devices[1]; // Tomamos la primera impresora que encuentre
+                    const savedDevice = devices[0]; // Tomamos la primera impresora que encuentre
 
                     // Repetimos el proceso de conexión
                     await savedDevice.open();

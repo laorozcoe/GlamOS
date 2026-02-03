@@ -26,14 +26,16 @@ model Business {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  users         User[]
-  clients       Client[]
-  manicurists   Manicurist[]
-  services      Service[]
-  appointments  Appointment[]
-  payments      Payment[]
-  reviews       Review[]
-  loyaltyPoints LoyaltyPoint[]
+  users             User[]
+  clients           Client[]
+  employees         Employee[]
+  services          Service[]
+  appointments      Appointment[]
+  payments          Payment[]
+  reviews           Review[]
+  loyaltyPoints     LoyaltyPoint[]
+  serviceCategories ServiceCategory[]
+  serviceExtras     ServiceExtra[]
 }
 
 //////////////////////
@@ -51,8 +53,8 @@ model User {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  business   Business    @relation(fields: [businessId], references: [id])
-  manicurist Manicurist?
+  business Business  @relation(fields: [businessId], references: [id])
+  employee Employee?
 
   @@unique([businessId, email])
 }
@@ -60,13 +62,13 @@ model User {
 enum Role {
   ADMIN
   RECEPTION
-  MANICURIST
+  EMPLOYEE
 }
 
 //////////////////////
-// 👩‍🎨 MANICURISTAS
+// 👩‍🎨 EMPLOYEEAS
 //////////////////////
-model Manicurist {
+model Employee {
   id         String   @id @default(uuid())
   businessId String
   userId     String   @unique
@@ -106,39 +108,98 @@ model Client {
 //////////////////////
 // 💅 SERVICIOS
 //////////////////////
+model ServiceCategory {
+  id         String   @id @default(uuid())
+  businessId String
+  name       String // MANOS, PIES, CABELLO, DEPILACIÓN
+  order      Int?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  business Business  @relation(fields: [businessId], references: [id])
+  services Service[]
+}
+
 model Service {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   businessId  String
-  name        String
+  categoryId  String
+  name        String // Manicura, Pedicura, Ondas
   description String?
   duration    Int // minutos
   price       Float
-  category    String?
-  active      Boolean  @default(true)
+
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  business Business        @relation(fields: [businessId], references: [id])
+  category ServiceCategory @relation(fields: [categoryId], references: [id])
+
+  appointmentServices AppointmentService[]
+  variants            ServiceVariant[]
+}
+
+model ServiceVariant {
+  id        String  @id @default(uuid())
+  serviceId String
+  name      String // Corto, Largo, Manos, Pies
+  duration  Int // minutos
+  price     Float
+  active    Boolean @default(true)
+
+  service Service @relation(fields: [serviceId], references: [id])
+}
+
+model ServiceExtra {
+  id          String   @id @default(uuid())
+  businessId  String
+  name        String // Diseño por uña, Extralargo
+  priceMin    Float?
+  priceMax    Float?
+  durationMin Int?
+  durationMax Int?
   createdAt   DateTime @default(now())
 
-  business            Business             @relation(fields: [businessId], references: [id])
-  appointmentServices AppointmentService[]
+  business          Business           @relation(fields: [businessId], references: [id])
+  appointmentExtras AppointmentExtra[]
 }
+
+// model Service {
+//   id                  String               @id @default(uuid())
+//   businessId          String
+//   name                String
+//   description         String?
+//   duration            Int // minutos
+//   price               Float
+//   category            String?
+//   active              Boolean              @default(true)
+//   createdAt           DateTime             @default(now())
+//   business            Business             @relation(fields: [businessId], references: [id])
+
+// }
 
 //////////////////////
 // 📅 CITAS
 //////////////////////
-model Appointment {
-  id           String            @id @default(uuid())
-  businessId   String
-  clientId     String
-  manicuristId String
-  start        DateTime
-  end          DateTime
-  allDay       Boolean           @default(false)
-  status       AppointmentStatus @default(PENDING)
-  notes        String?
-  createdAt    DateTime          @default(now())
 
-  business   Business   @relation(fields: [businessId], references: [id])
-  client     Client     @relation(fields: [clientId], references: [id])
-  manicurist Manicurist @relation(fields: [manicuristId], references: [id])
+model Appointment {
+  id         String            @id @default(uuid())
+  businessId String
+  clientId   String?
+  employeeId String
+  title      String
+  start      DateTime
+  end        DateTime
+  allDay     Boolean           @default(false)
+  status     AppointmentStatus @default(PENDING)
+  notes      String?
+  guestName  String?
+  guestPhone String?
+  createdAt  DateTime          @default(now())
+
+  business Business @relation(fields: [businessId], references: [id])
+  client   Client?  @relation(fields: [clientId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
 
   services AppointmentService[]
   payments Payment[]
@@ -160,10 +221,22 @@ model AppointmentService {
   serviceId     String
   price         Float
 
-  appointment Appointment @relation(fields: [appointmentId], references: [id])
-  service     Service     @relation(fields: [serviceId], references: [id])
+  appointment       Appointment        @relation(fields: [appointmentId], references: [id])
+  service           Service            @relation(fields: [serviceId], references: [id])
+  appointmentExtras AppointmentExtra[]
 
   @@unique([appointmentId, serviceId])
+}
+
+model AppointmentExtra {
+  id                   String             @id @default(uuid())
+  appointmentServiceId String
+  extraId              String
+  quantity             Int                @default(1) // uñas
+  price                Float
+  duration             Int
+  appointmentService   AppointmentService @relation(fields: [appointmentServiceId], references: [id])
+  extra                ServiceExtra       @relation(fields: [extraId], references: [id])
 }
 
 //////////////////////
@@ -191,17 +264,17 @@ enum PaymentMethod {
 // ⭐ RESEÑAS
 //////////////////////
 model Review {
-  id           String   @id @default(uuid())
-  businessId   String
-  clientId     String
-  manicuristId String
-  rating       Int
-  comment      String?
-  createdAt    DateTime @default(now())
+  id         String   @id @default(uuid())
+  businessId String
+  clientId   String
+  employeeId String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
 
-  business   Business   @relation(fields: [businessId], references: [id])
-  client     Client     @relation(fields: [clientId], references: [id])
-  manicurist Manicurist @relation(fields: [manicuristId], references: [id])
+  business Business @relation(fields: [businessId], references: [id])
+  client   Client   @relation(fields: [clientId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
 }
 
 //////////////////////
