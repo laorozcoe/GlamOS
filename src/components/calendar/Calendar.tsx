@@ -149,172 +149,172 @@ const Calendar: React.FC = () => {
 
     // } catch (error) {
     //   console.error("Error al guardar", error);
-  }
-};
+
+  };
 
 
-// Función para cuando das clic en un hueco VACÍO (Crear)
-const handleDateClick = (arg: DateClickArg) => {
-  debugger
-  // arg.date contiene la fecha y hora donde hiciste clic
-  // arg.dateStr es la fecha en string
-  const start = arg.date;
+  // Función para cuando das clic en un hueco VACÍO (Crear)
+  const handleDateClick = (arg: DateClickArg) => {
+    debugger
+    // arg.date contiene la fecha y hora donde hiciste clic
+    // arg.dateStr es la fecha en string
+    const start = arg.date;
 
-  const yyyy = start.getFullYear();
-  const mm = String(start.getMonth() + 1).padStart(2, '0');
-  const dd = String(start.getDate()).padStart(2, '0');
+    const yyyy = start.getFullYear();
+    const mm = String(start.getMonth() + 1).padStart(2, '0');
+    const dd = String(start.getDate()).padStart(2, '0');
 
-  const hh = String(start.getHours()).padStart(2, '0');
-  const min = String(start.getMinutes()).padStart(2, '0');
+    const hh = String(start.getHours()).padStart(2, '0');
+    const min = String(start.getMinutes()).padStart(2, '0');
 
-  setDate(`${yyyy}-${mm}-${dd}`); // para <input type="date">
-  setTime(`${hh}:${min}`);        // para <input type="time">
-  const end = new Date(arg.date.getTime() + 60 * 60 * 1000); // 1 hora por defecto
+    setDate(`${yyyy}-${mm}-${dd}`); // para <input type="date">
+    setTime(`${hh}:${min}`);        // para <input type="time">
+    const end = new Date(arg.date.getTime() + 60 * 60 * 1000); // 1 hora por defecto
 
 
-  //AUN no tenemos la fecha fin cada Appointment TIENE UN TIEMPO ESTIMADO HAY QUE SUMARLOS TOCOS Y CALCULAR LA FECHA FIN
-  setSelectedDate({ start, end });
-  // setIsModalOpen(true);
-  openModal(); 5
+    //AUN no tenemos la fecha fin cada Appointment TIENE UN TIEMPO ESTIMADO HAY QUE SUMARLOS TOCOS Y CALCULAR LA FECHA FIN
+    setSelectedDate({ start, end });
+    // setIsModalOpen(true);
+    openModal();
 
-};
+  };
 
-// Función para cuando das clic en una CITA EXISTENTE (Editar)
-const handleEventClick2 = (clickInfo: EventClickArg) => {
-  // arg.event contiene los datos de la cita real
-  const event = clickInfo.event;
-  setSelectedEvent(event as unknown as CalendarEvent);
-  setEventTitle(event.title);
-  setEventStartDate(event.start?.toISOString().split("T")[0] || "");
-  setEventEndDate(event.end?.toISOString().split("T")[0] || "");
-  setEventLevel(event.extendedProps.calendar);
-  openModal();
+  // Función para cuando das clic en una CITA EXISTENTE (Editar)
+  const handleEventClick2 = (clickInfo: EventClickArg) => {
+    // arg.event contiene los datos de la cita real
+    const event = clickInfo.event;
+    setSelectedEvent(event as unknown as CalendarEvent);
+    setEventTitle(event.title);
+    setEventStartDate(event.start?.toISOString().split("T")[0] || "");
+    setEventEndDate(event.end?.toISOString().split("T")[0] || "");
+    setEventLevel(event.extendedProps.calendar);
+    openModal();
 
-};
+  };
 
-const addAppointment = (service: any) => {
-  const newAppointment = service;
-  setAppointments([...appointments, newAppointment]);
-  setSelectedService(service);
+  const addAppointment = (service: any) => {
+    const newAppointment = service;
+    setAppointments([...appointments, newAppointment]);
+    setSelectedService(service);
 
-  setFlashCategory(service.id);
+    setFlashCategory(service.id);
 
-  setTimeout(() => {
-    setFlashCategory(null); // solo quita el flash
-  }, 600);
+    setTimeout(() => {
+      setFlashCategory(null); // solo quita el flash
+    }, 150);
 
-  setTimeout(() => {
-    setSelectedService(null); // quita selección después
-  }, 1200);
-};
+    setTimeout(() => {
+      setSelectedService(null); // quita selección después
+    }, 300);
+  };
 
-const handleAddOrUpdateEvent = () => {
-  if (selectedEvent) {
-    // Update existing event
-    setEvents((prevEvents) =>
-      prevEvents.map((event) =>
-        event.id === selectedEvent.id
-          ? {
-            ...event,
-            title: eventTitle,
-            start: eventStartDate,
-            end: eventEndDate,
-            extendedProps: { calendar: eventLevel },
-          }
-          : event
-      )
-    );
-  } else {
-    // Add new event
-    const newEvent: CalendarEvent = {
-      id: Date.now().toString(),
-      title: eventTitle,
-      start: eventStartDate,
-      end: eventEndDate,
-      allDay: true,
-      extendedProps: { calendar: eventLevel },
-    };
-    setEvents((prevEvents) => [...prevEvents, newEvent]);
-  }
-  closeModal();
-  resetModalFields();
-};
+  const handleAddOrUpdateEvent = () => {
+    if (selectedEvent) {
+      // Update existing event
+      setEvents((prevEvents) =>
+        prevEvents.map((event) =>
+          event.id === selectedEvent.id
+            ? {
+              ...event,
+              title: eventTitle,
+              start: eventStartDate,
+              end: eventEndDate,
+              extendedProps: { calendar: eventLevel },
+            }
+            : event
+        )
+      );
+    } else {
+      // Add new event
+      const newEvent: CalendarEvent = {
+        id: Date.now().toString(),
+        title: eventTitle,
+        start: eventStartDate,
+        end: eventEndDate,
+        allDay: true,
+        extendedProps: { calendar: eventLevel },
+      };
+      setEvents((prevEvents) => [...prevEvents, newEvent]);
+    }
+    closeModal();
+    resetModalFields();
+  };
 
-const resetModalFields = () => {
-  setEventTitle("");
-  setEventStartDate("");
-  setEventEndDate("");
-  setEventLevel("");
-  setSelectedEvent(null);
-};
+  const resetModalFields = () => {
+    setEventTitle("");
+    setEventStartDate("");
+    setEventEndDate("");
+    setEventLevel("");
+    setSelectedEvent(null);
+  };
 
-return (
-  <div className="rounded-2xl border  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3">
-    <div className="custom-calendar">
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="timeGridDay"
-        headerToolbar={{
-          left: "prev,next addEventButton",
-          center: "title",
-          right: "timeGridDay,timeGridWeek",
-        }}
-        height="auto"
-        allDaySlot={false}
-        longPressDelay={100}
-        events={events}
-        slotMinTime="09:00:00" // Empieza a las 9 AM
-        slotMaxTime="18:00:00" // Termina a las 6 PM
-        // selectable={true}
-        // select={handleDateSelect}
-        dateClick={handleDateClick}
-        eventClick={handleEventClick2}
-        // eventContent={renderEventContent}
-        locale={esLocale} // <--- 2. AÑADIR ESTO
-        customButtons={{
-          addEventButton: {
-            text: "Nueva Cita",
-            click: openModal,
-          },
-        }}
-      />
-    </div>
-    <Modal
-      isOpen={isOpen}
-      onClose={closeModal}
-      className="max-w-[700px] p-6 lg:p-10"
-    >
-      <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
-        <div>
-          <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-            {selectedEvent ? "Edit Event" : "Nueva Cita"}
-          </h5>
-          {/* <p className="text-sm text-gray-500 dark:text-gray-400">
+  return (
+    <div className="rounded-2xl border  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3">
+      <div className="custom-calendar">
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          initialView="timeGridDay"
+          headerToolbar={{
+            left: "prev,next addEventButton",
+            center: "title",
+            right: "timeGridDay,timeGridWeek",
+          }}
+          height="auto"
+          allDaySlot={false}
+          longPressDelay={100}
+          events={events}
+          slotMinTime="09:00:00" // Empieza a las 9 AM
+          slotMaxTime="18:00:00" // Termina a las 6 PM
+          // selectable={true}
+          // select={handleDateSelect}
+          dateClick={handleDateClick}
+          eventClick={handleEventClick2}
+          // eventContent={renderEventContent}
+          locale={esLocale} // <--- 2. AÑADIR ESTO
+          customButtons={{
+            addEventButton: {
+              text: "Nueva Cita",
+              click: openModal,
+            },
+          }}
+        />
+      </div>
+      <Modal
+        isOpen={isOpen}
+        onClose={closeModal}
+        className="max-w-[700px] p-6 lg:p-10"
+      >
+        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+          <div>
+            <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+              {selectedEvent ? "Edit Event" : "Nueva Cita"}
+            </h5>
+            {/* <p className="text-sm text-gray-500 dark:text-gray-400">
               Plan your next big moment: schedule or edit an event to stay on
               track
             </p> */}
-        </div>
-        {/* <Select options={services.map((service: any) => ({
+          </div>
+          {/* <Select options={services.map((service: any) => ({
             value: service.id,
             label: service.name,
           }))} placeholder="Selecciona un servicio" onChange={function (value: string): void {
             throw new Error("Function not implemented.");
           }}>
           </Select> */}
-        <div className="mt-8">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Empleado:
-            </label>
-            <Select options={employees.map((employee: any) => ({
-              value: employee.id,
-              label: employee.user.name + " " + employee.user.lastName,
-            }))} placeholder="Selecciona una persona" onChange={function (value: string): void {
-              throw new Error("Function not implemented.");
-            }}>
-            </Select>
-            {/* <input
+          <div className="mt-8">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Empleado:
+              </label>
+              <Select options={employees.map((employee: any) => ({
+                value: employee.id,
+                label: employee.user.name + " " + employee.user.lastName,
+              }))} placeholder="Selecciona una persona" onChange={function (value: string): void {
+                throw new Error("Function not implemented.");
+              }}>
+              </Select>
+              {/* <input
                   id="event-title"
                   type="text"
                   value={eventTitle}
@@ -322,50 +322,50 @@ return (
                   className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 /> */}
 
-          </div>
-
-          <div className="mt-6">
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Empleado:
-            </label>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {servicesCategories.map((cat: any) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 rounded-full border
-                    ${selectedCategory === cat.id
-                      ? 'bg-black text-white'
-                      : 'bg-white text-black'}
-                  `}
-                >
-                  {cat.name}
-                </button>
-              ))}
             </div>
-            <div className="h-52 overflow-y-auto custom-scrollbar">
-              <div className="grid grid-cols-2 gap-3 box-content p-2">
-                {services.filter((s: any) => s.categoryId === selectedCategory).map((ss: any) => (
+
+            <div className="mt-6">
+              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Empleado:
+              </label>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {servicesCategories.map((cat: any) => (
                   <button
-                    key={ss.id}
-                    onClick={() => addAppointment(ss)}
-                    className={`p-3 border rounded-lg text-left  transition-all duration-100 ease-in-out box-content
-                        ${selectedService?.id === ss.id ? 'bg-black text-white' : 'bg-white text-black'}
-                  ${flashCategory === ss.id ? 'outline outline-black shadow-lg'
-                        : 'outline-none shadow-none'}
-                      `}
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-4 py-2 rounded-full border
+                    ${selectedCategory === cat.id
+                        ? 'bg-black text-white'
+                        : 'bg-white text-black'}
+                  `}
                   >
-                    <div className="font-medium">{ss.name}</div>
-                    <div className="text-sm text-gray-500">
-                      ${ss.price}
-                    </div>
+                    {cat.name}
                   </button>
                 ))}
               </div>
-            </div>
+              <div className="h-52 overflow-y-auto custom-scrollbar">
+                <div className="grid grid-cols-2 gap-3 box-content p-2">
+                  {services.filter((s: any) => s.categoryId === selectedCategory).map((ss: any) => (
+                    <button
+                      key={ss.id}
+                      onClick={() => addAppointment(ss)}
+                      className={`p-3 border rounded-lg text-left  transition-all duration-100 ease-in-out box-content
+                        ${selectedService?.id === ss.id ? 'bg-black text-white' : 'bg-white text-black'}
+                  ${flashCategory === ss.id ? 'outline outline-black shadow-lg'
+                          : 'outline-none shadow-none'}
+                      `}
+                    >
+                      <div className="font-medium">{ss.name}</div>
+                      <div className="text-sm text-gray-500">
+                        ${ss.price}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          </div>
-          {/* 
+            </div>
+            {/* 
             <div className="mt-6">
               <label className="block mb-4 text-sm font-medium text-gray-700 dark:text-gray-400">
                 Event Color
@@ -404,38 +404,38 @@ return (
                 ))}
               </div>
             </div> */}
-          <div className="flex flex-row">
+            <div className="flex flex-row">
 
-            <div className="mt-6">
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Fecha
-              </label>
-              <div className="relative">
-                <input
-                  id="event-start-date"
-                  type="date"
-                  value={date}
-                  onChange={e => setDate(e.target.value)}
-                  className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                />
+              <div className="mt-6">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Fecha
+                </label>
+                <div className="relative">
+                  <input
+                    id="event-start-date"
+                    type="date"
+                    value={date}
+                    onChange={e => setDate(e.target.value)}
+                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="mt-6">
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Hora
-              </label>
-              <div className="relative">
-                <input
-                  id="event-start-date"
-                  type="time"
-                  value={time}
-                  onChange={e => setTime(e.target.value)}
-                  className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                />
+              <div className="mt-6">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Hora
+                </label>
+                <div className="relative">
+                  <input
+                    id="event-start-date"
+                    type="time"
+                    value={time}
+                    onChange={e => setTime(e.target.value)}
+                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                  />
+                </div>
               </div>
-            </div>
-            {/* 
+              {/* 
               <div className="mt-6">
                 <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                   Enter End Date
@@ -450,29 +450,29 @@ return (
                   />
                 </div>
               </div> */}
+            </div>
+          </div>
+          <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+            <button
+              onClick={closeModal}
+              type="button"
+              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 sm:w-auto"
+            >
+              Cancelar
+            </button>
+            <button
+              // onClick={handleAddOrUpdateEvent}
+              onClick={handleSaveEvent}
+              type="button"
+              className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
+            >
+              {selectedEvent ? "Actualizar" : "Guardar"}
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
-          <button
-            onClick={closeModal}
-            type="button"
-            className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 sm:w-auto"
-          >
-            Cancelar
-          </button>
-          <button
-            // onClick={handleAddOrUpdateEvent}
-            onClick={handleSaveEvent}
-            type="button"
-            className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
-          >
-            {selectedEvent ? "Actualizar" : "Guardar"}
-          </button>
-        </div>
-      </div>
-    </Modal >
-  </div >
-);
+      </Modal >
+    </div >
+  );
 };
 
 const renderEventContent = (eventInfo: EventContentArg) => {
