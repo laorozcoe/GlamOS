@@ -108,6 +108,11 @@ const Calendar: React.FC = () => {
     // ]);
   }, []);
 
+  const closeModalResetFields = () => {
+    closeModal();
+    setAppointments([]);
+  }
+
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     resetModalFields();
     setEventStartDate(selectInfo.startStr);
@@ -248,6 +253,12 @@ const Calendar: React.FC = () => {
     setSelectedEvent(null);
   };
 
+  const handleDelete = (indexToDelete: number) => {
+    setAppointments((prevAppointments: any) =>
+      prevAppointments.filter((_: any, i: number) => i !== indexToDelete)
+    );
+  };
+
   return (
     <div className="rounded-2xl border  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3">
       <div className="custom-calendar">
@@ -283,194 +294,105 @@ const Calendar: React.FC = () => {
       <Modal
         isOpen={isOpen}
         onClose={closeModal}
-        className="max-w-[700px] p-6 lg:p-10"
+        // TIP: Usamos h-[90vh] para que ocupe casi toda la pantalla pero deje margen
+        // Quitamos el bg-amber-400 y pusimos blanco con bordes redondeados grandes
+        className="w-full max-w-6xl h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
       >
-        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+
+
+        {/* --- 1. HEADER (Fijo, flex-none) --- */}
+        <div className="flex-none px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-gray-900 z-10">
           <div>
-            <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-              {selectedEvent ? "Edit Event" : "Nueva Cita"}
+            <h5 className="text-xl font-bold text-gray-800 dark:text-white">
+              {selectedEvent ? "Editar Cita" : "Nueva Cita"}
             </h5>
-            {/* <p className="text-sm text-gray-500 dark:text-gray-400">
-              Plan your next big moment: schedule or edit an event to stay on
-              track
-            </p> */}
-          </div>
-          {/* <Select options={services.map((service: any) => ({
-            value: service.id,
-            label: service.name,
-          }))} placeholder="Selecciona un servicio" onChange={function (value: string): void {
-            throw new Error("Function not implemented.");
-          }}>
-          </Select> */}
-          <div className="mt-8">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Empleado:
-              </label>
-              <Select options={employees.map((employee: any) => ({
-                value: employee.id,
-                label: employee.user.name + " " + employee.user.lastName,
-              }))} placeholder="Selecciona una persona" onChange={function (value: string): void {
-                throw new Error("Function not implemented.");
-              }}>
-              </Select>
-              {/* <input
-                  id="event-title"
-                  type="text"
-                  value={eventTitle}
-                  onChange={(e) => setEventTitle(e.target.value)}
-                  className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                /> */}
-
-            </div>
-
-            <div className="mt-6">
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Empleado:
-              </label>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {servicesCategories.map((cat: any) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-4 py-2 rounded-full border
-                    ${selectedCategory === cat.id
-                        ? 'bg-black text-white'
-                        : 'bg-white text-black'}
-                  `}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
-              <div className="h-52 overflow-y-auto custom-scrollbar">
-                <div className="grid grid-cols-2 gap-3 box-content p-2">
-                  {services.filter((s: any) => s.categoryId === selectedCategory).map((ss: any) => (
-                    <button
-                      key={ss.id}
-                      onClick={() => addAppointment(ss)}
-                      className={`p-3 border rounded-lg text-left  transition-all duration-100 ease-in-out box-content
-                        ${selectedService?.id === ss.id ? 'bg-black text-white' : 'bg-white text-black'}
-                  ${flashCategory === ss.id ? 'outline outline-black shadow-lg'
-                          : 'outline-none shadow-none'}
-                      `}
-                    >
-                      <div className="font-medium">{ss.name}</div>
-                      <div className="text-sm text-gray-500">
-                        ${ss.price}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-            {/* 
-            <div className="mt-6">
-              <label className="block mb-4 text-sm font-medium text-gray-700 dark:text-gray-400">
-                Event Color
-              </label>
-              <div className="flex flex-wrap items-center gap-4 sm:gap-5">
-                {Object.entries(calendarsEvents).map(([key, value]) => (
-                  <div key={key} className="n-chk">
-                    <div
-                      className={`form-check form-check-${value} form-check-inline`}
-                    >
-                      <label
-                        className="flex items-center text-sm text-gray-700 form-check-label dark:text-gray-400"
-                        htmlFor={`modal${key}`}
-                      >
-                        <span className="relative">
-                          <input
-                            className="sr-only form-check-input"
-                            type="radio"
-                            name="event-level"
-                            value={key}
-                            id={`modal${key}`}
-                            checked={eventLevel === key}
-                            onChange={() => setEventLevel(key)}
-                          />
-                          <span className="flex items-center justify-center w-5 h-5 mr-2 border border-gray-300 rounded-full box dark:border-gray-700">
-                            <span
-                              className={`h-2 w-2 rounded-full bg-white ${eventLevel === key ? "block" : "hidden"
-                                }`}
-                            ></span>
-                          </span>
-                        </span>
-                        {key}
-                      </label>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div> */}
-            <div className="flex flex-row">
-
-              <div className="mt-6">
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Fecha
-                </label>
-                <div className="relative">
-                  <input
-                    id="event-start-date"
-                    type="date"
-                    value={date}
-                    onChange={e => setDate(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Hora
-                </label>
-                <div className="relative">
-                  <input
-                    id="event-start-date"
-                    type="time"
-                    value={time}
-                    onChange={e => setTime(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-              </div>
-              {/* 
-              <div className="mt-6">
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Enter End Date
-                </label>
-                <div className="relative">
-                  <input
-                    id="event-end-date"
-                    type="date"
-                    value={eventEndDate}
-                    onChange={(e) => setEventEndDate(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-              </div> */}
-            </div>
-          </div>
-          <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
-            <button
-              onClick={closeModal}
-              type="button"
-              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 sm:w-auto"
-            >
-              Cancelar
-            </button>
-            <button
-              // onClick={handleAddOrUpdateEvent}
-              onClick={handleSaveEvent}
-              type="button"
-              className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
-            >
-              {selectedEvent ? "Actualizar" : "Guardar"}
-            </button>
+            <p className="text-sm text-gray-500">Completa los detalles para agendar</p>
           </div>
         </div>
-      </Modal >
+
+        {/* BODY PRINCIPAL */}
+        {/* flex-1 y min-h-0 obligatorios */}
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
+
+          {/* Columna Izquierda (Scroll simple) */}
+          <div className="w-full lg:w-8/12 h-full overflow-y-auto custom-scrollbar p-6">
+            {/* ... TU CONTENIDO DE INPUTS Y SERVICIOS IGUAL QUE ANTES ... */}
+
+            {/* (Pego aquí un resumen para que no pierdas el contexto, pero mantén tu lógica de selects) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* ... Inputs de empleado ... */}
+              <div><label className="text-sm font-bold">Empleado</label><Select options={[]} placeholder="..." onChange={() => { }} /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><label className="text-sm font-bold">Teléfono</label><Select options={[]} placeholder="..." onChange={() => { }} /></div>
+                <div><label className="text-sm font-bold">Nombre</label><Select options={[]} placeholder="..." onChange={() => { }} /></div>
+              </div>
+            </div>
+
+            {/* Servicios */}
+            <div className="sticky top-0 bg-white z-10 py-2">
+              {/* ... Tus botones de categorías ... */}
+              <div className="flex gap-2 pb-2">{servicesCategories.map((c: any) => <button key={c.id} className="border px-3 rounded-full text-xs">{c.name}</button>)}</div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {services.filter((s: any) => s.categoryId === selectedCategory).map((ss: any) => (
+                <button key={ss.id} onClick={() => addAppointment(ss)} className="border p-3 rounded hover:shadow-md text-left">
+                  <div className="font-bold text-sm">{ss.name}</div>
+                  <div className="text-xs text-gray-500">${ss.price}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* === COLUMNA DERECHA (GRID SYSTEM) === */}
+          {/* grid-rows-[auto_1fr_auto]: Header Auto, Lista Rellena, Footer Auto */}
+          <div className="w-full lg:w-4/12 h-full bg-gray-50 dark:bg-gray-800/50 border-l border-gray-200 dark:border-gray-700 grid grid-rows-[auto_1fr_auto]">
+
+            {/* A. HEADER (Fijo) */}
+            <div className="p-5 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="font-bold mb-2 text-gray-800 dark:text-white">Detalles</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="border p-1.5 rounded w-full text-sm" />
+                <input type="time" value={time} onChange={e => setTime(e.target.value)} className="border p-1.5 rounded w-full text-sm" />
+              </div>
+            </div>
+
+            {/* B. LISTA (Scrollable) */}
+            {/* overflow-y-auto es vital aquí */}
+            <div className="overflow-y-auto p-4 space-y-2">
+              {appointments.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
+                  <span className="text-xl">🛒</span>
+                  <span className="text-sm">Vacío</span>
+                </div>
+              )}
+              {appointments.map((appointment: any, index: number) => (
+                <div key={index} className="bg-white p-3 rounded shadow-sm border border-gray-200 flex justify-between items-center text-sm">
+                  <div className="overflow-hidden pr-2">
+                    <p className="font-bold truncate">{appointment.name}</p>
+                    <p className="text-xs text-gray-500">${appointment.price}</p>
+                  </div>
+                  <button onClick={() => handleDelete(index)} className="shrink-0 text-gray-400 hover:text-red-500 font-bold px-2">✕</button>
+                </div>
+              ))}
+            </div>
+
+            {/* C. FOOTER (Fijo) */}
+            <div className="p-5 bg-white border-t border-gray-200 z-10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+              <div className="flex justify-between items-end mb-4">
+                <span className="text-gray-500 text-sm font-medium">Total</span>
+                <span className="text-2xl font-bold text-gray-900">
+                  ${appointments.reduce((acc: any, curr: any) => acc + Number(curr.price), 0)}
+                </span>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={closeModalResetFields} className="flex-1 py-2.5 border rounded-lg text-sm hover:bg-gray-50">Cancelar</button>
+                <button onClick={handleSaveEvent} className="flex-1 py-2.5 bg-black text-white rounded-lg text-sm hover:bg-gray-800">Guardar</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </Modal>
     </div >
   );
 };

@@ -393,25 +393,87 @@ export async function deleteUserPrisma(id, businessId) {
     return user
 }
 
-// model User {
+//--------------------------------------------------------------------------------
+//-------------------------User-------------------------------------
+//--------------------------------------------------------------------------------
+
+export async function createClientPrisma(businessId, name, phone, email, notes) {
+    const client = await prisma.client.create({
+        data: {
+            businessId,
+            name,
+            phone,
+            email,
+            notes
+        },
+    })
+
+    return client
+}
+
+export async function getClientPrisma(businessId, phone) {
+    const client = await prisma.client.findFirst({
+        where: {
+            businessId: businessId,
+            phone: phone,
+        },
+    })
+
+    return client
+}
+
+export async function getClientsPrisma(businessId) {
+    const clients = await prisma.client.findMany({
+        where: {
+            businessId: businessId,
+        },
+    })
+
+    return clients
+}
+
+export async function updateClientPrisma(id, businessId, name, phone, email, notes) {
+    const client = await prisma.client.update({
+        where: {
+            id: id,
+            businessId: businessId,
+        },
+        data: {
+            name,
+            phone,
+            email,
+            notes
+        },
+    })
+
+    return client
+}
+
+export async function deleteClientPrisma(id, businessId) {
+    const client = await prisma.client.delete({
+        where: {
+            id: id,
+            businessId: businessId,
+        },
+    })
+
+    return client
+}
+
+
+// model Client {
 //   id         String   @id @default(uuid())
 //   businessId String
 //   name       String
-//   email      String
-//   password   String
-//   role       Role     @default(RECEPTION)
-//   active     Boolean  @default(true)
+//   phone      String?
+//   email      String?
+//   notes      String?
 //   createdAt  DateTime @default(now())
-//   updatedAt  DateTime @updatedAt
 
-//   business   Business    @relation(fields: [businessId], references: [id])
-//   employee Employee?
+//   business      Business       @relation(fields: [businessId], references: [id])
+//   appointments  Appointment[]
+//   reviews       Review[]
+//   loyaltyPoints LoyaltyPoint[]
 
-//   @@unique([businessId, email])
-// }
-
-// enum Role {
-//   ADMIN
-//   RECEPTION
-//   EMPLOYEE
+//   @@unique([businessId, phone])
 // }
