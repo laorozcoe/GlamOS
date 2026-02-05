@@ -5,8 +5,8 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
-import { getBusiness } from "@/lib/getBusiness";
-const business = await getBusiness();
+// import { getBusiness } from "@/lib/getBusiness";
+// const business = await getBusiness();
 
 export default function AuthLayout({
   children,
@@ -24,15 +24,15 @@ export default function AuthLayout({
               <GridShape />
               <div className="flex flex-col items-center max-w-xs">
                 <Link href="/" className="block mb-4">
-                  <Image
+                  {/* <Image
                     width={231}
                     height={48}
                     src={`/${business?.slug}/logo.png`}
                     alt="Logo"
-                  />
+                  /> */}
                 </Link>
                 <p className="text-center text-gray-400 dark:text-white/60">
-                  {business?.name}
+                  {/* {business?.name} */}
                 </p>
               </div>
             </div>
