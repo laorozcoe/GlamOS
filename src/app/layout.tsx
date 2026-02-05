@@ -7,6 +7,7 @@ import { getBusiness } from "@/lib/getBusiness"
 import BusinessProvider from "@/context/BusinessProvider"
 import Head from 'next/head';
 
+export const dynamic = "force-dynamic"; // 👈 ESTO ARREGLA
 
 const outfit = Outfit({
   subsets: ["latin"],
