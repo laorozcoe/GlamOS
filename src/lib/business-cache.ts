@@ -1,45 +1,43 @@
-import prisma from "@/lib/prisma2"
+// type BusinessCacheItem = {
+//   id: string
+//   slug: string
+//   expiresAt: number
+// }
 
-type BusinessCacheItem = {
-  id: string
-  slug: string
-  expiresAt: number
-}
+// const CACHE = new Map<string, BusinessCacheItem>()
 
-const CACHE = new Map<string, BusinessCacheItem>()
+// const TTL = 1000 * 60 * 5 // 5 minutos
 
-const TTL = 1000 * 60 * 5 // 5 minutos
+// export async function getBusinessCached(slug: string) {
+//   const now = Date.now()
 
-export async function getBusinessCached(slug: string) {
-  const now = Date.now()
+//   const cached = CACHE.get(slug)
 
-  const cached = CACHE.get(slug)
+//   if (cached && cached.expiresAt > now) {
+//     return cached
+//   }
 
-  if (cached && cached.expiresAt > now) {
-    return cached
-  }
+//   // ⚠️ aquí sí consultas Prisma
+//   const business = await fetchBusinessFromDB(slug)
 
-  // ⚠️ aquí sí consultas Prisma
-  const business = await fetchBusinessFromDB(slug)
+//   if (!business) return null
 
-  if (!business) return null
+//   const item: BusinessCacheItem = {
+//     id: business.id,
+//     slug: business.slug,
+//     expiresAt: now + TTL,
+//   }
 
-  const item: BusinessCacheItem = {
-    id: business.id,
-    slug: business.slug,
-    expiresAt: now + TTL,
-  }
+//   CACHE.set(slug, item)
 
-  CACHE.set(slug, item)
+//   return item
+// }
 
-  return item
-}
-
-// 👇 función real de Prisma (la separas)
-async function fetchBusinessFromDB(slug: string) {
-
-  return prisma.business.findUnique({
-    where: { slug },
-    select: { id: true, slug: true },
-  })
-}
+// // 👇 función real de Prisma (la separas)
+// async function fetchBusinessFromDB(slug: string) {
+//   const prisma = await import("@/lib/prisma2")
+//   return prisma.business.findUnique({
+//     where: { slug },
+//     select: { id: true, slug: true },
+//   })
+// }
