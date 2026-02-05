@@ -1,7 +1,8 @@
 "use client"
 
 import { createContext, useContext } from "react"
-import { Business } from "@prisma/client"
+// 👇 CAMBIO AQUÍ: Agrega 'type'
+import type { Business } from "@prisma/client"
 
 export const BusinessContext = createContext<Business | null>(null)
 

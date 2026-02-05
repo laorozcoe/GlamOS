@@ -1,7 +1,8 @@
 "use client"
 
 import { BusinessContext } from "@/context/BusinessContext"
-import { Business } from "@prisma/client"
+// 👇 CAMBIO AQUÍ: Agrega 'type'
+import type { Business } from "@prisma/client"
 
 export default function BusinessProvider({
     business,

@@ -1,33 +1,24 @@
-// import { headers } from "next/headers"
-// import { getBusinessPrisma } from "@/lib/prisma"
 
-// export async function getBusiness() {
-//     const slug = headers().get("x-business-slug")
-
-//     if (!slug || slug === "www" || slug === "localhost") {
-//         return null
-//     }
-
-//     const business = await getBusinessPrisma(slug);
-
-//     return business
-// }
-
-
+// src/lib/getBusiness.js
 import { headers } from "next/headers"
 import { getBusinessPrisma } from "@/lib/prisma"
 
 export async function getBusiness() {
-    const h = await headers()   // 👈 clave
-    const slug = h.get("x-business-slug")
+    try {
+        const h = await headers()
+        const slug = h.get("x-business-slug")
 
-    if (!slug || slug === "www" || slug === "localhost" || slug === "" || slug === "192") {
-        // aqui hay que definir un business por defecto
-        const business = await getBusinessPrisma("brillarte-bloom")
-        return business
+        if (!slug || slug === "www" || slug === "localhost" || slug === "") {
+            return await getBusinessPrisma("brillarte-bloom")
+        }
+
+        const business = await getBusinessPrisma(slug)
+        // Si no encuentra el negocio, regresa el default para evitar nulls peligrosos
+        return business || await getBusinessPrisma("brillarte-bloom")
+
+    } catch (error) {
+        console.error("Error obteniendo business:", error)
+        // En caso de error (ej. durante build de not-found), devuelve null o un default seguro
+        return null
     }
-
-    const business = await getBusinessPrisma(slug)
-
-    return business
 }
