@@ -35,7 +35,7 @@ export async function getBusinessCached(slug: string) {
 
 // 👇 función real de Prisma (la separas)
 async function fetchBusinessFromDB(slug: string) {
-  const { prisma } = await import("@/lib/prisma2")
+  const prisma = await import("@/lib/prisma2")
   return prisma.business.findUnique({
     where: { slug },
     select: { id: true, slug: true },
