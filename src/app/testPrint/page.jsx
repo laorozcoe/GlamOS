@@ -1,7 +1,163 @@
 'use client';
 import { useState, useEffect } from 'react';
+import EscPosEncoder from 'esc-pos-encoder';
 
 export default function WebUsbPrinter() {
+
+    // Función auxiliar para cargar la imagen antes de imprimir
+    // Función auxiliar para forzar el tamaño correcto usando un Canvas
+    const processImageOnCanvas = (url, targetWidth) => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = url;
+
+            img.onload = () => {
+                // 1. Calculamos la altura proporcional
+                const aspectRatio = img.height / img.width;
+                const targetHeight = Math.floor(targetWidth * aspectRatio);
+
+                // 2. Creamos un canvas invisible del tamaño EXACTO que queremos
+                const canvas = document.createElement('canvas');
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+
+                const ctx = canvas.getContext('2d');
+                // Dibujamos la imagen estirándola al tamaño del canvas
+                ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+                // 3. Devolvemos el canvas (la librería acepta canvas o imágenes)
+                resolve(canvas);
+            };
+
+            img.onerror = (err) => reject(new Error('No se pudo cargar la imagen: ' + url));
+        });
+    };
+
+    const printTicket2 = async () => {
+        if (!device) return;
+
+        try {
+            // 1. Preparamos la imagen (304px es un buen ancho para raster)
+            const imgCanvas = await processImageOnCanvas('/brillarte-bloom/logo_ticket-bw.png', 304);
+
+            // 2. AQUÍ ESTÁ LA CORRECCIÓN BASADA EN TU DOCUMENTACIÓN
+            const encoder = new EscPosEncoder({
+                width: 32,               // Le decimos: "Oye, soy papel pequeño (58mm)"
+                imageMode: 'raster',     // Modo compatible para impresoras genéricas
+                codepageMapping: 'xprinter' // Mapeo de caracteres para clones chinos (ayuda con la Ñ)
+            });
+
+
+            const result = encoder
+                .initialize()
+                .codepage('cp850') // Activamos el idioma español
+
+                // Ajuste manual de interlineado (esto sigue siendo necesario para compactar)
+                .raw([0x1B, 0x33, 20])
+
+                // LOGO
+                .align('center')
+                .image(imgCanvas, imgCanvas.width, imgCanvas.height, 'atkinson')
+
+                // TEXTO
+                .newline()
+                .bold(true)
+                .text('Brillarte Bloom\n') // Al tener width:32, el align center ahora sí será real
+                .bold(false)
+
+                .align('left')
+                .text('Fecha: 01/02/2026\n')
+                .text('--------------------------------\n')
+                // ARTÍCULOS (Ajustados a 32 caracteres de ancho)
+                // "Uñas Acrílicas" (14) + 11 espacios + "$25.00" (6) = 31 chars
+                .text('1x Uñas Acrílicas         $25.00\n')
+                // "Diseño Cabaña" (13) + 12 espacios + "$10.00" (6) = 31 chars
+                .text('1x Diseño Cabaña          $10.00\n')
+
+                .text('--------------------------------\n')
+
+                .align('right')
+                .bold(true)
+                .text('TOTAL: $35.00\n')
+                .bold(false)
+
+                .align('center')
+                .newline()
+                .text('¡Gracias por su visita!\n')
+
+                .newline()
+                .newline()
+                .cut()     // Si tu impresora tiene corte
+                .pulse()   // Abre el cajón (pin 0 por defecto según la doc)
+                .encode();
+
+            const interfaceData = device.configuration.interfaces[0];
+            const endpoint = interfaceData.alternates[0].endpoints.find(e => e.direction === 'out');
+
+            await device.transferOut(endpoint.endpointNumber, result);
+            console.log("Impresión optimizada enviada ✅");
+
+        } catch (err) {
+            console.error(err);
+            alert('Error: ' + err.message);
+        }
+    };
+
+    // const printTicket2 = async () => {
+    //     if (!device) return;
+
+    //     try {
+    //         console.log("Cargando imagen...");
+
+    //         // USAMOS 304 px (Múltiplo de 8 garantizado)
+    //         // El canvas se encargará de que sea matemáticamente perfecto
+    //         const imgCanvas = await processImageOnCanvas('/brillarte-bloom/logo_ticket-bw.png', 304);
+
+    //         let encoder = new EscPosEncoder({
+    //             width: 32,
+    //             wordWrap: true
+    //         });
+
+    //         const result = encoder
+    //             .initialize()
+    //             .codepage('cp850')
+
+    //             .align('center')
+    //             // Pasamos el CANVAS, no la imagen directa. 
+    //             // Ponemos 304 en el ancho y 'atkinson' para el difuminado.
+    //             .image(imgCanvas, 304, imgCanvas.height, 'atkinson')
+
+    //             .bold(true)
+    //             .text('Brillarte Bloom\n')
+    //             .bold(false)
+
+    //             .align('left')
+    //             .text('--------------------------------\n')
+    //             .text('Prueba de imagen y acentos\n')
+    //             .text('Uñas: $25.00\n') // Probamos la Ñ
+    //             .text('--------------------------------\n')
+
+    //             .newline()
+    //             .newline()
+    //             .cut()
+    //             .pulse()
+    //             .encode();
+
+    //         const interfaceData = device.configuration.interfaces[0];
+    //         const endpoint = interfaceData.alternates[0].endpoints.find(e => e.direction === 'out');
+
+    //         await device.transferOut(endpoint.endpointNumber, result);
+    //         console.log("¡Impresión enviada!");
+
+    //     } catch (err) {
+    //         console.error('Error detallado:', err);
+    //         // Muestra el error en pantalla para saber qué pasa
+    //         alert('Error: ' + err.message);
+    //     }
+    // };
+
+
     const [device, setDevice] = useState(null);
     const [status, setStatus] = useState('Desconectado');
     const [error, setError] = useState('');
@@ -77,31 +233,33 @@ export default function WebUsbPrinter() {
     };
 
     useEffect(() => {
-        alert("hola");
         console.log(device);
         // Esta función busca dispositivos ya permitidos
         const autoConnect = async () => {
             debugger
-            alert("hola 2");
-            try {
-                // getDevices() devuelve una lista de dispositivos con permiso previo
-                const devices = await navigator.usb.getDevices();
 
-                if (devices.length > 0) {
-                    console.log("Dispositivo conocido encontrado, reconectando...");
-                    const savedDevice = devices[0]; // Tomamos la primera impresora que encuentre
+            // getDevices() devuelve una lista de dispositivos con permiso previo
+            const devices = await navigator.usb.getDevices();
 
-                    // Repetimos el proceso de conexión
-                    await savedDevice.open();
-                    await savedDevice.selectConfiguration(1);
-                    await savedDevice.claimInterface(0);
+            if (devices.length > 0) {
+                for (const device of devices) {
+                    try {
+                        console.log("Dispositivo conocido encontrado, reconectando...");
+                        const savedDevice = device; // Tomamos la primera impresora que encuentre
 
-                    setDevice(savedDevice);
-                    setStatus(`Reconectado a: ${savedDevice.productName}`);
+                        // Repetimos el proceso de conexión
+                        await savedDevice.open();
+                        await savedDevice.selectConfiguration(1);
+                        await savedDevice.claimInterface(0);
+
+                        setDevice(savedDevice);
+                        setStatus(`Reconectado a: ${savedDevice.productName}`);
+                    } catch (err) {
+                        console.log("No se pudo reconectar automáticamente:", err);
+                    }
                 }
-            } catch (err) {
-                console.log("No se pudo reconectar automáticamente:", err);
             }
+
         };
 
         autoConnect();
@@ -188,11 +346,18 @@ export default function WebUsbPrinter() {
                     2. Imprimir Ticket
                 </button>
                 <button
+                    onClick={printTicket2}
+                    disabled={!device}
+                    style={{ padding: '10px 20px', background: device ? 'green' : '#ccc', color: 'white', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
+                >
+                    3. Imprimir Ticket 2
+                </button>
+                <button
                     onClick={openCashDrawer}
                     disabled={!device}
                     style={{ padding: '10px 20px', background: device ? 'green' : '#ccc', color: 'white', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
                 >
-                    3. Abrir Cajón
+                    4. Abrir Cajón
                 </button>
             </div>
 

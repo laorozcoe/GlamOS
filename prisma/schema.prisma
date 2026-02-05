@@ -121,13 +121,14 @@ model ServiceCategory {
 }
 
 model Service {
-  id          String  @id @default(uuid())
-  businessId  String
-  categoryId  String
-  name        String // Manicura, Pedicura, Ondas
-  description String?
-  duration    Int // minutos
-  price       Float
+  id                String  @id @default(uuid())
+  businessId        String
+  categoryId        String
+  name              String // Manicura, Pedicura, Ondas
+  description       String?
+  descriptionTicket String? @db.VarChar(15)
+  duration          Int // minutos
+  price             Float
 
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -183,26 +184,35 @@ model ServiceExtra {
 //////////////////////
 
 model Appointment {
-  id         String            @id @default(uuid())
-  businessId String
-  clientId   String?
-  employeeId String
-  title      String
-  start      DateTime
-  end        DateTime
-  allDay     Boolean           @default(false)
-  status     AppointmentStatus @default(PENDING)
-  notes      String?
-  guestName  String?
-  guestPhone String?
-  createdAt  DateTime          @default(now())
-
-  business Business @relation(fields: [businessId], references: [id])
-  client   Client?  @relation(fields: [clientId], references: [id])
-  employee Employee @relation(fields: [employeeId], references: [id])
+  id            String            @id @default(uuid())
+  businessId    String
+  clientId      String?
+  employeeId    String
+  title         String
+  start         DateTime
+  end           DateTime
+  allDay        Boolean           @default(false)
+  status        AppointmentStatus @default(PENDING)
+  notes         String?
+  guestName     String?
+  guestPhone    String?
+  createdAt     DateTime          @default(now())
+  // FINANZAS (Resumen)
+  totalAmount   Float             @default(0) // El costo total del servicio (ej. $1000)
+  paymentStatus PaymentState      @default(UNPAID) // Estado general de la deuda
+  business      Business          @relation(fields: [businessId], references: [id])
+  client        Client?           @relation(fields: [clientId], references: [id])
+  employee      Employee          @relation(fields: [employeeId], references: [id])
 
   services AppointmentService[]
   payments Payment[]
+}
+
+enum PaymentState {
+  UNPAID // No ha pagado nada
+  PARTIALLY_PAID // Dio anticipo pero debe el resto
+  PAID // Pagado al 100%
+  REFUNDED // Se le devolvió el dinero
 }
 
 enum AppointmentStatus {
@@ -244,20 +254,32 @@ model AppointmentExtra {
 //////////////////////
 model Payment {
   id            String        @id @default(uuid())
-  businessId    String
   appointmentId String
-  amount        Float
-  method        PaymentMethod
-  paidAt        DateTime      @default(now())
+  amount        Float // Cuánto pagó en ESTA transacción
+  method        PaymentMethod // CASH, CARD, TRANSFER, OTHER
+  status        PaymentStatus @default(COMPLETED) // COMPLETED, PENDING, REFUNDED
+  externalId    String? // ID de Stripe/PayPal o número de autorización de la terminal
 
-  business    Business    @relation(fields: [businessId], references: [id])
+  createdAt DateTime @default(now())
+
+  // Relación inversa
   appointment Appointment @relation(fields: [appointmentId], references: [id])
+  business    Business?   @relation(fields: [businessId], references: [id])
+  businessId  String?
 }
 
+// Tus Enums para controlar los tipos
 enum PaymentMethod {
   CASH
   CARD
   TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
 }
 
 //////////////////////
