@@ -34,7 +34,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-, "src/app/(admin)/(others-pages)/layout.jsx"  ],
+, "src/app/(admin)/(others-pages)/layout.jsx", "src/lib/auth.js"  ],
   "exclude": [
     "node_modules"
   ]
