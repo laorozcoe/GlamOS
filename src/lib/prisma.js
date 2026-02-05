@@ -1,6 +1,6 @@
 'use server'
 
-import { prisma } from '@/lib/prisma2'
+import prisma from '@/lib/prisma2'
 import { hashPassword } from '@/lib/hashPassword'
 import { revalidatePath } from "next/cache";
 // import { auth } from "@/lib/auth"; // Tu configuración de Auth.js
