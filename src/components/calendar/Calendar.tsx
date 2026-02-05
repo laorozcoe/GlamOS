@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
-import { getAppointments } from "@/lib/prisma";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -17,7 +16,7 @@ import { useModal } from "@/hooks/useModal";
 import { Modal } from "@/components/ui/modal";
 import Select from "@/components/form/Select";
 
-import { getEmployeesPrisma, getServicesPrisma, createAppointment, getServicesCategoriesPrisma } from "@/lib/prisma";
+import { getEmployeesPrisma, getServicesPrisma, createAppointment, getAppointmentsPrisma, getServicesCategoriesPrisma } from "@/lib/prisma";
 import { useBusiness } from "@/context/BusinessContext";
 import { setServers } from "dns/promises";
 
@@ -46,10 +45,13 @@ const Calendar: React.FC = () => {
   const [employees, setEmployees] = useState<any>([]);
   const [servicesCategories, setServicesCategories] = useState<any>([]);
   const [services, setServices] = useState<any>([]);
-  const [appointments, setAppointments] = useState<any>([]);
+
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<any>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [appointments, setAppointments] = useState<any>([]);
 
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -81,7 +83,8 @@ const Calendar: React.FC = () => {
   useEffect(() => {
     // Initialize with some events
     const loadEvents = async () => {
-      const resEvents: any = await getAppointments();
+      debugger
+      const resEvents: any = await getAppointmentsPrisma(business?.id);
       setEvents(resEvents);
     }
     loadEvents();
@@ -111,6 +114,10 @@ const Calendar: React.FC = () => {
   const closeModalResetFields = () => {
     closeModal();
     setAppointments([]);
+    setSelectedCategory(null);
+    setSelectedService(null);
+    setSelectedEmployee(null);
+    setSelectedClient(null);
   }
 
   const handleDateSelect = (selectInfo: DateSelectArg) => {
@@ -133,7 +140,41 @@ const Calendar: React.FC = () => {
 
   // 2. Guardar en Base de Datos
   const handleSaveEvent = async () => {
+    debugger
     alert(JSON.stringify(appointments));
+
+    const startDateTime = new Date(`${date}T${time}:00`);
+    const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + ap.duration, 0);
+    const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
+
+
+    const newAppointments = appointments.map((item: any) => ({
+      serviceId: item.id,
+      price: item.price,
+    }));
+
+    const newEvent = {
+      businessId: business?.id,
+      clientId: null,
+      employeeId: selectedEmployee,
+      title: "test",
+      start: startDateTime,
+      end: endDateTime,
+      status: "PENDING",
+      notes: "test",
+      guestName: "test",
+      guestPhone: "test",
+      services: newAppointments
+    };
+
+    try {
+      await createAppointment(newEvent);
+
+    } catch (error) {
+      console.error("Error al guardar", error);
+    }
+    closeModalResetFields();
+    setEvents((prevEvents: any) => [...prevEvents, newEvent]);
     return
     // debugger
     // if (!selectedDate) return;
@@ -186,6 +227,7 @@ const Calendar: React.FC = () => {
 
   // Función para cuando das clic en una CITA EXISTENTE (Editar)
   const handleEventClick2 = (clickInfo: EventClickArg) => {
+    debugger
     // arg.event contiene los datos de la cita real
     const event = clickInfo.event;
     setSelectedEvent(event as unknown as CalendarEvent);
@@ -281,7 +323,7 @@ const Calendar: React.FC = () => {
           // select={handleDateSelect}
           dateClick={handleDateClick}
           eventClick={handleEventClick2}
-          // eventContent={renderEventContent}
+          eventContent={renderEventContent}
           locale={esLocale} // <--- 2. AÑADIR ESTO
           customButtons={{
             addEventButton: {
@@ -293,7 +335,7 @@ const Calendar: React.FC = () => {
       </div>
       <Modal
         isOpen={isOpen}
-        onClose={closeModal}
+        onClose={closeModalResetFields}
         // TIP: Usamos h-[90vh] para que ocupe casi toda la pantalla pero deje margen
         // Quitamos el bg-amber-400 y pusimos blanco con bordes redondeados grandes
         className="w-full max-w-6xl h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
@@ -306,7 +348,7 @@ const Calendar: React.FC = () => {
             <h5 className="text-xl font-bold text-gray-800 dark:text-white">
               {selectedEvent ? "Editar Cita" : "Nueva Cita"}
             </h5>
-            <p className="text-sm text-gray-500">Completa los detalles para agendar</p>
+            <p className="text-sm text-gray-500">{selectedEvent ? "Detalles de la Cita" : "Completa los detalles para agendar"}</p>
           </div>
         </div>
 
@@ -321,7 +363,7 @@ const Calendar: React.FC = () => {
             {/* (Pego aquí un resumen para que no pierdas el contexto, pero mantén tu lógica de selects) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {/* ... Inputs de empleado ... */}
-              <div><label className="text-sm font-bold">Empleado</label><Select options={[]} placeholder="..." onChange={() => { }} /></div>
+              <div><label className="text-sm font-bold">Empleado</label><Select options={employees.map((e: any) => ({ value: e.id, label: `${e.user.name} ${e.user.lastName}` }))} placeholder="..." onChange={(e) => setSelectedEmployee(e)} /></div>
               <div className="grid grid-cols-2 gap-2">
                 <div><label className="text-sm font-bold">Teléfono</label><Select options={[]} placeholder="..." onChange={() => { }} /></div>
                 <div><label className="text-sm font-bold">Nombre</label><Select options={[]} placeholder="..." onChange={() => { }} /></div>
@@ -331,11 +373,15 @@ const Calendar: React.FC = () => {
             {/* Servicios */}
             <div className="sticky top-0 bg-white z-10 py-2">
               {/* ... Tus botones de categorías ... */}
-              <div className="flex gap-2 pb-2">{servicesCategories.map((c: any) => <button key={c.id} className="border px-3 rounded-full text-xs">{c.name}</button>)}</div>
+              <div className="flex gap-2 pb-2">{servicesCategories.map((cat: any) => <button className={selectedCategory === cat.id ? "border px-3 rounded-full text-xs bg-blue-500 text-white" : "border px-3 rounded-full text-xs"} onClick={() => setSelectedCategory(cat.id)} key={cat.id}>{cat.name}</button>)}</div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {services.filter((s: any) => s.categoryId === selectedCategory).map((ss: any) => (
-                <button key={ss.id} onClick={() => addAppointment(ss)} className="border p-3 rounded hover:shadow-md text-left">
+                <button key={ss.id} onClick={() => addAppointment(ss)} className={`p-3 border rounded-lg text-left  transition-all duration-100 ease-in-out box-content
+                        ${selectedService?.id === ss.id ? 'bg-black text-white' : 'bg-white text-black'}
+                  ${flashCategory === ss.id ? 'outline outline-black shadow-lg'
+                    : 'outline-none shadow-none'}
+                      `}>
                   <div className="font-bold text-sm">{ss.name}</div>
                   <div className="text-xs text-gray-500">${ss.price}</div>
                 </button>
@@ -398,18 +444,49 @@ const Calendar: React.FC = () => {
 };
 
 const renderEventContent = (eventInfo: EventContentArg) => {
+  const employeeName = eventInfo.event.extendedProps.employee.user.name || "Sin asignar";
+  const status = eventInfo.event.extendedProps.status;
+
   debugger
-  // const colorClass = `fc-bg-${eventInfo.event.extendedProps.calendar.toLowerCase()}`;
+  const colorClass = `bg-${employeeColors[employeeName]}`;
   return (
     <div
-      // className={`event-fc-color flex fc-event-main ${colorClass} p-1 rounded-sm`}
-      className={`event-fc-color flex fc-event-main p-1 rounded-sm`}
+      className={`event-fc-color flex fc-event-main ${colorClass}  rounded-sm`}
+    // className={`event-fc-color flex fc-event-main p-1 rounded-sm`}
     >
-      <div className="fc-daygrid-event-dot"></div>
-      <div className="fc-event-time">{eventInfo.timeText}</div>
-      <div className="fc-event-title">{eventInfo.event.title}</div>
+      {/* <div className="flex items-center">{statusIcon(status)}</div> */}
+
+      {/* hora */}
+      {/* <div className="text-xs font-semibold">{eventInfo.timeText}</div> */}
+
+      {/* nombre */}
+      <div className="text-xs font-bold truncate px-2 py-1">{employeeName}</div>
     </div>
   );
 };
 
 export default Calendar;
+
+
+const employeeColors: Record<string, string> = {
+  "Ana": "pink-200 text-pink-900",
+  "Daniela": "purple-200 text-purple-900",
+  "Luis Alejandro": "blue-200 text-blue-900",
+  "María": "yellow-200 text-yellow-900",
+  "Sofía": "green-200 text-green-900",
+  "Valeria": "orange-200 text-orange-900",
+};
+const statusIcon = (status: string) => {
+  switch (status) {
+    case "PENDING":
+      return "⏳";
+    case "CONFIRMED":
+      return "✅";
+    case "CANCELLED":
+      return "❌";
+    case "COMPLETED":
+      return "🏁";
+    default:
+      return "📌";
+  }
+};

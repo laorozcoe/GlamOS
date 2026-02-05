@@ -750,3 +750,10 @@ span.flatpickr-weekday,
   opacity: 0.8;
   cursor: grabbing; /* Changes the cursor to indicate dragging */
 }
+
+
+:root {
+  --fc-event-bg-color: transparent ; /* moradito pastel */
+  --fc-event-border-color: transparent;
+  --fc-event-text-color: #111827;
+}

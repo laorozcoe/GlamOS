@@ -9,37 +9,94 @@ import { revalidatePath } from "next/cache";
 //-------------------------Appointment-------------------------------------
 //--------------------------------------------------------------------------------
 
-export async function createAppointment(data) {
+export async function createAppointment(payload) {
     // const session = await auth();
     // if (!session?.user) throw new Error("No autenticado");
-
     await prisma.appointment.create({
         data: {
-            title: data.title,
-            start: data.start,
-            end: data.end,
-            userId: "7bb16997-9054-4956-b001-47088536935e", // Ajusta según tu auth
+            businessId: payload.businessId,
+            employeeId: payload.employeeId,
+            title: payload.title,
+            start: payload.start,
+            end: payload.end,
+            services: {
+                create: payload.services.map((s) => ({
+                    serviceId: s.serviceId,
+                    price: s.price,
+                })),
+            },
         },
     });
 
     revalidatePath("/admin/calendario"); // <-- Pon aquí la ruta de tu página de calendario
 }
 
-export async function getAppointments() {
-    // const session = await auth();
-    // if (!session?.user?.email) return [];
-    // return []
-    // // Buscamos appointmentos solo de este usuario (opcional, según tu lógica)
-    // const appointments = await prisma.appointment.findMany({
-    //     where: { userId: "7bb16997-9054-4956-b001-47088536935e" },
-    // });
+export async function getAppointmentPrisma(businessId, id) {
+    debugger
+    const appointment = await prisma.appointment.findFirst({
+        where: {
+            businessId: businessId,
+            id: id,
+        },
+        include: {
+            employee: {
+                include: {
+                    user: {
+                        select: {
+                            name: true,
+                            lastName: true,
+                            email: true,
+                        },
+                    },
+                }
+            },
+            client: true,
+            services: {
+                include: {
+                    service: true,
+                    appointmentExtras: {
+                        include: {
+                            extra: true,
+                        },
+                    },
+                },
+            },
+        },
+    })
 
-    // // IMPORTANTE: Convertir fechas a String para evitar error de serialización en Client Components
-    // return appointments.map(appointment => ({
-    //     ...appointment,
-    //     start: appointment.start.toISOString(),
-    //     end: appointment.end.toISOString(),
-    // }));
+    return appointment
+}
+
+export async function getAppointmentsPrisma(businessId) {
+    const appointment = await prisma.appointment.findMany({
+        where: { businessId: businessId },
+        include: {
+            employee: {
+                include: {
+                    user: {
+                        select: {
+                            name: true,
+                            lastName: true,
+                            email: true,
+                        },
+                    },
+                }
+            },
+            client: true,
+            services: {
+                include: {
+                    service: true,
+                    appointmentExtras: {
+                        include: {
+                            extra: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+
+    return appointment
 }
 
 //--------------------------------------------------------------------------------
@@ -269,6 +326,15 @@ export async function getEmployeePrisma(businessId, userId) {
         where: {
             businessId: businessId,
             userId: userId,
+        },
+        include: {
+            user: {
+                select: {
+                    name: true,
+                    lastName: true,
+                    email: true,
+                },
+            },
         },
     })
 
