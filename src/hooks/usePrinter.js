@@ -140,7 +140,7 @@ export const usePrinter = () => {
 
             if (!currentDevice) throw new Error("Impresora no encontrada. Por favor, conéctala manualmente.");
 
-            const imgCanvas = await processImageOnCanvas('/brillarte-bloom/logo_ticket-bw.png');
+            const imgCanvas = await processImageOnCanvas('/brillartebloom/logo_ticket-bw.png');
             const encoder = new EscPosEncoder({ width: 32, imageMode: 'raster', codepageMapping: 'xprinter' });
 
             let printJob = encoder.initialize().codepage('cp850').raw([0x1B, 0x33, 20]);

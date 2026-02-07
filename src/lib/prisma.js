@@ -154,7 +154,7 @@ export async function seed() {
     return await prisma.business.create({
         data: {
             name: "Brillarte Bloom",
-            slug: "brillarte-bloom",
+            slug: "brillartebloom",
             phone: "",
             email: "",
             address: "",

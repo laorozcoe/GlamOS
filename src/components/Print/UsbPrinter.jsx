@@ -172,7 +172,7 @@ export default function WebUsbPrinter({ ticketData }) {
             let imgCanvas;
             try {
                 // Asegúrate que esta imagen exista en public/brillarte-bloom/logo_ticket-bw.png
-                imgCanvas = await processImageOnCanvas('/brillarte-bloom/logo_ticket-bw.png', 304);
+                imgCanvas = await processImageOnCanvas('/brillartebloom/logo_ticket-bw.png', 304);
             } catch (e) {
                 console.warn("No se pudo cargar el logo, imprimiendo sin logo.");
             }

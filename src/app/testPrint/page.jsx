@@ -38,7 +38,7 @@ export default function WebUsbPrinter() {
 
         try {
             // 1. Preparamos la imagen (304px es un buen ancho para raster)
-            const imgCanvas = await processImageOnCanvas('/brillarte-bloom/logo_ticket-bw.png', 304);
+            const imgCanvas = await processImageOnCanvas('/brillartebloom/logo_ticket-bw.png', 304);
 
             // 2. AQUÍ ESTÁ LA CORRECCIÓN BASADA EN TU DOCUMENTACIÓN
             const encoder = new EscPosEncoder({
