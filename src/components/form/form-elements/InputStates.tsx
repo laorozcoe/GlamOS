@@ -32,7 +32,7 @@ export default function InputStates() {
           <Label>Email</Label>
           <Input
             type="email"
-            defaultValue={email}
+            value={email}
             error={error}
             onChange={handleEmailChange}
             placeholder="Enter your email"
@@ -45,7 +45,7 @@ export default function InputStates() {
           <Label>Email</Label>
           <Input
             type="email"
-            defaultValue={email}
+            value={email}
             success={!error}
             onChange={handleEmailChange}
             placeholder="Enter your email"
@@ -58,7 +58,7 @@ export default function InputStates() {
           <Label>Email</Label>
           <Input
             type="text"
-            defaultValue="disabled@example.com"
+            value="disabled@example.com"
             disabled={true}
             placeholder="Disabled email"
             hint="This field is disabled."
