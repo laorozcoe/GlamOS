@@ -19,7 +19,8 @@ const MainContentArea = ({ children }: { children: React.ReactNode }) => {
                 className={`flex-1 transition-all  duration-300 ease-in-out ${mainContentMargin}`}
             >
                 <AppHeader />
-                <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">{children}</div>
+                {/* //TODO REVISAR ESTA MADRE h-[calc(100vh-80px)]*/}
+                <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6 h-[calc(100vh-80px)]">{children}</div>
             </div>
         </>
     );

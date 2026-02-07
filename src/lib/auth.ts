@@ -100,17 +100,18 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { type: "email" },
+        username: { type: "text" },
         password: { type: "password" },
       },
 
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
+        debugger
+        if (!credentials?.username || !credentials?.password) return null
 
         const business = await getBusiness()
         if (!business) return null
 
-        const user = await getUserPrisma(credentials.email, business.id)
+        const user = await getUserPrisma(credentials.username, business.id)
         if (!user) return null
 
         const valid = await bcrypt.compare(credentials.password, user.password)
@@ -120,6 +121,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
+          username: user.username,
           businessId: business.id,
           role: user.role,
         }
@@ -136,6 +138,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.userId = user.id
         token.businessId = user.businessId
+        token.username = user.username
         token.role = user.role
       }
       return token
@@ -145,6 +148,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.userId
         session.user.businessId = token.businessId
+        session.user.username = token.username
         session.user.role = token.role
       }
       return session

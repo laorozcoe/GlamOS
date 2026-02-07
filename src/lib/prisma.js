@@ -447,7 +447,7 @@ export async function deleteEmployeePrisma(id, businessId) {
 //-------------------------User-------------------------------------
 //--------------------------------------------------------------------------------
 
-export async function createUserPrisma(businessId, name, lastName, email, password, role) {
+export async function createUserPrisma(businessId, name, lastName, username, email, password, role) {
     const passwordHash = await hashPassword(password)
 
     const user = await prisma.user.create({
@@ -455,6 +455,7 @@ export async function createUserPrisma(businessId, name, lastName, email, passwo
             email,
             businessId,
             name,
+            username,
             lastName,
             password: passwordHash,
             role
@@ -464,21 +465,19 @@ export async function createUserPrisma(businessId, name, lastName, email, passwo
     return user
 }
 
-export async function getUserPrisma(email, businessid) {
+export async function getUserPrisma(username, businessId) {
 
     const user = await prisma.user.findFirst({
         where: {
-            email: email,
-            businessId: businessid,
+            username: username,
+            businessId: businessId,
         },
     })
 
     return user
 }
 
-
-
-export async function updateUserPrisma(id, businessId, name, lastName, password, role) {
+export async function updateUserPrisma(id, businessId, name, username, lastName, password, role) {
     const user = await prisma.user.update({
         where: {
             id: id,
@@ -487,6 +486,7 @@ export async function updateUserPrisma(id, businessId, name, lastName, password,
         data: {
             name,
             lastName,
+            username,
             password,
             role
         },

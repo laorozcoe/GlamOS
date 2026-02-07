@@ -2,10 +2,10 @@ import { seed, createUserPrisma, createServicePrisma, createEmployeePrisma, crea
 
 const Seed = async () => {
 
-    createClientPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Luis Estrada", "61431944524", "", "")
-    createClientPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Alejandro Orozco", "61431944525", "", "")
+    // createClientPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Luis Estrada", "61431944524", "", "")
+    // createClientPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Alejandro Orozco", "61431944525", "", "")
     // seed();
-    // createUserPrisma("laorozcoe@gmail.com", "6d6f0206-b659-455f-9743-283d6949bb4c", "Luis Alejandro", "Orozco Estrada", "123456", "ADMIN")
+    // createUserPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Luis Alejandro", "Orozco Estrada", "laorozcoe", "laorozcoe@gmail.com", "123456", "ADMIN")
 
     // createServiceCategoryPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Manos", 1, true)
     // createServiceCategoryPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Pies", 2, true)
@@ -45,89 +45,64 @@ const Seed = async () => {
     // createServicePrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "ff84a043-8d53-485e-b107-cb09dc92b0bf", "Planchado medio", "", 30, 165.00)
     // createServicePrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "ff84a043-8d53-485e-b107-cb09dc92b0bf", "Planchado largo", "", 30, 220.00)
 
-    // const employees = [
-    //     {
-    //         user: {
-    //             name: "Ana",
-    //             lastName: "López",
-    //             email: "ana.lopez@salon.com",
-    //             password: "password123",
-    //             role: "EMPLOYEE",
-    //         },
-    //         employee: {
-    //             phone: "5551234567",
-    //             bio: "Especialista en manicure clásico y spa.",
-    //             commission: 0.35,
-    //             rating: 4.8
-    //         }
-    //     },
-    //     {
-    //         user: {
-    //             name: "María",
-    //             lastName: "Hernández",
-    //             email: "maria.hernandez@salon.com",
-    //             password: "password123",
-    //             role: "EMPLOYEE",
-    //         },
-    //         employee: {
-    //             phone: "5552345678",
-    //             bio: "Experta en uñas acrílicas y gel.",
-    //             commission: 0.4,
-    //             rating: 4.9
-    //         }
-    //     },
-    //     {
-    //         user: {
-    //             name: "Daniela",
-    //             lastName: "Ramírez",
-    //             email: "daniela.ramirez@salon.com",
-    //             password: "password123",
-    //             role: "EMPLOYEE",
-    //         },
-    //         employee: {
-    //             phone: "5553456789",
-    //             bio: "Diseños personalizados y nail art.",
-    //             commission: 0.45,
-    //             rating: 4.7
-    //         }
-    //     },
-    //     {
-    //         user: {
-    //             name: "Sofía",
-    //             lastName: "Martínez",
-    //             email: "sofia.martinez@salon.com",
-    //             password: "password123",
-    //             role: "EMPLOYEE",
-    //         },
-    //         employee: {
-    //             phone: "5554567890",
-    //             bio: "Pedicure spa y tratamientos relajantes.",
-    //             commission: 0.3,
-    //             rating: 4.6
-    //         }
-    //     },
-    //     {
-    //         user: {
-    //             name: "Valeria",
-    //             lastName: "Gómez",
-    //             email: "valeria.gomez@salon.com",
-    //             password: "password123",
-    //             role: "EMPLOYEE",
-    //         },
-    //         employee: {
-    //             phone: "5555678901",
-    //             bio: "Manicure express y esmaltado semipermanente.",
-    //             commission: 0.25,
-    //             rating: 4.5
-    //         }
-    //     }
-    // ]
+    const employees = [
+        {
+            user: {
+                name: "Ana",
+                lastName: "González",
+                email: "",
+                username: "agonzalez",
+                password: "password1",
+                role: "ADMIN",
+            },
+            employee: {
+                phone: "5551234567",
+                bio: "",
+                commission: 0.35,
+                rating: 4.8
+            }
+        },
+        {
+            user: {
+                name: "Doris",
+                lastName: "González",
+                email: "",
+                username: "dgonzalez",
+                password: "password1",
+                role: "ADMIN",
+            },
+            employee: {
+                phone: "5552345678",
+                bio: "",
+                commission: 0.4,
+                rating: 4.9
+            }
+        },
+        {
+            user: {
+                name: "Rubi",
+                lastName: "Ramos",
+                email: "",
+                username: "rramos",
+                password: "password1",
+                role: "ADMIN",
+            },
+            employee: {
+                phone: "5553456789",
+                bio: "",
+                commission: 0.45,
+                rating: 4.7
+            }
+        }
+    ]
 
-    // for (let i = 0; i < 5; i++) {
 
-    //     const user = await createUserPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", employees[i].user.name, employees[i].user.lastName, employees[i].user.email, employees[i].user.password, employees[i].user.role)
-    //     await createEmployeePrisma(user.businessId, user.id, employees[i].employee.phone, employees[i].employee.bio, employees[i].employee.commission, employees[i].employee.rating)
-    // }
+
+    for (let i = 0; i < 5; i++) {
+
+        const user = await createUserPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", employees[i].user.name, employees[i].user.lastName, employees[i].user.username, employees[i].user.email, employees[i].user.password, employees[i].user.role)
+        await createEmployeePrisma(user.businessId, user.id, employees[i].employee.phone, employees[i].employee.bio, employees[i].employee.commission, employees[i].employee.rating)
+    }
 
     return (
         <div>

@@ -9,18 +9,19 @@ import { signIn } from "next-auth/react"
 import React, { useState } from "react";
 
 export default function SignInForm() {
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
 
   async function handleLogin(e: React.FormEvent) {
+    debugger
     e.preventDefault()
 
     const slug = window.location.hostname.split(".")[0]
 
     const res = await signIn("credentials", {
-      email,
+      username,
       password,
       slug,
       redirect: true,
@@ -99,9 +100,9 @@ export default function SignInForm() {
               <div className="space-y-6">
                 <div>
                   <Label>
-                    Correo Electrónico <span className="text-error-500">*</span>{" "}
+                    Usuario <span className="text-error-500">*</span>{" "}
                   </Label>
-                  <Input placeholder="info@gmail.com" type="email" defaultValue={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Input placeholder="Usuario" type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
                 </div>
                 <div>
                   <Label>
@@ -111,7 +112,7 @@ export default function SignInForm() {
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Ingresa tu contraseña"
-                      defaultValue={password}
+                      value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                     <span
