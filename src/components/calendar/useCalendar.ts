@@ -325,7 +325,7 @@ export const useCalendarLogic = () => {
                     // Si es la primera vez que vemos este servicio, lo creamos
                     acc[key] = {
                         quantity: 0,
-                        ticket_desc: appt.ticket_desc || appt.name, // El varchar(15) de tu BD
+                        ticket_desc: appt.descriptionTicket || appt.name, // El varchar(15) de tu BD
                         name: appt.name,
                         unitPrice: Number(appt.price), // Guardamos el precio unitario
                         totalPrice: 0

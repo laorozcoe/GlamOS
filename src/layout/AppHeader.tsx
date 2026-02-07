@@ -6,11 +6,15 @@ import { useSidebar } from "@/context/SidebarContext";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
+import { usePrinter } from "@/hooks/usePrinter";
+import { PrinterStatus } from "@/components/Print/PrinterStatus";
+
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const { status, connect, device } = usePrinter();
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {
@@ -119,7 +123,7 @@ const AppHeader: React.FC = () => {
               />
             </svg>
           </button>
-
+          <PrinterStatus status={status} onConnect={connect} />
           {/* <div className="hidden lg:block">
             <form>
               <div className="relative">

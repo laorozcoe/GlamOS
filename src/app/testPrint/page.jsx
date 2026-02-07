@@ -176,38 +176,38 @@ export default function WebUsbPrinter() {
         }
     };
 
-    useEffect(() => {
-        console.log(device);
-        // Esta función busca dispositivos ya permitidos
-        const autoConnect = async () => {
-            debugger
+    // useEffect(() => {
+    //     console.log(device);
+    //     // Esta función busca dispositivos ya permitidos
+    //     const autoConnect = async () => {
+    //         debugger
 
-            // getDevices() devuelve una lista de dispositivos con permiso previo
-            const devices = await navigator.usb.getDevices();
+    //         // getDevices() devuelve una lista de dispositivos con permiso previo
+    //         const devices = await navigator.usb.getDevices();
 
-            if (devices.length > 0) {
-                for (const device of devices) {
-                    try {
-                        console.log("Dispositivo conocido encontrado, reconectando...");
-                        const savedDevice = device; // Tomamos la primera impresora que encuentre
+    //         if (devices.length > 0) {
+    //             for (const device of devices) {
+    //                 try {
+    //                     console.log("Dispositivo conocido encontrado, reconectando...");
+    //                     const savedDevice = device; // Tomamos la primera impresora que encuentre
 
-                        // Repetimos el proceso de conexión
-                        await savedDevice.open();
-                        await savedDevice.selectConfiguration(1);
-                        await savedDevice.claimInterface(0);
+    //                     // Repetimos el proceso de conexión
+    //                     await savedDevice.open();
+    //                     await savedDevice.selectConfiguration(1);
+    //                     await savedDevice.claimInterface(0);
 
-                        setDevice(savedDevice);
-                        setStatus(`Reconectado a: ${savedDevice.productName}`);
-                    } catch (err) {
-                        console.log("No se pudo reconectar automáticamente:", err);
-                    }
-                }
-            }
+    //                     setDevice(savedDevice);
+    //                     setStatus(`Reconectado a: ${savedDevice.productName}`);
+    //                 } catch (err) {
+    //                     console.log("No se pudo reconectar automáticamente:", err);
+    //                 }
+    //             }
+    //         }
 
-        };
+    //     };
 
-        autoConnect();
-    }, []);
+    //     autoConnect();
+    // }, []);
 
     // 2. Función para imprimir el Ticket
     const printTicket = async () => {
