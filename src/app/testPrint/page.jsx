@@ -4,8 +4,7 @@ import EscPosEncoder from 'esc-pos-encoder';
 
 export default function WebUsbPrinter() {
 
-    // Función auxiliar para cargar la imagen antes de imprimir
-    // Función auxiliar para forzar el tamaño correcto usando un Canvas
+
     const processImageOnCanvas = (url, targetWidth) => {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -104,60 +103,6 @@ export default function WebUsbPrinter() {
         }
     };
 
-    // const printTicket2 = async () => {
-    //     if (!device) return;
-
-    //     try {
-    //         console.log("Cargando imagen...");
-
-    //         // USAMOS 304 px (Múltiplo de 8 garantizado)
-    //         // El canvas se encargará de que sea matemáticamente perfecto
-    //         const imgCanvas = await processImageOnCanvas('/brillarte-bloom/logo_ticket-bw.png', 304);
-
-    //         let encoder = new EscPosEncoder({
-    //             width: 32,
-    //             wordWrap: true
-    //         });
-
-    //         const result = encoder
-    //             .initialize()
-    //             .codepage('cp850')
-
-    //             .align('center')
-    //             // Pasamos el CANVAS, no la imagen directa. 
-    //             // Ponemos 304 en el ancho y 'atkinson' para el difuminado.
-    //             .image(imgCanvas, 304, imgCanvas.height, 'atkinson')
-
-    //             .bold(true)
-    //             .text('Brillarte Bloom\n')
-    //             .bold(false)
-
-    //             .align('left')
-    //             .text('--------------------------------\n')
-    //             .text('Prueba de imagen y acentos\n')
-    //             .text('Uñas: $25.00\n') // Probamos la Ñ
-    //             .text('--------------------------------\n')
-
-    //             .newline()
-    //             .newline()
-    //             .cut()
-    //             .pulse()
-    //             .encode();
-
-    //         const interfaceData = device.configuration.interfaces[0];
-    //         const endpoint = interfaceData.alternates[0].endpoints.find(e => e.direction === 'out');
-
-    //         await device.transferOut(endpoint.endpointNumber, result);
-    //         console.log("¡Impresión enviada!");
-
-    //     } catch (err) {
-    //         console.error('Error detallado:', err);
-    //         // Muestra el error en pantalla para saber qué pasa
-    //         alert('Error: ' + err.message);
-    //     }
-    // };
-
-
     const [device, setDevice] = useState(null);
     const [status, setStatus] = useState('Desconectado');
     const [error, setError] = useState('');
@@ -193,7 +138,6 @@ export default function WebUsbPrinter() {
         }
     };
 
-    // Comandos ESC/POS estándar (Hexadecimales)
     const ESC_POS = {
         INIT: '\x1B\x40',          // Inicializar impresora
         TEXT_CENTER: '\x1B\x61\x01', // Centrar texto

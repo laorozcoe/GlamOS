@@ -34,7 +34,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-, "src/app/(admin)/(others-pages)/layout.jsx", "src/lib/auth.ts", "src/types/**/*.d.ts"  ],
+, "src/app/(admin)/(others-pages)/layout.jsx", "src/lib/auth.ts", "src/types/**/*.d.ts", "src/components/Print/UsbPrinter.jsx", "src/hooks/usePrinter.js"  ],
   "exclude": [
     "node_modules"
   ]

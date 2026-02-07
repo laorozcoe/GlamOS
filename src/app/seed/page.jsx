@@ -1,6 +1,9 @@
-import { seed, createUserPrisma, createServicePrisma, createEmployeePrisma, createServiceCategoryPrisma } from "@/lib/prisma";
+import { seed, createUserPrisma, createServicePrisma, createEmployeePrisma, createServiceCategoryPrisma, createClientPrisma } from "@/lib/prisma";
 
 const Seed = async () => {
+
+    createClientPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Luis Estrada", "61431944524", "", "")
+    createClientPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Alejandro Orozco", "61431944525", "", "")
     // seed();
     // createUserPrisma("laorozcoe@gmail.com", "6d6f0206-b659-455f-9743-283d6949bb4c", "Luis Alejandro", "Orozco Estrada", "123456", "ADMIN")
 

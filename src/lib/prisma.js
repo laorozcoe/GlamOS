@@ -12,13 +12,19 @@ import { revalidatePath } from "next/cache";
 export async function createAppointment(payload) {
     // const session = await auth();
     // if (!session?.user) throw new Error("No autenticado");
-    await prisma.appointment.create({
+    const appointment = await prisma.appointment.create({
         data: {
             businessId: payload.businessId,
             employeeId: payload.employeeId,
             title: payload.title,
             start: payload.start,
             end: payload.end,
+            guestName: payload.guestName,
+            guestPhone: payload.guestPhone,
+            status: payload.status,
+            paymentStatus: payload.paymentStatus,
+            totalAmount: payload.totalAmount,
+            notes: payload.notes,
             services: {
                 create: payload.services.map((s) => ({
                     serviceId: s.serviceId,
@@ -28,7 +34,8 @@ export async function createAppointment(payload) {
         },
     });
 
-    revalidatePath("/admin/calendario"); // <-- Pon aquí la ruta de tu página de calendario
+    revalidatePath("/calendar"); // <-- Pon aquí la ruta de tu página de calendario
+    return appointment
 }
 
 export async function getAppointmentPrisma(businessId, id) {
@@ -97,6 +104,46 @@ export async function getAppointmentsPrisma(businessId) {
     });
 
     return appointment
+}
+
+export async function updateAppointment(payload, appointmentId) {
+    // Validación básica
+    if (!appointmentId) throw new Error("Se requiere el ID de la cita para actualizar");
+
+    await prisma.appointment.update({
+        where: {
+            id: appointmentId
+        },
+        data: {
+            // 1. Actualizamos los datos planos de la Cita
+            businessId: payload.businessId,
+            employeeId: payload.employeeId, // Ojo: asegúrate que tu payload traiga el objeto o el string directo
+            title: payload.title,
+            start: payload.start,
+            end: payload.end,
+            status: payload.status,
+            paymentStatus: payload.paymentStatus,
+            totalAmount: payload.totalAmount,
+            guestName: payload.guestName,
+            guestPhone: payload.guestPhone,
+            clientId: payload.clientId,
+            notes: payload.notes,
+            // 2. LA MAGIA: Borrar todo y crear de nuevo
+            services: {
+                // Esto borra TODOS los registros en la tabla AppointmentService 
+                // que estén relacionados con este appointmentId.
+                deleteMany: {},
+
+                // Inmediatamente después, crea los nuevos que vienen en el payload
+                create: payload.services.map((s) => ({
+                    serviceId: s.serviceId,
+                    price: s.price,
+                })),
+            },
+        },
+    });
+
+    revalidatePath("/calendar");
 }
 
 //--------------------------------------------------------------------------------
@@ -464,7 +511,28 @@ export async function deleteUserPrisma(id, businessId) {
 //--------------------------------------------------------------------------------
 
 export async function createClientPrisma(businessId, name, phone, email, notes) {
-    const client = await prisma.client.create({
+
+    if (name == '' || phone == '') return
+    // 1. VALIDACIÓN: Buscar si ya existe un cliente con ese teléfono en ese negocio
+    const existingClient = await prisma.client.findFirst({
+        where: {
+            businessId: businessId,
+            phone: phone
+        }
+    });
+
+    // 2. DECISIÓN: Si existe, lo retornamos (o puedes lanzar un error)
+    if (existingClient) {
+        // Opción A: Retornar el existente (útil para "Get or Create")
+        console.log("Cliente ya existía, retornando el existente.");
+        return existingClient;
+
+        // Opción B: Si prefieres que de error, descomenta esto:
+        // throw new Error("El cliente ya está registrado en este negocio.");
+    }
+
+    // 3. CREACIÓN: Si no existe, lo insertamos
+    const newClient = await prisma.client.create({
         data: {
             businessId,
             name,
@@ -472,9 +540,9 @@ export async function createClientPrisma(businessId, name, phone, email, notes) 
             email,
             notes
         },
-    })
+    });
 
-    return client
+    return newClient;
 }
 
 export async function getClientPrisma(businessId, phone) {
@@ -526,20 +594,105 @@ export async function deleteClientPrisma(id, businessId) {
     return client
 }
 
+//--------------------------------------------------------------------------------
+//-------------------------User-------------------------------------
+//--------------------------------------------------------------------------------
 
-// model Client {
-//   id         String   @id @default(uuid())
-//   businessId String
-//   name       String
-//   phone      String?
-//   email      String?
-//   notes      String?
-//   createdAt  DateTime @default(now())
+export async function createPaymentPrisma(businessId, appointmentId, amount, method, status, externalId) {
+    const payment = await prisma.payment.create({
+        data: {
+            businessId,
+            appointmentId,
+            amount,
+            method,
+            status,
+            externalId
+        },
+    })
 
-//   business      Business       @relation(fields: [businessId], references: [id])
-//   appointments  Appointment[]
-//   reviews       Review[]
-//   loyaltyPoints LoyaltyPoint[]
+    return payment
+}
 
-//   @@unique([businessId, phone])
+export async function getPaymentPrisma(businessId, appointmentId) {
+    const payment = await prisma.payment.findFirst({
+        where: {
+            appointmentId: appointmentId,
+            businessId: businessId,
+        },
+    })
+
+    return payment
+}
+
+export async function getPaymentsPrisma(businessId) {
+    const payments = await prisma.payment.findMany({
+        where: {
+            businessId: businessId,
+        },
+    })
+
+    return payments
+}
+
+export async function updatePaymentPrisma(businessId, id, amount, method, status, externalId) {
+    const payment = await prisma.payment.update({
+        where: {
+            id: id,
+            businessId: businessId,
+        },
+        data: {
+            amount,
+            method,
+            status,
+            externalId
+        },
+    })
+
+    return payment
+}
+
+export async function deletePaymentPrisma(businessId, id) {
+    const payment = await prisma.payment.delete({
+        where: {
+            id: id,
+            businessId: businessId,
+        },
+    })
+
+    return payment
+}
+
+
+
+// //////////////////////
+// // 💰 PAGOS
+// //////////////////////
+// model Payment {
+//   id            String @id @default (uuid())
+//   appointmentId String
+//   amount        Float // Cuánto pagó en ESTA transacción
+//   method        PaymentMethod // CASH, CARD, TRANSFER, OTHER
+//   status        PaymentStatus @default (COMPLETED) // COMPLETED, PENDING, REFUNDED
+//   externalId    String ? // ID de Stripe/PayPal o número de autorización de la terminal
+
+//         createdAt DateTime @default (now())
+
+//   // Relación inversa
+//   appointment Appointment @relation(fields: [appointmentId], references: [id])
+//   business    Business ? @relation(fields: [businessId], references: [id])
+//   businessId  String ?
+// }
+
+// // Tus Enums para controlar los tipos
+// enum PaymentMethod {
+//     CASH
+//   CARD
+//   TRANSFER
+// }
+
+// enum PaymentStatus {
+//     PENDING
+//   COMPLETED
+//   FAILED
+//   REFUNDED
 // }

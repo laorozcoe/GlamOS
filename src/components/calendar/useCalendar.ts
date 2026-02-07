@@ -1,0 +1,394 @@
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useModal } from "@/hooks/useModal";
+import { useBusiness } from "@/context/BusinessContext";
+import FullCalendar from "@fullcalendar/react";
+import { usePrinter } from "@/hooks/usePrinter";
+import {
+    getEmployeesPrisma, getServicesPrisma, getServicesCategoriesPrisma,
+    getAppointmentsPrisma, createAppointment, updateAppointment,
+    createClientPrisma, getClientPrisma, createPaymentPrisma
+} from "@/lib/prisma";
+
+export const useCalendarLogic = () => {
+    const business = useBusiness();
+    const { isOpen, openModal, closeModal } = useModal();
+    const calendarRef = useRef<FullCalendar>(null);
+    const [showSaleDetails, setShowSaleDetails] = useState(false); // <--- NUEVO ESTADO
+    const { printTicket, device, connect } = usePrinter();
+
+    // --- ESTADOS DE DATOS (CATÁLOGOS) ---
+    const [employees, setEmployees] = useState<any[]>([]);
+    const [servicesCategories, setServicesCategories] = useState<any[]>([]);
+    const [services, setServices] = useState<any[]>([]);
+    const [events, setEvents] = useState<any[]>([]);
+
+    // Ref para evitar problemas de closure en hooks
+    const servicesRef = useRef(services);
+
+    // --- ESTADOS DEL FORMULARIO ---
+    const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+    const [date, setDate] = useState("");
+    const [time, setTime] = useState("");
+
+    // Selecciones
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+    const [appointments, setAppointments] = useState<any[]>([]); // Carrito de servicios
+    const [customer, setCustomer] = useState({ name: "", phone: "" });
+
+    // UI Helpers
+    const [flashCategory, setFlashCategory] = useState<string | null>(null);
+    const [showPayModal, setShowPayModal] = useState(false);
+
+    // --- CARGA INICIAL ---
+    useEffect(() => {
+        servicesRef.current = services;
+    }, [services]);
+
+    useEffect(() => {
+        const loadCatalogs = async () => {
+            if (!business?.id) return;
+            try {
+                const [emp, srv, cats, evts] = await Promise.all([
+                    getEmployeesPrisma(business.id),
+                    getServicesPrisma(business.id),
+                    getServicesCategoriesPrisma(business.id),
+                    getAppointmentsPrisma(business.id)
+                ]);
+                setEmployees(emp);
+                setServices(srv);
+                setServicesCategories(cats);
+                setEvents(evts);
+            } catch (error) {
+                console.error("Error cargando catálogos:", error);
+            }
+        };
+        loadCatalogs();
+    }, [business?.id]);
+
+    // --- CÁLCULOS ---
+    const total = useMemo(() => {
+        return appointments.reduce((acc: any, curr: any) => acc + Number(curr.price), 0);
+    }, [appointments]);
+
+    // --- HANDLERS LÓGICOS ---
+
+    const resetModalFields = () => {
+        setAppointments([]);
+        setSelectedCategory(null);
+        setSelectedEmployee(null);
+        setSelectedEvent(null);
+        setCustomer({ name: "", phone: "" });
+        setDate("");
+        setTime("");
+    };
+
+    const handleNewEventButton = () => {
+        resetModalFields();
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+
+        // Siguiente hora en punto
+        const nextHour = (now.getHours() + 1) % 24;
+
+        setDate(`${year}-${month}-${day}`);
+        setTime(`${String(nextHour).padStart(2, '0')}:00`);
+        openModal();
+    };
+
+    const handleDateClick = (arg: any) => {
+        resetModalFields();
+        const start = arg.date;
+        const yyyy = start.getFullYear();
+        const mm = String(start.getMonth() + 1).padStart(2, '0');
+        const dd = String(start.getDate()).padStart(2, '0');
+        const hh = String(start.getHours()).padStart(2, '0');
+        const min = String(start.getMinutes()).padStart(2, '0');
+
+        setDate(`${yyyy}-${mm}-${dd}`);
+        setTime(`${hh}:${min}`);
+        openModal();
+    };
+
+    const handleEventClick = (clickInfo: any) => {
+        debugger
+        const event = clickInfo.event;
+
+        // 1. Recuperar info básica
+        setSelectedEvent(event); // Guardamos el evento original de FullCalendar
+
+
+        const status = event.extendedProps.paymentStatus; // Asegúrate que tu Prisma traiga esto
+        if (status === "PAID") {
+            setShowSaleDetails(true);
+        } else {
+
+            setSelectedEmployee(event.extendedProps.employeeId);
+            setCustomer({
+                name: event.extendedProps.guestName,
+                phone: event.extendedProps.guestPhone
+            });
+
+            // 2. Hidratar fechas
+            if (event.start) {
+                const yyyy = event.start.getFullYear();
+                const mm = String(event.start.getMonth() + 1).padStart(2, '0');
+                const dd = String(event.start.getDate()).padStart(2, '0');
+                const hh = String(event.start.getHours()).padStart(2, '0');
+                const min = String(event.start.getMinutes()).padStart(2, '0');
+                setDate(`${yyyy}-${mm}-${dd}`);
+                setTime(`${hh}:${min}`);
+            }
+
+            // 3. Hidratar servicios (Recuperar del catálogo o usar backup)
+            const appointmentServices = event.extendedProps.services || [];
+            const currentCatalog = servicesRef.current;
+
+            const fullServices = appointmentServices.map((apptService: any) => {
+                const catalogService = currentCatalog.find((s: any) => s.id === apptService.serviceId);
+                return catalogService || apptService.service; // Fallback
+            }).filter(Boolean);
+
+            setAppointments(fullServices);
+            openModal();
+        }
+
+    };
+
+    // Agregar servicio al carrito
+    const addServiceToCart = (service: any) => {
+        setAppointments(prev => [...prev, service]);
+
+        // Efecto visual flash
+        setFlashCategory(service.id);
+        setTimeout(() => setFlashCategory(null), 150);
+    };
+
+    const removeServiceFromCart = (indexToDelete: number) => {
+        setAppointments(prev => prev.filter((_, i) => i !== indexToDelete));
+    };
+
+    // Guardar / Actualizar
+    const handleSaveOrUpdate = async () => {
+        debugger
+        if (!time || !date) return alert("Ingresa fecha y hora");
+        if (appointments.length === 0) return alert("Ingresa un servicio");
+        if (selectedEmployee?.id == "" || selectedEmployee?.id == null) return alert("Selecciona un empleado");
+
+        const startDateTime = new Date(`${date}T${time}:00`);
+        const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
+        const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
+
+        const serviceMap = appointments.map((item: any) => ({
+            serviceId: item.id,
+            price: item.price,
+        }));
+
+        const payload = {
+            businessId: business?.id,
+            clientId: null, // O lógica de cliente real
+            employeeId: selectedEmployee?.id || selectedEmployee, // Manejar si es obj o ID
+            title: customer.name || "Cita",
+            start: startDateTime,
+            end: endDateTime,
+            status: "PENDING",
+            paymentStatus: "UNPAID",
+            notes: "",
+            guestName: customer.name,
+            guestPhone: customer.phone,
+            totalAmount: total,
+            services: serviceMap
+        };
+
+        try {
+            if (selectedEvent) {
+                // Actualizar
+                await updateAppointment(payload, selectedEvent.id);
+            } else {
+                // Crear
+                await createAppointment(payload);
+            }
+            // Siempre asegurar cliente
+            if (customer.name && customer.phone) {
+                await createClientPrisma(business?.id, customer.name, customer.phone, "", "");
+            }
+
+            // Recargar eventos (idealmente optimista, pero aquí recargamos)
+            const newEvents = await getAppointmentsPrisma(business?.id);
+            setEvents(newEvents);
+
+        } catch (error) {
+            console.error("Error guardando:", error);
+        }
+
+        closeModal();
+        resetModalFields();
+    };
+
+    // Buscar cliente al escribir teléfono
+    const handleChangeCustomer = async (e: any) => {
+        const { name, value } = e.target;
+        setCustomer(prev => ({ ...prev, [name]: value }));
+
+        if (name === "phone" && value.length === 10) {
+            try {
+                const found = await getClientPrisma(business?.id, value);
+                if (found) {
+                    setCustomer(prev => ({ ...prev, name: found.name }));
+                }
+            } catch (e) { console.error(e); }
+        }
+    };
+
+    // Procesar Pago Final
+    const handleFinalizePayment = async (paymentData: any) => {
+        // 1. Validaciones
+        debugger
+        if (!time || !date) return alert("Ingresa fecha y hora");
+        if (appointments.length === 0) return alert("Ingresa un servicio");
+        if (selectedEmployee?.id == "" || selectedEmployee?.id == null) return alert("Selecciona un empleado");
+
+        try {
+            // 2. Cálculos de fechas y totales
+            const startDateTime = new Date(`${date}T${time}:00`);
+            const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
+            const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
+
+            // Determinamos el estado del pago (Por si en el futuro permites abonos)
+            // Si el monto recibido cubre el total, es PAID, si no, PARTIALLY_PAID
+            const isFullPayment = paymentData.received >= paymentData.total;
+            const newPaymentStatus = isFullPayment ? "PAID" : "PARTIALLY_PAID";
+
+            // 3. Mapeo de servicios
+            const serviceMap = appointments.map((item: any) => ({
+                serviceId: item.id,
+                price: item.price,
+            }));
+
+            // 4. Payload de la Cita
+            const appointmentPayload = {
+                businessId: business?.id,
+                clientId: null, // O la lógica para ligar el cliente si ya existe
+                employeeId: selectedEmployee?.id || selectedEmployee,
+                title: customer.name || "Venta",
+                start: startDateTime,
+                end: endDateTime,
+
+                // --- AQUÍ ESTÁN TUS REQUERIMIENTOS ---
+                status: "COMPLETED",          // La cita se marca como completada
+                paymentStatus: newPaymentStatus, // "PAID" (según tu Enum PaymentState)
+                totalAmount: paymentData.total,
+                // -------------------------------------
+
+                notes: `Pago: ${paymentData.method}.`,
+                guestName: customer.name,
+                guestPhone: customer.phone,
+                services: serviceMap
+            };
+
+            let currentAppointmentId = selectedEvent?.id;
+
+            // 5. Guardar o Actualizar la Cita
+            if (selectedEvent) {
+                // ACTUALIZAR
+                await updateAppointment(appointmentPayload, currentAppointmentId);
+            } else {
+                // CREAR (Importante: createAppointment debe retornar el objeto creado)
+                const newAppt = await createAppointment(appointmentPayload);
+                currentAppointmentId = newAppt.id;
+            }
+
+            // 6. Asegurar Cliente (Tu lógica existente)
+            if (customer.name && customer.phone) {
+                await createClientPrisma(business?.id, customer.name, customer.phone, "", "");
+            }
+
+            // 7. CREAR EL REGISTRO DE PAGO (Tabla Payment)
+            if (currentAppointmentId) {
+                await createPaymentPrisma(
+                    business?.id,
+                    currentAppointmentId,
+                    paymentData.total, // O paymentData.received si quieres registrar lo real
+                    paymentData.method, // 'CASH', 'CARD', etc.
+                    "COMPLETED",
+                    ""
+                );
+            }
+            // 1. Agrupamos los servicios para que no se repitan renglones
+            const groupedItems = appointments.reduce((acc, appt) => {
+                // Usamos el ID del servicio como llave, si no tiene, usamos el nombre
+                const key = appt.id || appt.name;
+
+                if (!acc[key]) {
+                    // Si es la primera vez que vemos este servicio, lo creamos
+                    acc[key] = {
+                        quantity: 0,
+                        ticket_desc: appt.ticket_desc || appt.name, // El varchar(15) de tu BD
+                        name: appt.name,
+                        unitPrice: Number(appt.price), // Guardamos el precio unitario
+                        totalPrice: 0
+                    };
+                }
+
+                // Sumamos cantidad y acumulamos el precio
+                acc[key].quantity += 1;
+                acc[key].totalPrice += Number(appt.price);
+
+                return acc;
+            }, {});
+
+            // 2. Preparamos los datos finales para el ticket
+            const ticketData = {
+                businessName: business?.name || "Brillarte Bloom",
+                date: new Date().toLocaleDateString('es-MX'),
+                total: paymentData.total,
+                // --- NUEVOS CAMPOS ---
+                paymentMethod: paymentData.method, // 'CASH' o 'CARD'
+                received: paymentData.received,   // Cantidad recibida
+                change: paymentData.change,       // Cambio calculado
+                // ---------------------
+                items: Object.values(groupedItems).map((item: any) => ({
+                    quantity: item.quantity,
+                    ticket_desc: item.ticket_desc,
+                    price: item.totalPrice
+                }))
+            };
+
+            // 3. Disparamos la impresión
+            await printTicket(ticketData);
+
+            console.log("¡Cita pagada y registrada!");
+
+            // 8. Refrescar UI
+            const newEvents = await getAppointmentsPrisma(business?.id);
+            setEvents(newEvents);
+
+            setShowPayModal(false);
+            closeModal();
+            resetModalFields();
+
+        } catch (error) {
+            console.error("Error finalizando pago:", error);
+            alert("Error al procesar la venta.");
+        }
+    };
+
+    return {
+        calendarRef,
+        isOpen, openModal, closeModal,
+        employees, services, servicesCategories, events,
+        date, setDate, time, setTime,
+        selectedEvent, selectedCategory, setSelectedCategory,
+        selectedEmployee, setSelectedEmployee,
+        appointments, addServiceToCart, removeServiceFromCart,
+        customer, handleChangeCustomer,
+        total,
+        flashCategory,
+        showPayModal, setShowPayModal,
+        handleNewEventButton, handleDateClick, handleEventClick,
+        handleSaveOrUpdate, handleFinalizePayment,
+        showSaleDetails, setShowSaleDetails, // <--- Exportar nuevo estado
+    };
+};

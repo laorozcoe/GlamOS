@@ -251,6 +251,9 @@ export async function middleware(req: NextRequest) {
   }
 
 
+
+  //TODO: Revisar esta parte, en las rutas publicas esta / entonces permite todo a todos
+
   // 🧑‍💻 roles
   if (token) {
     const userRole = token.role as string
