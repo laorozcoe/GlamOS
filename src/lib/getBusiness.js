@@ -9,12 +9,12 @@ export async function getBusiness() {
         const slug = h.get("x-business-slug")
 
         if (!slug || slug === "www" || slug === "localhost" || slug === "") {
-            return await getBusinessPrisma("brillarte-bloom")
+            return await getBusinessPrisma("brillartebloom")
         }
 
         const business = await getBusinessPrisma(slug)
         // Si no encuentra el negocio, regresa el default para evitar nulls peligrosos
-        return business || await getBusinessPrisma("brillarte-bloom")
+        return business || await getBusinessPrisma("brillartebloom")
 
     } catch (error) {
         console.error("Error obteniendo business:", error)
