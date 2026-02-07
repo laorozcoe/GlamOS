@@ -14,7 +14,7 @@ datasource db {
 }
 
 //////////////////////
-// 🏢 NEGOCIOS (SALONES)
+// 🏢 NEGOCIO
 //////////////////////
 model Business {
   id        String   @id @default(uuid())
@@ -31,6 +31,8 @@ model Business {
   employees         Employee[]
   services          Service[]
   appointments      Appointment[]
+  sales             Sale[] // La Venta es ahora el eje principal
+  cashCloses        CashClose[] // Cortes de caja para auditoría
   payments          Payment[]
   reviews           Review[]
   loyaltyPoints     LoyaltyPoint[]
@@ -66,7 +68,7 @@ enum Role {
 }
 
 //////////////////////
-// 👩‍🎨 EMPLOYEEAS
+// 👥 EMPLEADOS
 //////////////////////
 model Employee {
   id         String   @id @default(uuid())
@@ -83,6 +85,7 @@ model Employee {
   user         User          @relation(fields: [userId], references: [id])
   appointments Appointment[]
   reviews      Review[]
+  sales        Sale[]
 }
 
 //////////////////////
@@ -101,12 +104,13 @@ model Client {
   appointments  Appointment[]
   reviews       Review[]
   loyaltyPoints LoyaltyPoint[]
+  sales         Sale[]
 
   @@unique([businessId, phone])
 }
 
 //////////////////////
-// 💅 SERVICIOS
+// 💅 CATEGORÍAS
 //////////////////////
 model ServiceCategory {
   id         String   @id @default(uuid())
@@ -120,6 +124,9 @@ model ServiceCategory {
   services Service[]
 }
 
+//////////////////////
+// 💅 SERVICIOS
+//////////////////////
 model Service {
   id                String  @id @default(uuid())
   businessId        String
@@ -138,8 +145,12 @@ model Service {
 
   appointmentServices AppointmentService[]
   variants            ServiceVariant[]
+  saleItems           SaleItem[]
 }
 
+//////////////////////
+// 🎁 VARIANTES DE SERVICIO
+//////////////////////
 model ServiceVariant {
   id        String  @id @default(uuid())
   serviceId String
@@ -151,6 +162,9 @@ model ServiceVariant {
   service Service @relation(fields: [serviceId], references: [id])
 }
 
+//////////////////////
+// 🎁 ADICIONALES DE SERVICIO
+//////////////////////
 model ServiceExtra {
   id          String   @id @default(uuid())
   businessId  String
@@ -165,24 +179,9 @@ model ServiceExtra {
   appointmentExtras AppointmentExtra[]
 }
 
-// model Service {
-//   id                  String               @id @default(uuid())
-//   businessId          String
-//   name                String
-//   description         String?
-//   duration            Int // minutos
-//   price               Float
-//   category            String?
-//   active              Boolean              @default(true)
-//   createdAt           DateTime             @default(now())
-//   business            Business             @relation(fields: [businessId], references: [id])
-
-// }
-
 //////////////////////
-// 📅 CITAS
+// 📅 CITAS (Solo para gestión de tiempo)
 //////////////////////
-
 model Appointment {
   id            String            @id @default(uuid())
   businessId    String
@@ -197,15 +196,15 @@ model Appointment {
   guestName     String?
   guestPhone    String?
   createdAt     DateTime          @default(now())
-  // FINANZAS (Resumen)
-  totalAmount   Float             @default(0) // El costo total del servicio (ej. $1000)
   paymentStatus PaymentState      @default(UNPAID) // Estado general de la deuda
-  business      Business          @relation(fields: [businessId], references: [id])
-  client        Client?           @relation(fields: [clientId], references: [id])
-  employee      Employee          @relation(fields: [employeeId], references: [id])
+  totalAmount   Float             @default(0) // El costo total del servicio (ej. $1000)
+  // Relación 1:1 con la Venta
+  sale          Sale?
 
+  business Business             @relation(fields: [businessId], references: [id])
+  employee Employee             @relation(fields: [employeeId], references: [id])
+  client   Client?              @relation(fields: [clientId], references: [id])
   services AppointmentService[]
-  payments Payment[]
 }
 
 enum PaymentState {
@@ -236,6 +235,9 @@ model AppointmentService {
   appointmentExtras AppointmentExtra[]
 }
 
+//////////////////////
+// 🔗 CITA - ADICIONALES
+//////////////////////
 model AppointmentExtra {
   id                   String             @id @default(uuid())
   appointmentServiceId String
@@ -248,25 +250,26 @@ model AppointmentExtra {
 }
 
 //////////////////////
-// 💰 PAGOS
+// 💳 PAGOS Y CAJA
 //////////////////////
 model Payment {
-  id            String        @id @default(uuid())
-  appointmentId String
-  amount        Float // Cuánto pagó en ESTA transacción
-  method        PaymentMethod // CASH, CARD, TRANSFER, OTHER
-  status        PaymentStatus @default(COMPLETED) // COMPLETED, PENDING, REFUNDED
-  externalId    String? // ID de Stripe/PayPal o número de autorización de la terminal
+  id         String        @id @default(uuid())
+  saleId     String
+  businessId String
+  amount     Float // Monto de este pago específico
+  method     PaymentMethod // CASH, CARD, TRANSFER
+  status     PaymentStatus @default(COMPLETED)
+
+  // Datos para el ticket y auditoría
+  amountReceived Float? // Útil para calcular el cambio en efectivo
+  changeReturned Float?
 
   createdAt DateTime @default(now())
 
-  // Relación inversa
-  appointment Appointment @relation(fields: [appointmentId], references: [id])
-  business    Business?   @relation(fields: [businessId], references: [id])
-  businessId  String?
+  sale     Sale     @relation(fields: [saleId], references: [id])
+  business Business @relation(fields: [businessId], references: [id])
 }
 
-// Tus Enums para controlar los tipos
 enum PaymentMethod {
   CASH
   CARD
@@ -311,4 +314,69 @@ model LoyaltyPoint {
   client   Client   @relation(fields: [clientId], references: [id])
 
   @@unique([businessId, clientId])
+}
+
+enum SaleStatus {
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+//////////////////////
+// 💰 VENTAS (El corazón del POS)
+//////////////////////
+model Sale {
+  id         String @id @default(uuid())
+  businessId String
+  folio      Int    @default(autoincrement()) // Ticket #1, #2...
+
+  clientId      String? // Opcional para "Público General"
+  employeeId    String // Quién atendió/vendió
+  appointmentId String? @unique // Opcional: liga la venta a una cita del calendario
+
+  // Totales financieros
+  subtotal Float @default(0)
+  discount Float @default(0)
+  total    Float // Monto final cobrado
+
+  status    SaleStatus @default(COMPLETED)
+  notes     String? // Para auditoría: "Se aplicó descuento por retraso"
+  createdAt DateTime   @default(now()) // LA HORA REAL DEL COBRO
+  updatedAt DateTime   @updatedAt
+
+  business    Business     @relation(fields: [businessId], references: [id])
+  client      Client?      @relation(fields: [clientId], references: [id])
+  employee    Employee     @relation(fields: [employeeId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+
+  items    SaleItem[]
+  payments Payment[]
+}
+
+model SaleItem {
+  id          String  @id @default(uuid())
+  saleId      String
+  serviceId   String?
+  description String // Nombre del servicio al momento de vender (Snapshot)
+  price       Float // Precio al que se vendió (histórico)
+  quantity    Int     @default(1)
+
+  sale    Sale     @relation(fields: [saleId], references: [id])
+  service Service? @relation(fields: [serviceId], references: [id])
+}
+
+model CashClose {
+  id          String   @id @default(uuid())
+  businessId  String
+  userId      String // Quién hizo el corte
+  openingDate DateTime
+  closingDate DateTime @default(now())
+
+  cashExpected Float // Lo que el sistema dice
+  cashActual   Float // Lo que el usuario contó físicamente
+  difference   Float // Faltante o sobrante
+
+  notes String?
+
+  business Business @relation(fields: [businessId], references: [id])
 }

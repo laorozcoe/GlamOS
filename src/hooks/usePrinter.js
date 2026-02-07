@@ -111,6 +111,14 @@ export const usePrinter = () => {
         return `${leftPart}${spaces}${priceStr}\n`;
     };
 
+    const generateDateLine = (date, time, folio) => {
+        const dateStr = `${date} ${time}`;
+        const spaceCount = 32 - dateStr.length - folio.toString().length;
+        const spaces = ' '.repeat(Math.max(0, spaceCount));
+        return `${dateStr}${spaces}${folio}\n`;
+    };
+
+
     const printTicket = async (ticketData) => {
         debugger
         setIsPrinting(true);
@@ -144,7 +152,7 @@ export const usePrinter = () => {
             // --- DISEÑO DEL TICKET ---
             printJob = printJob
                 .newline().bold(true).text(`${ticketData.businessName}\n`).bold(false)
-                .align('left').text(`Fecha: ${ticketData.date}\n`)
+                .text(generateDateLine(ticketData.date, ticketData.time, ticketData.folio))
                 .text('--------------------------------\n');
 
             ticketData.items.forEach(item => {
@@ -174,14 +182,14 @@ export const usePrinter = () => {
                 .newline().newline().newline()
                 .cut().pulse();
 
-            const result = printJob.encode();
+            // const result = printJob.encode();
 
-            // Usar el endpoint 'out' de forma dinámica (como en tu test)
-            const interfaceData = currentDevice.configuration.interfaces[0];
-            const endpoint = interfaceData.alternates[0].endpoints.find(e => e.direction === 'out');
+            // // Usar el endpoint 'out' de forma dinámica (como en tu test)
+            // const interfaceData = currentDevice.configuration.interfaces[0];
+            // const endpoint = interfaceData.alternates[0].endpoints.find(e => e.direction === 'out');
 
-            await currentDevice.transferOut(endpoint.endpointNumber, result);
-            return true;
+            // await currentDevice.transferOut(endpoint.endpointNumber, result);
+            // return true;
 
         } catch (err) {
             console.error("Error en printTicket:", err);

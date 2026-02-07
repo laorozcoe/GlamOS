@@ -662,37 +662,174 @@ export async function deletePaymentPrisma(businessId, id) {
     return payment
 }
 
+//--------------------------------------------------------------------------------
+//-------------------------Sale-------------------------------------
+//--------------------------------------------------------------------------------
 
+export const createSalePrisma = async (data) => {
+    const {
+        businessId,
+        clientId,
+        employeeId,
+        appointmentId,
+        items, // Array de { serviceId, description, price, quantity }
+        payment, // Objeto { amount, method, received, change }
+        totals // Objeto { subtotal, discount, total }
+    } = data;
 
-// //////////////////////
-// // 💰 PAGOS
-// //////////////////////
-// model Payment {
-//   id            String @id @default (uuid())
-//   appointmentId String
-//   amount        Float // Cuánto pagó en ESTA transacción
-//   method        PaymentMethod // CASH, CARD, TRANSFER, OTHER
-//   status        PaymentStatus @default (COMPLETED) // COMPLETED, PENDING, REFUNDED
-//   externalId    String ? // ID de Stripe/PayPal o número de autorización de la terminal
+    try {
+        const result = await prisma.$transaction(async (tx) => {
+            // 1. Creamos la Venta principal
+            const newSale = await tx.sale.create({
+                data: {
+                    businessId,
+                    clientId,
+                    employeeId,
+                    appointmentId,
+                    subtotal: totals.subtotal,
+                    discount: totals.discount,
+                    total: totals.total,
+                    status: 'COMPLETED',
+                    // 2. Creamos los ítems de la venta en la misma operación (Nested Write)
+                    items: {
+                        create: items.map((item) => ({
+                            serviceId: item.serviceId, // Puede ser null si es cargo extra manual
+                            description: item.description,
+                            price: item.price,
+                            quantity: item.quantity || 1,
+                        })),
+                    },
+                    // 3. Creamos el registro del pago
+                    payments: {
+                        create: {
+                            businessId,
+                            amount: payment.amount,
+                            method: payment.method,
+                            amountReceived: payment.received,
+                            changeReturned: payment.change,
+                            status: 'COMPLETED',
+                        },
+                    },
+                },
+                // Incluimos los datos relacionados para devolverlos al frontend (para el ticket)
+                include: {
+                    items: true,
+                    payments: true,
+                },
+            });
 
-//         createdAt DateTime @default (now())
+            // 4. Si la venta viene de una cita, la marcamos como completada
+            if (appointmentId) {
+                await tx.appointment.update({
+                    where: { id: appointmentId },
+                    data: { status: 'COMPLETED', paymentStatus: "PAID" },
+                });
+            }
 
-//   // Relación inversa
-//   appointment Appointment @relation(fields: [appointmentId], references: [id])
-//   business    Business ? @relation(fields: [businessId], references: [id])
-//   businessId  String ?
-// }
+            return newSale;
+        }, {
+            maxWait: 5000, // Tiempo máximo para esperar una conexión (5s)
+            timeout: 30000 // Tiempo máximo para que se ejecute la transacción (30s)
+        });
 
-// // Tus Enums para controlar los tipos
-// enum PaymentMethod {
-//     CASH
-//   CARD
-//   TRANSFER
-// }
+        return { success: true, sale: result };
+    } catch (error) {
+        console.error("Error en la transacción de venta:", error);
+        return { success: false, error: error.message };
+    }
+};
 
-// enum PaymentStatus {
-//     PENDING
-//   COMPLETED
-//   FAILED
-//   REFUNDED
-// }
+export async function getSalePrisma(businessId, id) {
+    const sale = await prisma.sale.findFirst({
+        where: {
+            id: id,
+            businessId: businessId,
+        },
+    })
+
+    return sale
+}
+
+export async function getSalesPrisma(businessId) {
+    const sales = await prisma.sale.findMany({
+        where: {
+            businessId: businessId,
+        },
+    })
+
+    return sales
+}
+
+export async function updateSalePrisma(id, businessId, clientId, employeeId, appointmentId, subtotal, discount, total, status, notes) {
+    const sale = await prisma.sale.update({
+        where: {
+            id: id,
+            businessId: businessId,
+        },
+        data: {
+            businessId, clientId, employeeId, appointmentId, subtotal, discount, total, status, notes
+        },
+    })
+
+    return sale
+}
+
+export async function deleteSalePrisma(businessId, id) {
+    const sale = await prisma.sale.delete({
+        where: {
+            id: id,
+            businessId: businessId,
+        },
+    })
+
+    return sale
+}
+
+//--------------------------------------------------------------------------------
+//-------------------------SaleItem-------------------------------------
+//--------------------------------------------------------------------------------  
+
+export async function createSaleItemPrisma(saleId, serviceId, description, price, quantity) {
+    const saleItem = await prisma.saleItem.create({
+        data: {
+            saleId, serviceId, description, price, quantity
+        },
+    })
+
+    return saleItem
+}
+
+export async function getSaleItemPrisma(businessId, saleId) {
+    const saleItem = await prisma.saleItem.findFirst({
+        where: {
+            saleId: saleId,
+            businessId: businessId,
+        },
+    })
+
+    return saleItem
+}
+
+export async function updateSaleItemPrisma(id, saleId, serviceId, description, price, quantity) {
+    const saleItem = await prisma.saleItem.update({
+        where: {
+            id: id,
+        },
+        data: {
+            saleId, serviceId, description, price, quantity
+        },
+    })
+
+    return saleItem
+}
+
+export async function deleteSaleItemPrisma(businessId, id) {
+    const saleItem = await prisma.saleItem.delete({
+        where: {
+            id: id,
+            businessId: businessId,
+        },
+    })
+
+    return saleItem
+}

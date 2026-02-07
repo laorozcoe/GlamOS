@@ -6,7 +6,8 @@ import { usePrinter } from "@/hooks/usePrinter";
 import {
     getEmployeesPrisma, getServicesPrisma, getServicesCategoriesPrisma,
     getAppointmentsPrisma, createAppointment, updateAppointment,
-    createClientPrisma, getClientPrisma, createPaymentPrisma
+    createClientPrisma, getClientPrisma, createPaymentPrisma,
+    createSalePrisma
 } from "@/lib/prisma";
 
 export const useCalendarLogic = () => {
@@ -125,7 +126,7 @@ export const useCalendarLogic = () => {
             setShowSaleDetails(true);
         } else {
 
-            setSelectedEmployee(event.extendedProps.employeeId);
+            setSelectedEmployee(event.extendedProps.employee);
             setCustomer({
                 name: event.extendedProps.guestName,
                 phone: event.extendedProps.guestPhone
@@ -244,41 +245,53 @@ export const useCalendarLogic = () => {
 
     // Procesar Pago Final
     const handleFinalizePayment = async (paymentData: any) => {
-        // 1. Validaciones
-        debugger
+        // 1. Validaciones iniciales
         if (!time || !date) return alert("Ingresa fecha y hora");
         if (appointments.length === 0) return alert("Ingresa un servicio");
         if (selectedEmployee?.id == "" || selectedEmployee?.id == null) return alert("Selecciona un empleado");
 
         try {
-            // 2. Cálculos de fechas y totales
+            // 2. Cálculos de tiempo
             const startDateTime = new Date(`${date}T${time}:00`);
             const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
             const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
 
-            // Determinamos el estado del pago (Por si en el futuro permites abonos)
-            // Si el monto recibido cubre el total, es PAID, si no, PARTIALLY_PAID
-            const isFullPayment = paymentData.received >= paymentData.total;
-            const newPaymentStatus = isFullPayment ? "PAID" : "PARTIALLY_PAID";
+            // 3. Preparar Agrupación de Ítems (Para la Venta y el Ticket)
+            const groupedItems = appointments.reduce((acc: any, appt: any) => {
+                const key = appt.id || appt.name;
+                if (!acc[key]) {
+                    acc[key] = {
+                        serviceId: appt.id || null,
+                        quantity: 0,
+                        ticket_desc: appt.descriptionTicket || appt.name,
+                        name: appt.name,
+                        unitPrice: Number(appt.price),
+                        totalPrice: 0
+                    };
+                }
+                acc[key].quantity += 1;
+                acc[key].totalPrice += Number(appt.price);
+                return acc;
+            }, {});
 
-            // 3. Mapeo de servicios
+            const itemsList = Object.values(groupedItems);
+
             const serviceMap = appointments.map((item: any) => ({
                 serviceId: item.id,
                 price: item.price,
             }));
 
-            // 4. Payload de la Cita
+            // 4. PASO A: Crear/Actualizar la Cita (Reserva de tiempo)
             const appointmentPayload = {
                 businessId: business?.id,
-                clientId: null, // O la lógica para ligar el cliente si ya existe
+                //TODO REVISAR ESTA PARTE PARA TRAER AL CLIENTE
+                clientId: null,
                 employeeId: selectedEmployee?.id || selectedEmployee,
-                title: customer.name || "Venta",
+                title: customer.name,
                 start: startDateTime,
                 end: endDateTime,
-
-                // --- AQUÍ ESTÁN TUS REQUERIMIENTOS ---
-                status: "COMPLETED",          // La cita se marca como completada
-                paymentStatus: newPaymentStatus, // "PAID" (según tu Enum PaymentState)
+                status: "COMPLETED",
+                paymentStatus: "PAID", // "PAID" (según tu Enum PaymentState)
                 totalAmount: paymentData.total,
                 // -------------------------------------
 
@@ -290,88 +303,94 @@ export const useCalendarLogic = () => {
 
             let currentAppointmentId = selectedEvent?.id;
 
-            // 5. Guardar o Actualizar la Cita
             if (selectedEvent) {
-                // ACTUALIZAR
                 await updateAppointment(appointmentPayload, currentAppointmentId);
             } else {
-                // CREAR (Importante: createAppointment debe retornar el objeto creado)
                 const newAppt = await createAppointment(appointmentPayload);
                 currentAppointmentId = newAppt.id;
             }
 
-            // 6. Asegurar Cliente (Tu lógica existente)
+            // 5. PASO B: Generar la VENTA (Sale) y sus Ítems (Snapshot)
+            // Este es el nuevo query "en cascada" que definimos en el esquema
+
+            const subtotal = appointments.reduce((sum, item) => sum + Number(item.price), 0);
+
+            // 2. Definimos el descuento (por ahora en 0, o puedes traerlo de un input si lo agregas luego)
+            const discount = 0;
+
+            // 3. El total es lo que realmente se cobra
+            const totalFinal = subtotal - discount;
+
+            const totals = {
+                subtotal,
+                discount,
+                total: totalFinal
+            };
+
+            const salePayload = {
+                businessId: business?.id,
+                clientId: null,
+                employeeId: selectedEmployee?.id || selectedEmployee,
+                appointmentId: currentAppointmentId, // Ligamos la venta a la cita
+                totals: totals,
+                items: itemsList.map((item: any) => ({
+                    serviceId: item.serviceId,
+                    description: item.ticket_desc,
+                    price: item.unitPrice, // Guardamos precio unitario
+                    quantity: item.quantity
+                })),
+                payment: {
+                    amount: paymentData.total,
+                    method: paymentData.method,
+                    received: paymentData.received,
+                    change: paymentData.change
+                }
+            };
+
+            // Aquí llamas a tu nueva función de backend que hace la transacción de Prisma
+            const saleResult = await createSalePrisma(salePayload);
+
+            // 6. PASO C: Asegurar Cliente en BD
             if (customer.name && customer.phone) {
                 await createClientPrisma(business?.id, customer.name, customer.phone, "", "");
             }
-
-            // 7. CREAR EL REGISTRO DE PAGO (Tabla Payment)
-            if (currentAppointmentId) {
-                await createPaymentPrisma(
-                    business?.id,
-                    currentAppointmentId,
-                    paymentData.total, // O paymentData.received si quieres registrar lo real
-                    paymentData.method, // 'CASH', 'CARD', etc.
-                    "COMPLETED",
-                    ""
-                );
-            }
-            // 1. Agrupamos los servicios para que no se repitan renglones
-            const groupedItems = appointments.reduce((acc, appt) => {
-                // Usamos el ID del servicio como llave, si no tiene, usamos el nombre
-                const key = appt.id || appt.name;
-
-                if (!acc[key]) {
-                    // Si es la primera vez que vemos este servicio, lo creamos
-                    acc[key] = {
-                        quantity: 0,
-                        ticket_desc: appt.descriptionTicket || appt.name, // El varchar(15) de tu BD
-                        name: appt.name,
-                        unitPrice: Number(appt.price), // Guardamos el precio unitario
-                        totalPrice: 0
-                    };
-                }
-
-                // Sumamos cantidad y acumulamos el precio
-                acc[key].quantity += 1;
-                acc[key].totalPrice += Number(appt.price);
-
-                return acc;
-            }, {});
-
-            // 2. Preparamos los datos finales para el ticket
+            // 7. PASO D: Impresión del Ticket (Usando datos de la venta recién creada)
             const ticketData = {
                 businessName: business?.name || "Brillarte Bloom",
-                date: new Date().toLocaleDateString('es-MX'),
+                folio: saleResult.sale.folio, // Usamos el folio real generado por la BD
                 total: paymentData.total,
-                // --- NUEVOS CAMPOS ---
-                paymentMethod: paymentData.method, // 'CASH' o 'CARD'
-                received: paymentData.received,   // Cantidad recibida
-                change: paymentData.change,       // Cambio calculado
-                // ---------------------
-                items: Object.values(groupedItems).map((item: any) => ({
+                paymentMethod: paymentData.method,
+                received: paymentData.received,
+                change: paymentData.change,
+                // Formato: 07/02/2026
+                date: saleResult.sale.createdAt.toLocaleDateString('es-MX'),
+                // Formato: 04:27 AM (Formato 12h con am/pm para facilidad de lectura)
+                time: saleResult.sale.createdAt.toLocaleTimeString('es-MX', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                }),
+                items: itemsList.map((item: any) => ({
                     quantity: item.quantity,
                     ticket_desc: item.ticket_desc,
                     price: item.totalPrice
                 }))
             };
 
-            // 3. Disparamos la impresión
             await printTicket(ticketData);
 
-            console.log("¡Cita pagada y registrada!");
-
-            // 8. Refrescar UI
+            // 8. Limpieza y Refresco
             const newEvents = await getAppointmentsPrisma(business?.id);
             setEvents(newEvents);
 
             setShowPayModal(false);
             closeModal();
             resetModalFields();
+            alert("Venta procesada y ticket impreso con éxito.");
 
         } catch (error) {
             console.error("Error finalizando pago:", error);
-            alert("Error al procesar la venta.");
+            alert("Ocurrió un error al procesar la venta.");
         }
     };
 
