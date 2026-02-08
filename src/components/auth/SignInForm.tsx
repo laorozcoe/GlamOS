@@ -6,13 +6,24 @@ import Button from "@/components/ui/button/Button";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
 import { signIn } from "next-auth/react"
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { getBusiness } from "@/lib/getBusiness";
+
 
 export default function SignInForm() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [business, setBusiness] = useState()
+
+  useEffect(() => {
+    const loadBusiness = async () => {
+      const rtnBusiness = await getBusiness();
+      setBusiness(rtnBusiness)
+    }
+    loadBusiness()
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     debugger
@@ -36,7 +47,7 @@ export default function SignInForm() {
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
           <div className="mb-5 sm:mb-8">
-            <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
+            <h1 className="mb-2 font-semibold text-gray-800 text-title-sm text-center dark:text-white/90 sm:text-title-md border-r-red-400">
               Inicia Sesión
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
