@@ -1,9 +1,9 @@
 // components/calendar/PrinterStatus.jsx
 import React from 'react';
-import { PrinterCheck, PrinterX } from 'lucide-react';
+import { PrinterCheck, PrinterX, PanelTopOpen } from 'lucide-react';
 
 
-export const PrinterStatus = ({ status, onConnect }) => {
+export const PrinterStatus = ({ status, onConnect, openDrawer }) => {
     const statusConfig = {
         online: { color: 'text-green-500', icon: PrinterCheck },
         connecting: { color: 'text-yellow-500', icon: PrinterX, pulse: true },
@@ -13,9 +13,9 @@ export const PrinterStatus = ({ status, onConnect }) => {
     const config = statusConfig[status] || statusConfig.offline;
     const Icon = config.icon; // Referencia al componente
 
-
+    // este center no me convense revisaro TODO
     return (
-        <div className="flex items-center gap-2 ...">
+        <div className="flex items-center gap-8 justify-center">
             {/* Círculo de estado */}
             <div className="relative flex h-3 w-3">
                 {config.pulse && (
@@ -28,6 +28,13 @@ export const PrinterStatus = ({ status, onConnect }) => {
 
             >
                 <Icon size={24} className={config.color} />
+            </button>
+
+            <button
+                onClick={openDrawer}
+
+            >
+                <PanelTopOpen size={24} className={'text-green-500'} />
             </button>
             {/* El Icono con tamaño definido */}
 

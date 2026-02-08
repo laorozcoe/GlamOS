@@ -200,5 +200,61 @@ export const usePrinter = () => {
         }
     };
 
-    return { device, isPrinting, printerError, status, connect: requestPrinter, printTicket };
+
+    // --- FUNCIÓN SOLO ABRIR CAJA ---
+    const openDrawer = async () => {
+        // debugger; // Descomenta si necesitas depurar
+        setIsPrinting(true);
+        setPrinterError('');
+
+        try {
+            // 1. Lógica de re-conexión (Igual que en printTicket)
+            let currentDevice = device;
+
+            // Si no hay dispositivo o se cerró la conexión, intentamos recuperar
+            if (!currentDevice || !currentDevice.opened) {
+                if (navigator.usb) {
+                    const devices = await navigator.usb.getDevices();
+                    for (const d of devices) {
+                        const success = await connectToDevice(d);
+                        if (success) {
+                            currentDevice = d;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!currentDevice || !currentDevice.opened) {
+                throw new Error("Impresora desconectada. Conéctala primero.");
+            }
+
+            // 2. Generar comando SOLO pulso
+            const encoder = new EscPosEncoder();
+            const result = encoder
+                .initialize()
+                .pulse() // <--- El comando mágico
+                .encode();
+
+            // 3. Enviar al USB
+            const interfaceData = currentDevice.configuration.interfaces[0];
+            const endpoint = interfaceData.alternates[0].endpoints.find(e => e.direction === 'out');
+
+            if (!endpoint) throw new Error("Endpoint de escritura no encontrado");
+
+            await currentDevice.transferOut(endpoint.endpointNumber, result);
+            console.log("✅ Comando de apertura enviado");
+            return true;
+
+        } catch (err) {
+            console.error("Error al abrir caja:", err);
+            setPrinterError("Error al abrir caja: " + err.message);
+            return false;
+        } finally {
+            setIsPrinting(false);
+        }
+    };
+
+
+    return { device, isPrinting, printerError, status, connect: requestPrinter, printTicket, openDrawer };
 };
