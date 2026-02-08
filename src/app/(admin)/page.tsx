@@ -6,6 +6,8 @@ import MonthlySalesChart from "@/components/ecommerce/MonthlySalesChart";
 import StatisticsChart from "@/components/ecommerce/StatisticsChart";
 import RecentOrders from "@/components/ecommerce/RecentOrders";
 import DemographicCard from "@/components/ecommerce/DemographicCard";
+// import { useBusiness } from "@/context/BusinessContext";
+import { getBusiness } from "@/lib/getBusiness";
 
 export const metadata: Metadata = {
   title:
@@ -13,10 +15,11 @@ export const metadata: Metadata = {
   description: "This is Next.js Home for TailAdmin Dashboard Template",
 };
 
-export default function Ecommerce() {
+export default async function Ecommerce() {
+  const business = await getBusiness();
   return (
     <div className=" grid-cols-12 gap-4 md:gap-6 w-full h-full flex items-center justify-center">
-      <img src="/brillartebloom/logo.png" className="w-96 h-96" alt="Logo" />
+      <img src={`/${business?.slug}/logo2.png`} className="w-96 h-96" alt="Logo" />
       {/* <div className="col-span-12 space-y-6 xl:col-span-7">
         <EcommerceMetrics />
 
