@@ -18,6 +18,15 @@ export const ServiceModal = ({ isOpen, onClose, ...selectorProps }: any) => {
             <div className="flex-1 p-4 overflow-hidden">
                 <ServiceSelector {...selectorProps} />
             </div>
+            <div className="p-4 bg-white border-t border-gray-200 shadow-sm safe-area-pb">
+
+                <div className="flex gap-2">
+                    <button onClick={onClose} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black">
+                        Aceptar
+                    </button>
+
+                </div>
+            </div>
         </Modal>
     );
 };

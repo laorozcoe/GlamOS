@@ -1,5 +1,6 @@
+// components/booking/ServiceSelector.tsx
 import React from 'react';
-import { Minus, Plus, Check } from 'lucide-react'; // Asegúrate de tener esto o usa texto
+import { Minus, Plus, Check } from 'lucide-react';
 
 export const ServiceSelector = ({
     services,
@@ -7,26 +8,25 @@ export const ServiceSelector = ({
     selectedCategory,
     setSelectedCategory,
     onAddService,
-    onRemoveService, // <--- NUEVO: Función para restar
-    appointments,    // <--- NUEVO: Lista actual para contar
-    onClose,         // <--- NUEVO: Para el botón de "Listo"
+    onRemoveService,
+    appointments,
+    onClose,
     flashCategory
 }: any) => {
 
-    // Helper para contar cuántas veces está seleccionado un servicio
     const getServiceCount = (serviceId: any) => {
         if (!appointments) return 0;
         return appointments.filter((a: any) => a.id === serviceId).length;
     };
 
     return (
-        <div className=" flex flex-col relative">
+        <div className="h-full flex flex-col relative bg-white dark:bg-gray-900">
 
-            {/* Header Sticky: Categorías */}
-            <div className="sticky top-0 bg-white dark:bg-gray-900 z-20 py-2 border-b border-gray-100 dark:border-gray-800 mb-2">
-                <div className="flex justify-start gap-2 pb-2 overflow-x-auto custom-scrollbar px-1">
+            {/* --- CATEGORÍAS (Igual que antes) --- */}
+            <div className="sticky top-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm z-20 py-3 border-b border-gray-100 dark:border-gray-800">
+                <div className="flex flex-wrap justify-center  items-center gap-2 my-2 overflow-x-auto custom-scrollbar">
                     <button
-                        className={`border px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors ${!selectedCategory ? 'bg-black text-white border-black' : 'dark:text-gray-300'}`}
+                        className={`border px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all ${!selectedCategory ? 'bg-black text-white border-black' : 'text-gray-600 border-gray-200'}`}
                         onClick={() => setSelectedCategory("")}
                     >
                         Todos
@@ -34,10 +34,10 @@ export const ServiceSelector = ({
                     {servicesCategories.map((cat: any) => (
                         <button
                             key={cat.id}
-                            className={`border px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors 
+                            className={`border px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all 
                                 ${selectedCategory === cat.id
                                     ? "bg-black text-white border-black"
-                                    : "hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"}`}
+                                    : "text-gray-600 border-gray-200 hover:bg-gray-50"}`}
                             onClick={() => setSelectedCategory(cat.id)}
                         >
                             {cat.name}
@@ -46,8 +46,8 @@ export const ServiceSelector = ({
                 </div>
             </div>
 
-            {/* Grid de Servicios */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 px-1">
+            {/* --- GRID DE SERVICIOS --- */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 pb-28">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {services
                         .filter((s: any) => !selectedCategory || s.categoryId === selectedCategory)
@@ -58,57 +58,68 @@ export const ServiceSelector = ({
                             return (
                                 <div
                                     key={ss.id}
-                                    className={`relative group border rounded-xl transition-all duration-200 overflow-hidden
-                                        ${flashCategory === ss.id ? 'ring-2 ring-black scale-95 bg-gray-50' : ''}
-                                        ${isSelected
-                                            ? 'border-black dark:border-white bg-gray-50 dark:bg-gray-800 shadow-md ring-1 ring-black/5 dark:ring-white/10'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 hover:shadow-sm bg-white dark:bg-gray-900'}
-                                    `}
+                                    // Quitamos el onClick del contenedor padre para evitar conflictos con los botones grandes
+                                    className={`
+            relative group flex flex-row items-center justify-between
+            border rounded-2xl p-0 h-32 overflow-hidden bg-white
+            transition-all duration-200 select-none
+            ${flashCategory === ss.id ? 'ring-2 ring-black bg-gray-50' : ''}
+            ${isSelected
+                                            ? 'border-black shadow-md ring-1 ring-black/5'
+                                            : 'border-gray-200 hover:border-gray-300'}
+        `}
                                 >
-                                    {/* Botón Principal (Añadir) */}
-                                    <button
+                                    {/* --- IZQUIERDA: INFORMACIÓN (Click aquí selecciona/agrega) --- */}
+                                    <div
                                         onClick={() => onAddService(ss)}
-                                        className="w-full text-left p-3 pb-8 h-full flex flex-col"
+                                        className="flex-1 flex flex-col justify-center h-full p-4 pr-2 cursor-pointer"
                                     >
-                                        <div className="font-bold text-sm truncate dark:text-white leading-tight mb-1">{ss.name}</div>
-                                        <div className="text-xs text-gray-500 font-medium">${ss.price}</div>
-                                    </button>
+                                        <h4 className={`text-sm font-bold leading-tight line-clamp-2 ${isSelected ? 'text-black' : 'text-gray-700'}`}>
+                                            {ss.name}
+                                        </h4>
+                                        <span className="text-xs text-gray-500 mt-1 font-medium">
+                                            ${ss.price}
+                                        </span>
+                                    </div>
 
-                                    {/* CONTROLES FLOTANTES (Solo aparecen si está seleccionado) */}
-                                    {isSelected && (
-                                        <div className="absolute bottom-0 left-0 w-full p-2 flex justify-between items-center bg-gray-100/80 dark:bg-gray-800/90 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 animate-in slide-in-from-bottom-2 fade-in">
-
-                                            {/* Botón Restar */}
+                                    {/* --- DERECHA: CONTROLES ASIDE (Verticales y Grandes) --- */}
+                                    {isSelected ? (
+                                        <div className="h-full w-14 bg-black text-white flex flex-col items-center justify-between py-2 animate-in slide-in-from-right-4 duration-200">
+                                            {/* Botón MÁS (Arriba) - Área táctil grande */}
                                             <button
                                                 onClick={(e) => {
-                                                    e.stopPropagation(); // Evita que se active el click de añadir
-                                                    onRemoveService(ss.id);
+                                                    e.stopPropagation();
+                                                    onAddService(ss);
                                                 }}
-                                                className="h-6 w-6 flex items-center justify-center bg-white dark:bg-gray-700 rounded-full shadow-sm border border-gray-200 dark:border-gray-600 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors"
+                                                className="flex-1 w-full flex items-center justify-center hover:bg-gray-800 active:bg-gray-700 transition-colors"
                                             >
-                                                <Minus size={14} />
+                                                <Plus size={20} strokeWidth={3} />
                                             </button>
 
-                                            {/* Contador Central */}
-                                            <span className="font-bold text-sm mx-2 dark:text-white">
+                                            {/* Contador (Centro) */}
+                                            <span className="text-sm font-bold tabular-nums py-1">
                                                 {count}
                                             </span>
 
-                                            {/* Botón Sumar (Pequeño visual) */}
+                                            {/* Botón MENOS (Abajo) - Área táctil grande */}
                                             <button
-                                                onClick={() => onAddService(ss)}
-                                                className="h-6 w-6 flex items-center justify-center bg-black text-white dark:bg-white dark:text-black rounded-full shadow-sm hover:scale-110 transition-transform"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onRemoveService(ss.id);
+                                                }}
+                                                className="flex-1 w-full flex items-center justify-center hover:bg-gray-800 active:bg-gray-700 transition-colors"
                                             >
-                                                <Plus size={14} />
+                                                <Minus size={20} strokeWidth={3} />
                                             </button>
                                         </div>
-                                    )}
-
-                                    {/* Badge de Cantidad (Esquina superior derecha) */}
-                                    {isSelected && (
-                                        <div className="absolute top-2 right-2 bg-black text-white text-[10px] font-bold h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center shadow-sm animate-bounce-short">
-                                            {count}
-                                        </div>
+                                    ) : (
+                                        /* Botón inicial de agregar (Grande y visible) */
+                                        <button
+                                            onClick={() => onAddService(ss)}
+                                            className="h-full w-12 flex items-center justify-center border-l border-gray-100 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-400 hover:text-black transition-colors"
+                                        >
+                                            <Plus size={24} />
+                                        </button>
                                     )}
                                 </div>
                             );
@@ -116,15 +127,19 @@ export const ServiceSelector = ({
                 </div>
             </div>
 
-            {/* Footer Flotante "LISTO" (Solo si se pasa onClose) */}
+            {/* --- BOTÓN FLOTANTE 'LISTO' --- */}
             {onClose && (
-                <div className="absolute bottom-4 left-0 w-full px-4 z-30">
+                <div className="fixed bottom-0 left-0 w-full p-4 bg-gradient-to-t from-white via-white to-transparent z-30 pointer-events-none flex justify-center">
                     <button
                         onClick={onClose}
-                        className="w-full py-3.5 bg-black text-white dark:bg-white dark:text-black rounded-xl font-bold shadow-xl hover:translate-y-[-2px] transition-all flex items-center justify-center gap-2"
+                        className="pointer-events-auto w-full max-w-md py-4 bg-black text-white text-sm font-bold rounded-2xl shadow-xl transform active:scale-95 transition-all flex items-center justify-center gap-3"
                     >
-                        <Check size={18} />
-                        Listo ({appointments ? appointments.length : 0})
+                        <span>Confirmar Servicios</span>
+                        {appointments && appointments.length > 0 && (
+                            <span className="bg-white text-black px-2 py-0.5 rounded-md text-xs">
+                                {appointments.length}
+                            </span>
+                        )}
                     </button>
                 </div>
             )}
