@@ -105,7 +105,6 @@ export const authOptions: NextAuthOptions = {
       },
 
       async authorize(credentials) {
-        debugger
         if (!credentials?.username || !credentials?.password) return null
 
         const business = await getBusiness()

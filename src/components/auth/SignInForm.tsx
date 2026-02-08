@@ -7,7 +7,7 @@ import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
 import { signIn } from "next-auth/react"
 import React, { useEffect, useState } from "react";
-import { getBusiness } from "@/lib/getBusiness";
+import { useBusiness } from "@/context/BusinessContext";
 
 
 export default function SignInForm() {
@@ -15,21 +15,12 @@ export default function SignInForm() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
-  const [business, setBusiness] = useState()
-
-  useEffect(() => {
-    const loadBusiness = async () => {
-      const rtnBusiness = await getBusiness();
-      setBusiness(rtnBusiness)
-    }
-    loadBusiness()
-  }, []);
+  const business = useBusiness()
 
   async function handleLogin(e: React.FormEvent) {
-    debugger
     e.preventDefault()
 
-    const slug = window.location.hostname.split(".")[0]
+    const slug = business?.slug
 
     const res = await signIn("credentials", {
       username,
@@ -44,10 +35,13 @@ export default function SignInForm() {
     <div className="flex flex-col flex-1 lg:w-1/2 w-full">
       <div className="w-full max-w-md sm:pt-10 mx-auto mb-5">
       </div>
-      <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
+      <div className="flex flex-col justify-start sm:justify-center items-center flex-1 w-full max-w-md mx-auto -500">
         <div>
           <div className="mb-5 sm:mb-8">
-            <h1 className="mb-2 font-semibold text-gray-800 text-title-sm text-center dark:text-white/90 sm:text-title-md border-r-red-400">
+            <div className="flex justify-center">
+              <img src={`/${business?.slug}/logo2.png`} alt="" className="h-60 w-60 justify-center lg:hidden " />
+            </div>
+            <h1 className="mb-2 font-semibold text-gray-800 text-title-sm text-center dark:text-white/90 sm:text-title-md ">
               Inicia Sesión
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -138,7 +132,7 @@ export default function SignInForm() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
+                {/* <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Checkbox checked={isChecked} onChange={setIsChecked} />
                     <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
@@ -151,7 +145,7 @@ export default function SignInForm() {
                   >
                     ¿Olvidaste tu contraseña?
                   </Link>
-                </div>
+                </div> */}
                 <div>
                   <Button className="w-full" size="sm">
                     Iniciar Sesión
@@ -160,7 +154,7 @@ export default function SignInForm() {
               </div>
             </form>
 
-            <div className="mt-5">
+            {/* <div className="mt-5">
               <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
                 ¿No tienes una cuenta? {""}
                 <Link
@@ -170,7 +164,7 @@ export default function SignInForm() {
                   Registrarse
                 </Link>
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
