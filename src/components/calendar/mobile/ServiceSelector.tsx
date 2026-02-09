@@ -129,7 +129,7 @@ export const ServiceSelector = ({
 
             {/* --- BOTÓN FLOTANTE 'LISTO' --- */}
             {onClose && (
-                <div className="fixed bottom-0 left-0 w-full p-4 bg-gradient-to-t from-white via-white to-transparent z-30 pointer-events-none flex justify-center">
+                <div className="fixed bottom-0 left-0 w-full p-4 bg-linear-to-t from-white via-white to-transparent z-30 pointer-events-none flex justify-center">
                     <button
                         onClick={onClose}
                         className="pointer-events-auto w-full max-w-md py-4 bg-black text-white text-sm font-bold rounded-2xl shadow-xl transform active:scale-95 transition-all flex items-center justify-center gap-3"

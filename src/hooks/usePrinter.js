@@ -182,7 +182,7 @@ export const usePrinter = () => {
                 .newline().newline().newline()
                 .cut().pulse();
 
-            // const result = printJob.encode();
+            const result = printJob.encode();
 
             // // Usar el endpoint 'out' de forma dinámica (como en tu test)
             // const interfaceData = currentDevice.configuration.interfaces[0];

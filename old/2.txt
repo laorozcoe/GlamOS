@@ -1,0 +1,369 @@
+
+//////////////////////
+// 🏢 NEGOCIOS (SALONES)
+//////////////////////
+model Business {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  phone     String?
+  email     String?
+  address   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  users             User[]
+  clients           Client[]
+  employees         Employee[]
+  services          Service[]
+  appointments      Appointment[]
+  payments          Payment[]
+  reviews           Review[]
+  loyaltyPoints     LoyaltyPoint[]
+  serviceCategories ServiceCategory[]
+  serviceExtras     ServiceExtra[]
+  sales             Sale[]
+  cashCloses        CashClose[]
+}
+
+//////////////////////
+// 👤 USUARIOS
+//////////////////////
+model User {
+  id         String   @id @default(uuid())
+  businessId String
+  name       String
+  lastName   String
+  email      String
+  password   String
+  role       Role     @default(RECEPTION)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id])
+  employee Employee?
+
+  @@unique([businessId, email])
+}
+
+enum Role {
+  ADMIN
+  RECEPTION
+  EMPLOYEE
+}
+
+model Sale {
+  id         String @id @default(uuid())
+  businessId String
+  folio      Int    @default(autoincrement()) // Ticket #1, #2...
+
+  // Relaciones
+  clientId      String? // Opcional para "Público General"
+  employeeId    String // Quién atendió/vendió
+  appointmentId String? @unique // Si viene de una cita, se liga aquí
+
+  // Totales
+  subtotal Float
+  tax      Float @default(0)
+  discount Float @default(0)
+  total    Float // Monto final a pagar
+
+  status    SaleStatus @default(COMPLETED)
+  createdAt DateTime   @default(now()) // HORA REAL DE LA VENTA
+  updatedAt DateTime   @updatedAt
+
+  business    Business     @relation(fields: [businessId], references: [id])
+  client      Client?      @relation(fields: [clientId], references: [id])
+  employee    Employee     @relation(fields: [employeeId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+
+  items    SaleItem[]
+  payments Payment[]
+}
+
+model SaleItem {
+  id          String  @id @default(uuid())
+  saleId      String
+  serviceId   String?
+  description String // Nombre del servicio al momento de la venta
+  price       Float // Precio histórico (por si el servicio sube luego)
+  quantity    Int     @default(1)
+
+  sale    Sale     @relation(fields: [saleId], references: [id])
+  service Service? @relation(fields: [serviceId], references: [id])
+}
+
+enum SaleStatus {
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+//////////////////////
+// 👩‍🎨 EMPLOYEEAS
+//////////////////////
+model Employee {
+  id         String   @id @default(uuid())
+  businessId String
+  userId     String   @unique
+  phone      String?
+  bio        String?
+  commission Float    @default(0.0)
+  rating     Float    @default(0.0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  business     Business      @relation(fields: [businessId], references: [id])
+  user         User          @relation(fields: [userId], references: [id])
+  appointments Appointment[]
+  reviews      Review[]
+  sales        Sale[]
+}
+
+//////////////////////
+// 👥 CLIENTES
+//////////////////////
+model Client {
+  id         String   @id @default(uuid())
+  businessId String
+  name       String
+  phone      String?
+  email      String?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  business      Business       @relation(fields: [businessId], references: [id])
+  appointments  Appointment[]
+  reviews       Review[]
+  loyaltyPoints LoyaltyPoint[]
+  sales         Sale[]
+
+  @@unique([businessId, phone])
+}
+
+//////////////////////
+// 💅 SERVICIOS
+//////////////////////
+model ServiceCategory {
+  id         String   @id @default(uuid())
+  businessId String
+  name       String // MANOS, PIES, CABELLO, DEPILACIÓN
+  order      Int?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  business Business  @relation(fields: [businessId], references: [id])
+  services Service[]
+}
+
+model Service {
+  id                String  @id @default(uuid())
+  businessId        String
+  categoryId        String
+  name              String // Manicura, Pedicura, Ondas
+  description       String?
+  descriptionTicket String? @db.VarChar(15)
+  duration          Int // minutos
+  price             Float
+
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  business Business        @relation(fields: [businessId], references: [id])
+  category ServiceCategory @relation(fields: [categoryId], references: [id])
+
+  appointmentServices AppointmentService[]
+  variants            ServiceVariant[]
+  saleItems           SaleItem[]
+}
+
+model ServiceVariant {
+  id        String  @id @default(uuid())
+  serviceId String
+  name      String // Corto, Largo, Manos, Pies
+  duration  Int // minutos
+  price     Float
+  active    Boolean @default(true)
+
+  service Service @relation(fields: [serviceId], references: [id])
+}
+
+model ServiceExtra {
+  id          String   @id @default(uuid())
+  businessId  String
+  name        String // Diseño por uña, Extralargo
+  priceMin    Float?
+  priceMax    Float?
+  durationMin Int?
+  durationMax Int?
+  createdAt   DateTime @default(now())
+
+  business          Business           @relation(fields: [businessId], references: [id])
+  appointmentExtras AppointmentExtra[]
+}
+
+// model Service {
+//   id                  String               @id @default(uuid())
+//   businessId          String
+//   name                String
+//   description         String?
+//   duration            Int // minutos
+//   price               Float
+//   category            String?
+//   active              Boolean              @default(true)
+//   createdAt           DateTime             @default(now())
+//   business            Business             @relation(fields: [businessId], references: [id])
+
+// }
+
+//////////////////////
+// 📅 CITAS
+//////////////////////
+
+model Appointment {
+  id            String            @id @default(uuid())
+  businessId    String
+  clientId      String?
+  employeeId    String
+  title         String
+  start         DateTime
+  end           DateTime
+  allDay        Boolean           @default(false)
+  status        AppointmentStatus @default(PENDING)
+  notes         String?
+  guestName     String?
+  guestPhone    String?
+  createdAt     DateTime          @default(now())
+  // FINANZAS (Resumen)
+  totalAmount   Float             @default(0) // El costo total del servicio (ej. $1000)
+  paymentStatus PaymentState      @default(UNPAID) // Estado general de la deuda
+  business      Business          @relation(fields: [businessId], references: [id])
+  client        Client?           @relation(fields: [clientId], references: [id])
+  employee      Employee          @relation(fields: [employeeId], references: [id])
+
+  services AppointmentService[]
+  payments Payment[]
+  sale     Sale?
+}
+
+enum PaymentState {
+  UNPAID // No ha pagado nada
+  PARTIALLY_PAID // Dio anticipo pero debe el resto
+  PAID // Pagado al 100%
+  REFUNDED // Se le devolvió el dinero
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+//////////////////////
+// 🔗 CITA - SERVICIOS
+//////////////////////
+model AppointmentService {
+  id            String @id @default(uuid())
+  appointmentId String
+  serviceId     String
+  price         Float
+
+  appointment       Appointment        @relation(fields: [appointmentId], references: [id])
+  service           Service            @relation(fields: [serviceId], references: [id])
+  appointmentExtras AppointmentExtra[]
+}
+
+model AppointmentExtra {
+  id                   String             @id @default(uuid())
+  appointmentServiceId String
+  extraId              String
+  quantity             Int                @default(1) // uñas
+  price                Float
+  duration             Int
+  appointmentService   AppointmentService @relation(fields: [appointmentServiceId], references: [id])
+  extra                ServiceExtra       @relation(fields: [extraId], references: [id])
+}
+
+//////////////////////
+// 💰 PAGOS
+//////////////////////
+model Payment {
+  id            String        @id @default(uuid())
+  appointmentId String?
+  saleId        String?
+  amount        Float // Cuánto pagó en ESTA transacción
+  method        PaymentMethod // CASH, CARD, TRANSFER, OTHER
+  status        PaymentStatus @default(COMPLETED) // COMPLETED, PENDING, REFUNDED
+  externalId    String? // ID de Stripe/PayPal o número de autorización de la terminal
+
+  createdAt DateTime @default(now())
+
+  // Relación inversa
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+  business    Business?   @relation(fields: [businessId], references: [id])
+  businessId  String?
+  sale        Sale        @relation(fields: [saleId], references: [id])
+}
+
+model CashClose {
+  id          String   @id @default(uuid())
+  businessId  String
+  userId      String // Quién cerró caja
+  openingDate DateTime
+  closingDate DateTime @default(now())
+
+  expectedCash Float // Lo que el sistema dice que hay
+  actualCash   Float // Lo que el humano contó
+  difference   Float // Faltante o sobrante
+
+  business Business @relation(fields: [businessId], references: [id])
+}
+
+// Tus Enums para controlar los tipos
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+//////////////////////
+// ⭐ RESEÑAS
+//////////////////////
+model Review {
+  id         String   @id @default(uuid())
+  businessId String
+  clientId   String
+  employeeId String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id])
+  client   Client   @relation(fields: [clientId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
+
+//////////////////////
+// 🎁 PUNTOS DE LEALTAD
+//////////////////////
+model LoyaltyPoint {
+  id         String   @id @default(uuid())
+  businessId String
+  clientId   String
+  points     Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id])
+  client   Client   @relation(fields: [clientId], references: [id])
+
+  @@unique([businessId, clientId])
+}
