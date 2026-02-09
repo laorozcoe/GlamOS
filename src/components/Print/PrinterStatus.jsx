@@ -34,7 +34,7 @@ export const PrinterStatus = ({ status, onConnect, openDrawer }) => {
                 onClick={openDrawer}
 
             >
-                <PanelTopOpen size={24} className={'text-green-500'} />
+                <PanelTopOpen size={24} className={config.color} />
             </button>
             {/* El Icono con tamaño definido */}
 
