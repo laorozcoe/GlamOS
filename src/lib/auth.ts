@@ -110,7 +110,7 @@ export const authOptions: NextAuthOptions = {
         const business = await getBusiness()
         if (!business) return null
 
-        const user = await getUserPrisma(credentials.username, business.id)
+        const user = await getUserPrisma(credentials.username.toLowerCase(), business.id)
         if (!user) return null
 
         const valid = await bcrypt.compare(credentials.password, user.password)

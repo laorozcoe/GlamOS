@@ -15,7 +15,7 @@ const Seed = async () => {
     // createServiceCategoryPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Cabello", 6, true)
     // createServiceCategoryPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Adicional", 7, true)
 
-    // createServicePrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "b91b795b-9beb-4bee-bacb-49ad8a46c75a", "Manicura básica", "", 60, 150.00)
+    //createServicePrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "b91b795b-9beb-4bee-bacb-49ad8a46c75a", "Retoque acrilico con efecto", "", 60, 465.00)
     // createServicePrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "b91b795b-9beb-4bee-bacb-49ad8a46c75a", "Shellac manos (solo esmaltado)", "", 30, 150.00)
     // createServicePrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "b91b795b-9beb-4bee-bacb-49ad8a46c75a", "Manicura + Shellac", "", 60, 250.00)
     // createServicePrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "b91b795b-9beb-4bee-bacb-49ad8a46c75a", "Rubber + Shellac", "", 30, 220.00)
@@ -45,64 +45,66 @@ const Seed = async () => {
     // createServicePrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "ff84a043-8d53-485e-b107-cb09dc92b0bf", "Planchado medio", "", 30, 165.00)
     // createServicePrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "ff84a043-8d53-485e-b107-cb09dc92b0bf", "Planchado largo", "", 30, 220.00)
 
-    const employees = [
-        {
-            user: {
-                name: "Ana",
-                lastName: "González",
-                email: "",
-                username: "agonzalez",
-                password: "password1",
-                role: "ADMIN",
-            },
-            employee: {
-                phone: "5551234567",
-                bio: "",
-                commission: 0.35,
-                rating: 4.8
-            }
-        },
-        {
-            user: {
-                name: "Doris",
-                lastName: "González",
-                email: "",
-                username: "dgonzalez",
-                password: "password1",
-                role: "ADMIN",
-            },
-            employee: {
-                phone: "5552345678",
-                bio: "",
-                commission: 0.4,
-                rating: 4.9
-            }
-        },
-        {
-            user: {
-                name: "Rubi",
-                lastName: "Ramos",
-                email: "",
-                username: "rramos",
-                password: "password1",
-                role: "ADMIN",
-            },
-            employee: {
-                phone: "5553456789",
-                bio: "",
-                commission: 0.45,
-                rating: 4.7
-            }
-        }
-    ]
+    // const employees = [
+    //     {
+    //         user: {
+    //             name: "Ana",
+    //             lastName: "González",
+    //             email: "",
+    //             username: "agonzalez",
+    //             password: "password1",
+    //             role: "ADMIN",
+    //         },
+    //         employee: {
+    //             phone: "5551234567",
+    //             bio: "",
+    //             commission: 0.35,
+    //             rating: 4.8
+    //         }
+    //     },
+    //     {
+    //         user: {
+    //             name: "Doris",
+    //             lastName: "González",
+    //             email: "",
+    //             username: "dgonzalez",
+    //             username: "dgonzalez",
+    //             password: "password1",
+    //             role: "ADMIN",
+    //         },
+    //         employee: {
+    //             phone: "5552345678",
+    //             bio: "",
+    //             commission: 0.4,
+    //             rating: 4.9
+    //         }
+    //     },
+    //     {
+    //         user: {
+    //             name: "Rubi",
+    //             lastName: "Ramos",
+    //             email: "",
+    //             username: "rramos",
+    //             username: "rramos",
+    //             password: "password1",
+    //             role: "ADMIN",
+    //         },
+    //         employee: {
+    //             phone: "5553456789",
+    //             bio: "",
+    //             commission: 0.45,
+    //             rating: 4.7
+    //         }
+    //     }
+    // ]
 
 
 
-    for (let i = 0; i < 5; i++) {
+    // for (let i = 0; i < 5; i++) {
 
-        const user = await createUserPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", employees[i].user.name, employees[i].user.lastName, employees[i].user.username, employees[i].user.email, employees[i].user.password, employees[i].user.role)
-        await createEmployeePrisma(user.businessId, user.id, employees[i].employee.phone, employees[i].employee.bio, employees[i].employee.commission, employees[i].employee.rating)
-    }
+    //     const user = await createUserPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", employees[i].user.name, employees[i].user.lastName, employees[i].user.username, employees[i].user.email, employees[i].user.password, employees[i].user.role)
+    //     await createEmployeePrisma(user.businessId, user.id, employees[i].employee.phone, employees[i].employee.bio, employees[i].employee.commission, employees[i].employee.rating)
+    // }
 
     return (
         <div>
