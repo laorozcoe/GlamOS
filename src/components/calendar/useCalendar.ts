@@ -7,7 +7,7 @@ import {
     getEmployeesPrisma, getServicesPrisma, getServicesCategoriesPrisma,
     getAppointmentsPrisma, createAppointment, updateAppointment,
     createClientPrisma, getClientPrisma, createPaymentPrisma,
-    createSalePrisma
+    createSalePrisma, deleteAppointmentPrisma
 } from "@/lib/prisma";
 
 export const useCalendarLogic = () => {
@@ -30,6 +30,7 @@ export const useCalendarLogic = () => {
     const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
     const [date, setDate] = useState("");
     const [time, setTime] = useState("");
+    const [timeEnd, setTimeEnd] = useState("");
 
     // Selecciones
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -160,16 +161,56 @@ export const useCalendarLogic = () => {
 
     // Agregar servicio al carrito
     const addServiceToCart = (service: any) => {
+        debugger
         setAppointments(prev => [...prev, service]);
 
         // Efecto visual flash
         setFlashCategory(service.id);
+
         setTimeout(() => setFlashCategory(null), 150);
+
+        // const startDateTime = new Date(`${date}T${time}:00`);
+        // const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
+        // const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
+
+        // const end = `${endDateTime.getHours() > 10 ? endDateTime.getHours() : "0" + endDateTime.getHours()}:${endDateTime.getMinutes() > 10 ? endDateTime.getMinutes() : "0" + endDateTime.getMinutes()}`
+        // setTimeEnd(end);
     };
 
     const removeServiceFromCart = (indexToDelete: number) => {
+        debugger
         setAppointments(prev => prev.filter((_, i) => i !== indexToDelete));
+        // const startDateTime = new Date(`${date}T${time}:00`);
+        // const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
+        // const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
+
+        // const end = `${endDateTime.getHours() > 10 ? endDateTime.getHours() : "0" + endDateTime.getHours()}:${endDateTime.getMinutes() > 10 ? endDateTime.getMinutes() : "0" + endDateTime.getMinutes()}`
+        // setTimeEnd(end);
     };
+
+    // 2. Agrega este useEffect que "escucha" los cambios
+    useEffect(() => {
+        // Si no hay hora o fecha, no calculamos nada
+        if (!date || !time) return;
+
+        const calculateEndTime = () => {
+            const startDateTime = new Date(`${date}T${time}:00`);
+
+            // Sumamos la duración de todos los servicios en el estado actual
+            const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
+
+            const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
+
+            // Formateo seguro usando padStart (corrige el bug del 10 que se convierte en 010)
+            const hours = String(endDateTime.getHours()).padStart(2, '0');
+            const minutes = String(endDateTime.getMinutes()).padStart(2, '0');
+
+            setTimeEnd(`${hours}:${minutes}`);
+        };
+
+        calculateEndTime();
+
+    }, [appointments, date, time]); // <--- Se ejecuta cuando cualquiera de estos cambia
 
     // Guardar / Actualizar
     const handleSaveOrUpdate = async () => {
@@ -394,11 +435,26 @@ export const useCalendarLogic = () => {
         }
     };
 
+    const onDelete = async () => {
+        debugger;
+        if (!selectedEvent) return;
+        try {
+            await deleteAppointmentPrisma(selectedEvent.id);
+            closeModal();
+            resetModalFields();
+            const newEvents = await getAppointmentsPrisma(business?.id);
+            setEvents(newEvents);
+        } catch (error) {
+            console.error("Error eliminando cita:", error);
+            alert("Ocurrió un error al eliminar la cita.");
+        }
+    };
+
     return {
         calendarRef,
         isOpen, openModal, closeModal,
         employees, services, servicesCategories, events,
-        date, setDate, time, setTime,
+        date, setDate, time, setTime, timeEnd, setTimeEnd,
         selectedEvent, selectedCategory, setSelectedCategory,
         selectedEmployee, setSelectedEmployee,
         appointments, addServiceToCart, removeServiceFromCart,
@@ -408,6 +464,7 @@ export const useCalendarLogic = () => {
         showPayModal, setShowPayModal,
         handleNewEventButton, handleDateClick, handleEventClick,
         handleSaveOrUpdate, handleFinalizePayment,
-        showSaleDetails, setShowSaleDetails, // <--- Exportar nuevo estado
+        showSaleDetails, setShowSaleDetails,
+        onDeleteAppointment: onDelete
     };
 };

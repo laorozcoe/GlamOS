@@ -79,6 +79,8 @@ const Calendar: React.FC = () => {
         onDeleteService={logic.removeServiceFromCart}
         onSave={logic.handleSaveOrUpdate}
         onOpenPay={() => logic.setShowPayModal(true)}
+        onDeleteAppointment={logic.onDeleteAppointment}
+        timeEnd={logic.timeEnd} setTimeEnd={logic.setTimeEnd}
       />
 
       {/* MODAL DE PAGO */}

@@ -5,6 +5,8 @@ import Select from "@/components/form/Select";
 import InputField from '@/components/form/input/InputField';
 import { ServiceSelector } from "@/components/calendar/mobile/ServiceSelector"; // Tu nuevo componente
 import { ServiceModal } from "@/components/calendar/mobile/ServiceModal";       // Tu nuevo submodal
+import Button from "../ui/button/Button";
+import { Trash } from 'lucide-react';
 
 interface BookingModalProps {
     isOpen: boolean;
@@ -23,11 +25,13 @@ interface BookingModalProps {
     handleChangeCustomer: (e: any) => void;
     date: string; setDate: (v: string) => void;
     time: string; setTime: (v: string) => void;
+    timeEnd: string; setTimeEnd: (v: string) => void;
     paymentStatus?: string; // <--- NUEVO
     // Carrito
     appointments: any[];
     onAddService: (s: any) => void;
     onDeleteService: (idx: number) => void;
+    onDeleteAppointment: () => void;
     total: number;
     flashCategory: string | null;
 
@@ -45,7 +49,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
         customer, handleChangeCustomer,
         date, setDate, time, setTime,
         appointments, onDeleteService, total,
-        onSave, onOpenPay
+        onSave, onOpenPay, onDeleteAppointment, timeEnd, setTimeEnd
     } = props;
 
     const handleRemoveInstance = (serviceId: any) => {
@@ -67,6 +71,12 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
         value: e.id,
         label: `${e.user.name} ${e.user.lastName}`
     }));
+
+    const onDelete = () => {
+        onDeleteAppointment();
+        setIsDeleteModalOpen(false);
+    }
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     return (
         <>
@@ -109,11 +119,11 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="text-sm font-bold block mb-1">Teléfono</label>
+                                        <label className="text-sm block mb-1"><span className="font-bold">Cliente: </span><span>Teléfono</span></label>
                                         <InputField name="phone" value={customer.phone} type="number" onChange={handleChangeCustomer} />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-bold block mb-1">Nombre</label>
+                                        <label className="text-sm block mb-1"><span className="font-bold">Cliente: </span><span>Nombre</span></label>
                                         <InputField name="name" value={customer.name} onChange={handleChangeCustomer} />
                                     </div>
                                 </div>
@@ -162,10 +172,20 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
 
                         {/* Fecha y Hora (Solo Desktop - en movil ya lo pusimos arriba) */}
                         <div className="p-5 border-b border-gray-200 dark:border-gray-700 hidden sm:block">
-                            <h3 className="font-bold mb-2 text-gray-800 dark:text-white">Fecha y Hora</h3>
-                            <div className="grid grid-cols-2 gap-2">
-                                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="border p-2 rounded w-full text-sm" />
-                                <input type="time" value={time} onChange={e => setTime(e.target.value)} className="border p-2 rounded w-full text-sm" />
+
+                            <div className="grid grid-cols-3 gap-2">
+                                <div>
+                                    <h3 className="font-bold mb-2 text-gray-800 dark:text-white">Fecha</h3>
+                                    <input type="date" value={date} onChange={e => setDate(e.target.value)} className="border p-2 rounded w-full text-sm" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold mb-2 text-gray-800 dark:text-white">Inicio</h3>
+                                    <input type="time" value={time} onChange={e => setTime(e.target.value)} className="border p-2 rounded w-full text-sm" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold mb-2 text-gray-800 dark:text-white">Fin</h3>
+                                    <input type="time" value={timeEnd} onChange={e => setTimeEnd(e.target.value)} className="border p-2 rounded w-full text-sm" />
+                                </div>
                             </div>
                         </div>
 
@@ -204,6 +224,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     <span className="text-2xl font-black text-gray-900">${total}</span>
                                 </div>
                                 <div className="flex gap-2">
+                                    {isEditing ? <Button onClick={() => setIsDeleteModalOpen(true)}><Trash /></Button> : <></>}
                                     <button onClick={onSave} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black">
                                         {isEditing ? "Actualizar" : "Agendar"}
                                     </button>
@@ -233,6 +254,29 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                 appointments={appointments}       // <--- Lista actual
                 onRemoveService={handleRemoveInstance} // <--- Función para restar
             />
+            <Modal
+                className="max-w-6xl  bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+                isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
+                {/* HEADER */}
+                <div className="flex-none px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center">
+                    <div>
+                        <h5 className="text-xl font-bold text-gray-800 dark:text-white">
+                            Elimiar registro
+                        </h5>
+                        <p className="text-sm text-gray-500 hidden sm:block">¿Estás seguro de eliminar la cita?</p>
+                    </div>
+                </div>
+
+                <div className="p-4 bg-white border-t border-gray-200 shadow-sm safe-area-pb">
+
+                    <div className="flex gap-2">
+                        <button onClick={onDelete} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black">
+                            Eliminar
+                        </button>
+
+                    </div>
+                </div>
+            </Modal >
 
         </>
     );

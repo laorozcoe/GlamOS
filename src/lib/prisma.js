@@ -146,6 +146,19 @@ export async function updateAppointment(payload, appointmentId) {
     revalidatePath("/calendar");
 }
 
+export async function deleteAppointmentPrisma(appointmentId) {
+    // Validación básica
+    if (!appointmentId) throw new Error("Se requiere el ID de la cita para eliminar");
+
+    await prisma.appointment.delete({
+        where: {
+            id: appointmentId
+        },
+    });
+
+    revalidatePath("/calendar");
+}
+
 //--------------------------------------------------------------------------------
 //-------------------------Seed-------------------------------------
 //--------------------------------------------------------------------------------
