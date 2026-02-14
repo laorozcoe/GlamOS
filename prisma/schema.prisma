@@ -87,6 +87,7 @@ model Employee {
   appointments Appointment[]
   reviews      Review[]
   sales        Sale[]
+  clients      Client[]
 }
 
 //////////////////////
@@ -100,8 +101,10 @@ model Client {
   email      String?
   notes      String?
   createdAt  DateTime @default(now())
+  employeeId String?
 
   business      Business       @relation(fields: [businessId], references: [id])
+  employee      Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
   appointments  Appointment[]
   reviews       Review[]
   loyaltyPoints LoyaltyPoint[]

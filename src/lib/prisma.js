@@ -561,7 +561,7 @@ export async function deleteUserPrisma(id, businessId) {
 //-------------------------User-------------------------------------
 //--------------------------------------------------------------------------------
 
-export async function createClientPrisma(businessId, name, phone, email, notes) {
+export async function createClientPrisma(businessId, name, phone, email, notes, employeeId) {
 
     if (name == '' || phone == '') return
     // 1. VALIDACIÓN: Buscar si ya existe un cliente con ese teléfono en ese negocio
@@ -589,7 +589,8 @@ export async function createClientPrisma(businessId, name, phone, email, notes) 
             name,
             phone,
             email,
-            notes
+            notes,
+            employeeId
         },
     });
 
@@ -602,6 +603,19 @@ export async function getClientPrisma(businessId, phone) {
             businessId: businessId,
             phone: phone,
         },
+        include: {
+            employee: {
+                include: {
+                    user: {
+                        select: {
+                            name: true,
+                            lastName: true,
+                            email: true,
+                        },
+                    },
+                }
+            },
+        }
     })
 
     return client
@@ -612,12 +626,25 @@ export async function getClientsPrisma(businessId) {
         where: {
             businessId: businessId,
         },
+        include: {
+            employee: {
+                include: {
+                    user: {
+                        select: {
+                            name: true,
+                            lastName: true,
+                            email: true,
+                        },
+                    },
+                }
+            },
+        }
     })
 
     return clients
 }
 
-export async function updateClientPrisma(id, businessId, name, phone, email, notes) {
+export async function updateClientPrisma(id, businessId, name, phone, email, notes, employeeId) {
     const client = await prisma.client.update({
         where: {
             id: id,
@@ -627,7 +654,8 @@ export async function updateClientPrisma(id, businessId, name, phone, email, not
             name,
             phone,
             email,
-            notes
+            notes,
+            employeeId
         },
     })
 

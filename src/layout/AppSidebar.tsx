@@ -26,7 +26,7 @@ type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  subItems?: { name: string; path: string; pro?: boolean; new?: boolean, icon: React.ReactNode; }[];
 };
 
 const navItems: NavItem[] = [
@@ -35,21 +35,13 @@ const navItems: NavItem[] = [
     name: "Agenda",
     path: "/calendar",
   },
-  {
-    icon: <UserCircleIcon />, // Más intuitivo para personas/clientes
-    name: "Clientes",
-    path: "/customers",
-  },
+
   {
     icon: <PieChartIcon />, // Ideal para métricas de ventas y dinero
     name: "Ventas",
     path: "/sales",
   },
-  {
-    icon: <Sparkles />, // Ideal para métricas de ventas y dinero
-    name: "Servicios",
-    path: "/services",
-  },
+
   // {
   //   icon: <GridIcon />,
   //   name: "Dashboard",
@@ -61,11 +53,20 @@ const navItems: NavItem[] = [
   //   path: "/profile",
   // },
 
-  // {
-  //   name: "Forms",
-  //   icon: <ListIcon />,
-  //   subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
-  // },
+  {
+    name: "Catalogos",
+    icon: <ListIcon />,
+    subItems: [{
+      icon: <Sparkles />, // Ideal para métricas de ventas y dinero
+      name: "Servicios",
+      path: "/services",
+    },
+    {
+      icon: <UserCircleIcon />, // Más intuitivo para personas/clientes
+      name: "Clientes",
+      path: "/customers",
+    }],
+  },
   // {
   //   name: "Tables",
   //   icon: <TableIcon />,
@@ -82,34 +83,34 @@ const navItems: NavItem[] = [
 ];
 
 const othersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
-    ],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
-    ],
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
-    ],
-  },
+  // {
+  //   icon: <PieChartIcon />,
+  //   name: "Charts",
+  //   subItems: [
+  //     { name: "Line Chart", path: "/line-chart", pro: false },
+  //     { name: "Bar Chart", path: "/bar-chart", pro: false },
+  //   ],
+  // },
+  // {
+  //   icon: <BoxCubeIcon />,
+  //   name: "UI Elements",
+  //   subItems: [
+  //     { name: "Alerts", path: "/alerts", pro: false },
+  //     { name: "Avatar", path: "/avatars", pro: false },
+  //     { name: "Badge", path: "/badge", pro: false },
+  //     { name: "Buttons", path: "/buttons", pro: false },
+  //     { name: "Images", path: "/images", pro: false },
+  //     { name: "Videos", path: "/videos", pro: false },
+  //   ],
+  // },
+  // {
+  //   icon: <PlugInIcon />,
+  //   name: "Authentication",
+  //   subItems: [
+  //     { name: "Sign In", path: "/signin", pro: false },
+  //     { name: "Sign Up", path: "/signup", pro: false },
+  //   ],
+  // },
 ];
 
 const AppSidebar: React.FC = () => {
@@ -206,6 +207,7 @@ const AppSidebar: React.FC = () => {
                         : "menu-dropdown-item-inactive"
                         }`}
                     >
+                      {subItem.icon}
                       {subItem.name}
                       <span className="flex items-center gap-1 ml-auto">
                         {subItem.new && (
