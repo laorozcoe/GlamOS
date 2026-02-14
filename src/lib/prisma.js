@@ -295,13 +295,14 @@ export async function deleteServiceCategoryPrisma(id, businessId) {
 //-------------------------Service-------------------------------------
 //--------------------------------------------------------------------------------
 
-export async function createServicePrisma(businessId, categoryId, name, description, duration, price) {
+export async function createServicePrisma(businessId, categoryId, name, description, descriptionTicket, duration, price) {
     const service = await prisma.service.create({
         data: {
             businessId,
             categoryId,
             name,
             description,
+            descriptionTicket,
             duration,
             price
         },
@@ -345,7 +346,7 @@ export async function getServicesByCategoryPrisma(businessId, categoryId) {
     return servicesCategories
 }
 
-export async function updateServicePrisma(id, businessId, categoryId, name, description, duration, price) {
+export async function updateServicePrisma(id, businessId, categoryId, name, description, descriptionTicket, duration, price) {
     const service = await prisma.service.update({
         where: {
             id: id,
@@ -355,6 +356,7 @@ export async function updateServicePrisma(id, businessId, categoryId, name, desc
         data: {
             name,
             description,
+            descriptionTicket,
             duration,
             price
         },

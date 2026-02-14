@@ -2,31 +2,11 @@
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import React, { useState, useEffect } from 'react';
 import Button from '@/components/ui/button/Button'; // Asumo que este es tu componente
-import { getServicesCategoriesPrisma, getServicesPrisma } from '@/lib/prisma';
+import { getServicesCategoriesPrisma, getServicesPrisma, createServiceCategoryPrisma, updateServiceCategoryPrisma, deleteServiceCategoryPrisma, createServicePrisma, updateServicePrisma, deleteServicePrisma } from '@/lib/prisma';
 import { useBusiness } from '@/context/BusinessContext';
 import { Pencil, X, Clock, DollarSign } from 'lucide-react'; // Agregué iconos útiles
 import Select from '@/components/form/Select';
 import { Modal } from '@/components/ui/modal';
-
-// // Componente simple de Modal interno para no crear archivos extra por ahora
-// const Modal = ({ isOpen, onClose, title, children }) => {
-//     if (!isOpen) return null;
-//     return (
-//         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-//             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-//                 <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-800">
-//                     <h3 className="font-semibold text-lg">{title}</h3>
-//                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-//                         <X size={20} />
-//                     </button>
-//                 </div>
-//                 <div className="p-5">
-//                     {children}
-//                 </div>
-//             </div>
-//         </div>
-//     );
-// };
 
 export default function ServicesAdmin() {
     const [activeCategory, setActiveCategory] = useState(null); // Inicializar como null
@@ -36,32 +16,34 @@ export default function ServicesAdmin() {
 
     // Estados para los Modales
     const [isCatModalOpen, setIsCatModalOpen] = useState(false);
+    const [openDeleteCategory, setOpenDeleteCategory] = useState(false);
+    const [openDeleteService, setOpenDeleteService] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
 
     const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
     const [editingService, setEditingService] = useState(null);
 
-    useEffect(() => {
-        const fetchServiceCategories = async () => {
-            // debugger
-            const data = await getServicesCategoriesPrisma(bussiness.id);
-            const serviceCategoriesMap = data.map(item => ({
-                ...item,
-                value: item.id,
-                label: item.name
-            }));
-            setServiceCategories(serviceCategoriesMap);
+    const fetchServiceCategories = async () => {
+        // debugger
+        const data = await getServicesCategoriesPrisma(bussiness.id);
+        const serviceCategoriesMap = data.map(item => ({
+            ...item,
+            value: item.id,
+            label: item.name
+        }));
+        setServiceCategories(serviceCategoriesMap);
 
-            // Seleccionar la primera categoría por defecto si existe
-            if (serviceCategoriesMap.length > 0 && !activeCategory) {
-                handleCategoryClick(serviceCategoriesMap[0]);
-            }
-        };
+        // Seleccionar la primera categoría por defecto si existe
+        if (serviceCategoriesMap.length > 0 && !activeCategory) {
+            handleCategoryClick(serviceCategoriesMap[0]);
+        }
+    };
+    useEffect(() => {
+
         fetchServiceCategories();
     }, [bussiness.id]);
 
     const handleCategoryClick = async (category) => {
-        // debugger
         const servicesData = await getServicesPrisma(bussiness.id, category.id);
         setActiveCategory(category);
         setServices(servicesData);
@@ -74,10 +56,34 @@ export default function ServicesAdmin() {
         setIsCatModalOpen(true);
     };
 
-    const saveCategory = () => {
+    const saveCategory = async () => {
+        debugger
         console.log("Guardando categoría:", editingCategory);
         // Aquí iría tu llamada a la Server Action o API
+        if (editingCategory.id) {
+            updateServiceCategoryPrisma(editingCategory.id, bussiness.id, editingCategory.name, editingCategory.order, editingCategory.active);
+        } else {
+            createServiceCategoryPrisma(bussiness.id, editingCategory.name, editingCategory.order, editingCategory.active);
+        }
+
+        fetchServiceCategories();
         setIsCatModalOpen(false);
+    };
+
+    const saveService = async () => {
+        debugger
+        console.log("Guardando servicio:", editingService);
+        // Aquí iría tu llamada a la Server Action o API
+        if (editingService.id) {
+            updateServicePrisma(editingService.id, bussiness.id, editingService.categoryId, editingService.name, editingService.description, editingService.descriptionTicket, editingService.duration, editingService.price);
+        } else {
+            createServicePrisma(bussiness.id, editingService.categoryId, editingService.name, editingService.description, editingService.descriptionTicket, editingService.duration, editingService.price);
+        }
+        if (activeCategory.id) {
+            const servicesData = await getServicesPrisma(bussiness.id, activeCategory.id);
+            setServices(servicesData);
+        }
+        setIsServiceModalOpen(false);
     };
 
     // --- LÓGICA SERVICIOS ---
@@ -90,7 +96,7 @@ export default function ServicesAdmin() {
         // Inicializa un servicio vacío basado en tu esquema
         setEditingService({
             name: '',
-            price: 0,
+            price: 1,
             duration: 30,
             description: '',
             descriptionTicket: '',
@@ -99,10 +105,39 @@ export default function ServicesAdmin() {
         setIsServiceModalOpen(true);
     }
 
-    const saveService = () => {
-        console.log("Guardando servicio:", editingService);
+    const handleNewCategoryClick = () => {
+        setEditingCategory({
+            name: '',
+        });
+        setIsCatModalOpen(true);
+    }
+
+
+
+    const deleteService = async () => {
+        debugger
+        console.log("Eliminando servicio:", editingService);
+        deleteServicePrisma(editingService.id, bussiness.id);
         // Aquí iría tu llamada a la Server Action o API
+        const servicesData = await getServicesPrisma(bussiness.id, activeCategory.id);
+        setServices(servicesData);
+        setEditingService(null);
+        // setActiveCategory(null);
         setIsServiceModalOpen(false);
+        setOpenDeleteService(false);
+
+    };
+
+    const deleteCategory = async () => {
+        debugger
+        console.log("Eliminando categoría:", editingCategory);
+        deleteServiceCategoryPrisma(editingCategory.id, bussiness.id);
+        // Aquí iría tu llamada a la Server Action o API
+        fetchServiceCategories();
+        setEditingCategory(null);
+        setActiveCategory(null);
+        setIsCatModalOpen(false);
+        setOpenDeleteCategory(false);
     };
 
     return (
@@ -110,7 +145,7 @@ export default function ServicesAdmin() {
             <PageBreadcrumb pageTitle="Servicios" />
             <div className="min-h-full rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/3 xl:px-10 xl:py-12">
                 <div className="flex justify-center sm:justify-end gap-2 mb-5">
-                    <Button variant="outline">Nueva Categoría</Button>
+                    <Button onClick={handleNewCategoryClick} variant="outline">Nueva Categoría</Button>
                     <Button onClick={handleNewServiceClick}>Nuevo Servicio</Button>
                 </div>
 
@@ -138,7 +173,7 @@ export default function ServicesAdmin() {
                                         {/* Botón Lápiz */}
                                         <button
                                             onClick={(e) => handleEditCategoryClick(e, category)}
-                                            className="p-1.5 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-100 transition-all opacity-0 group-hover:opacity-100"
+                                            className="p-1.5 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-100 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
                                             title="Editar categoría"
                                         >
                                             <Pencil size={14} />
@@ -169,7 +204,7 @@ export default function ServicesAdmin() {
                                     <div className="flex items-center justify-between mb-6">
                                         <h2 className="text-xl font-bold text-gray-800">Servicios: {activeCategory.name}</h2>
                                         {/* Opción para editar la categoría activa desde el título */}
-                                        <button onClick={(e) => handleEditCategoryClick(e, activeCategory)} className="text-gray-400 hover:text-blue-600">
+                                        <button onClick={(e) => handleEditCategoryClick(e, activeCategory)} className="text-gray-400 hover:text-blue-600 sm:hidden cursor-pointer">
                                             <Pencil size={18} />
                                         </button>
                                     </div>
@@ -214,14 +249,14 @@ export default function ServicesAdmin() {
             {/* --- MODAL EDITAR CATEGORÍA --- */}
             <Modal
                 isOpen={isCatModalOpen}
-                onClose={() => setIsCatModalOpen(false)}
+                onClose={() => { setIsCatModalOpen(false); setEditingCategory(null) }}
                 title={editingCategory?.id ? "Editar Categoría" : "Nueva Categoría"}
-                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 w-auto max-w-md"
+                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
             >
 
                 <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full overflow-hidden">
-                    <div className="flex justify-between items-center px-4 pb-4 border-b border-gray-200 dark:border-gray-800">
-                        <h3 className="font-semibold text-lg">{editingCategory?.id ? "Editar Categoría" : "Nueva Categoría"}</h3>
+                    <div className="flex justify-between items-center px-4 pb-4 sm:pb-8 border-b border-gray-200 dark:border-gray-800">
+                        <h3 className="font-semibold text-lg sm:text-xl">{editingCategory?.id ? "Editar Categoría" : "Nueva Categoría"}</h3>
                     </div>
                     <div className="p-5 space-y-4">
                         <div>
@@ -234,7 +269,7 @@ export default function ServicesAdmin() {
                             />
                         </div>
                         <div className="flex justify-end pt-2 gap-5">
-                            <Button onClick={saveCategory} variant="outline">Eliminar</Button>
+                            {editingCategory?.id && <Button onClick={deleteCategory} variant="outline">Eliminar</Button>}
                             <Button onClick={saveCategory}>Guardar Cambios</Button>
                         </div>
                     </div>
@@ -246,24 +281,34 @@ export default function ServicesAdmin() {
 
             <Modal
                 isOpen={isServiceModalOpen}
-                onClose={() => setIsServiceModalOpen(false)}
+                onClose={() => { setIsServiceModalOpen(false); setEditingService(null) }}
                 title={editingService?.id ? "Editar Servicio" : "Nuevo Servicio"}
-                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 w-auto max-w-md"
+                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
             >
 
                 <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full overflow-hidden">
-                    <div className="flex justify-between items-center px-4 pb-4 border-b border-gray-200 dark:border-gray-800">
-                        <h3 className="font-semibold text-lg">Nombre del Servicio</h3>
+                    <div className="flex justify-between items-center px-4 pb-4 sm:pb-8 border-b border-gray-200 dark:border-gray-800">
+                        <h3 className="font-semibold text-lg sm:text-xl">{editingService?.id ? "Editar Servicio" : "Nuevo Servicio"}</h3>
                     </div>
                     <div className="p-5 space-y-4">
                         {/* Nombre */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1"></label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
                             <input
                                 type="text"
                                 className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 value={editingService?.name || ''}
                                 onChange={(e) => setEditingService({ ...editingService, name: e.target.value })}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Categorías</label>
+                            <Select
+                                options={serviceCategories}
+                                placeholder="Seleccionar..."
+                                value={activeCategory?.id || ""}
+                                onChange={(e) => setEditingService({ ...editingService, categoryId: e.target.value })}
                             />
                         </div>
 
@@ -276,7 +321,7 @@ export default function ServicesAdmin() {
                                     <input
                                         type="number"
                                         className="w-full rounded-lg border border-gray-300 pl-7 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        value={editingService?.price || 0}
+                                        value={editingService?.price || ""}
                                         onChange={(e) => setEditingService({ ...editingService, price: parseFloat(e.target.value) })}
                                     />
                                 </div>
@@ -287,7 +332,7 @@ export default function ServicesAdmin() {
                                 <input
                                     type="number"
                                     className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={editingService?.duration || 0}
+                                    value={editingService?.duration || ""}
                                     onChange={(e) => setEditingService({ ...editingService, duration: parseInt(e.target.value) })}
                                 />
                             </div>
@@ -316,12 +361,62 @@ export default function ServicesAdmin() {
                         </div>
 
                         <div className="flex justify-end pt-2 gap-5">
-                            <Button onClick={saveCategory} variant="outline">Eliminar</Button>
+                            {editingService?.id && <Button onClick={() => setOpenDeleteService(true)} variant="outline">Eliminar</Button>}
                             <Button onClick={saveService}>Guardar Servicio</Button>
                         </div>
                     </div>
                 </div>
             </Modal>
+
+            <Modal
+                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
+                isOpen={openDeleteCategory} onClose={() => setOpenDeleteCategory(false)}
+            >
+                {/* HEADER */}
+                <div className="flex-none px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center">
+                    <div>
+                        <h5 className="text-xl font-bold text-gray-800 dark:text-white">
+                            Elimiar
+                        </h5>
+                        <p className="text-sm text-gray-500 hidden sm:block">¿Estás seguro de eliminar?</p>
+                    </div>
+                </div>
+
+                <div className="p-4 bg-white border-t border-gray-200 shadow-sm safe-area-pb">
+
+                    <div className="flex gap-2">
+                        <button onClick={deleteService} className="flex-1 py-3 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-700">
+                            Eliminar
+                        </button>
+
+                    </div>
+                </div>
+            </Modal >
+
+            <Modal
+                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
+                isOpen={openDeleteService} onClose={() => setOpenDeleteService(false)}
+            >
+                {/* HEADER */}
+                <div className="flex-none px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center">
+                    <div>
+                        <h5 className="text-xl font-bold text-gray-800 dark:text-white">
+                            Elimiar
+                        </h5>
+                        <p className="text-sm text-gray-500 hidden sm:block">¿Estás seguro de eliminar?</p>
+                    </div>
+                </div>
+
+                <div className="p-4 bg-white border-t border-gray-200 shadow-sm safe-area-pb">
+
+                    <div className="flex gap-2">
+                        <button onClick={deleteService} className="flex-1 py-3 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-700">
+                            Eliminar
+                        </button>
+
+                    </div>
+                </div>
+            </Modal >
         </div>
     );
 }

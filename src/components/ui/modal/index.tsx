@@ -52,7 +52,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   const contentClasses = isFullscreen
     ? "w-full h-full"
-    : "relative w-full rounded-3xl bg-white  dark:bg-gray-900";
+    : "relative w-11/12 rounded-3xl bg-white  dark:bg-gray-900";
   return (
     <div className="fixed inset-0 flex items-center justify-center overflow-hidden modal z-99999"> {/* Cambié overflow-y-auto a overflow-hidden aquí también para evitar doble scroll en mobile */}
       {!isFullscreen && (

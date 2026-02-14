@@ -18,6 +18,8 @@ import {
   UserCircleIcon,
 } from "../icons/index";
 import { useBusiness } from "@/context/BusinessContext";
+import { Sparkles } from 'lucide-react';
+
 // import SidebarWidget from "./SidebarWidget";
 
 type NavItem = {
@@ -44,7 +46,7 @@ const navItems: NavItem[] = [
     path: "/sales",
   },
   {
-    icon: <PieChartIcon />, // Ideal para métricas de ventas y dinero
+    icon: <Sparkles />, // Ideal para métricas de ventas y dinero
     name: "Servicios",
     path: "/services",
   },
@@ -111,7 +113,7 @@ const othersItems: NavItem[] = [
 ];
 
 const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded, isMobileOpen, isHovered, setIsHovered, toggleMobileSidebar } = useSidebar();
   const pathname = usePathname();
   const business = useBusiness();
 
@@ -160,6 +162,12 @@ const AppSidebar: React.FC = () => {
                 href={nav.path}
                 className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
                   }`}
+                onClick={() => {
+                  if (isMobileOpen) toggleMobileSidebar()
+                  // Si tienes una función específica para cerrar, úsala aquí
+                  // Ejemplo: setIsMobileOpen(false) o toggleSidebar()
+                  // if (isMobileOpen) setIsMobileOpen(false); 
+                }}
               >
                 <span
                   className={`${isActive(nav.path)
