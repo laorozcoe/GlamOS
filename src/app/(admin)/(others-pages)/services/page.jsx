@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '@/components/ui/button/Button';
 import { getServicesCategoriesPrisma, getServicesPrisma } from '@/lib/prisma';
 import { useBusiness } from '@/context/BusinessContext';
+import { Pencil } from 'lucide-react';
 
 
 export default function ServicesAdmin() {
@@ -34,12 +35,8 @@ export default function ServicesAdmin() {
             <PageBreadcrumb pageTitle="Servicios" />
             <div className="min-h-full rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/3 xl:px-10 xl:py-12">
                 <div className="flex justify-end gap-2 mb-5">
-                    <Button variant="outline" >
-                        + Nueva Categoría
-                    </Button>
-                    <Button >
-                        + Nuevo Servicio
-                    </Button>
+                    <Button variant="outline" >Nueva Categoría</Button>
+                    <Button >Nuevo Servicio</Button>
                 </div>
                 <div className="max-w-7xl mx-auto min-h-full flex flex-col">
 
@@ -49,9 +46,15 @@ export default function ServicesAdmin() {
                             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Categorías</h2>
                             <nav className="flex-1 flex flex-col gap-1 overflow-y-auto space-y-1">
                                 {serviceCategories.map((category) => (
-                                    <Button key={category.id} variant={activeCategory.id === category.id ? "primary" : "outline"} onClick={() => handleCategoryClick(category)} >
+
+                                    <Button ket={category.id} className="relative" variant={activeCategory.id === category.id ? "primary" : "outline"} onClick={() => handleCategoryClick(category)} >
                                         {category.name}
+                                        <Button variant={"outline"} className="absolute right-2" onClick={() => alert("hola")} >
+                                            <Pencil size={11} />
+                                        </Button>
                                     </Button>
+
+
                                 ))}
                             </nav>
                         </div>
