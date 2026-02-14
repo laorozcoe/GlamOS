@@ -5,6 +5,7 @@ import Button from '@/components/ui/button/Button';
 import { getServicesCategoriesPrisma, getServicesPrisma } from '@/lib/prisma';
 import { useBusiness } from '@/context/BusinessContext';
 import { Pencil } from 'lucide-react';
+import Select from '@/components/form/Select';
 
 
 export default function ServicesAdmin() {
@@ -16,9 +17,15 @@ export default function ServicesAdmin() {
 
     useEffect(() => {
         const fetchServiceCategories = async () => {
+            debugger
             const serviceCategories = await getServicesCategoriesPrisma(bussiness.id);
             console.log(serviceCategories);
-            setServiceCategories(serviceCategories);
+            const serviceCategoriesMap = serviceCategories.map(item => ({
+                ...item,
+                value: item.id,
+                label: item.name
+            }))
+            setServiceCategories(serviceCategoriesMap);
         };
         fetchServiceCategories();
     }, []);
@@ -34,15 +41,13 @@ export default function ServicesAdmin() {
         <div>
             <PageBreadcrumb pageTitle="Servicios" />
             <div className="min-h-full rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/3 xl:px-10 xl:py-12">
-                <div className="flex justify-end gap-2 mb-5">
+                <div className="flex justify-center sm:justify-end gap-2 mb-5">
                     <Button variant="outline" >Nueva Categoría</Button>
                     <Button >Nuevo Servicio</Button>
                 </div>
                 <div className="max-w-7xl mx-auto min-h-full flex flex-col">
-
-                    <div className="flex flex-1 gap-6 overflow-hidden">
-
-                        <div className="w-64 bg-white rounded-lg border border-gray-200 p-4 flex flex-col h-full">
+                    <div className="flex flex-wrap flex-1 gap-6 overflow-hidden">
+                        <div className="w-64 bg-white rounded-lg border border-gray-200 p-4 sm:flex flex-col h-full hidden">
                             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Categorías</h2>
                             <nav className="flex-1 flex flex-col gap-1 overflow-y-auto space-y-1">
                                 {serviceCategories.map((category) => (
@@ -58,7 +63,20 @@ export default function ServicesAdmin() {
                                 ))}
                             </nav>
                         </div>
-                        <div className="flex-1 rounded-lg border border-gray-200 p-6 overflow-y-auto ">
+                        <div className="contents sm:hidden">
+                            <label>Categorias</label>
+                            <Select options={serviceCategories}
+                                placeholder="Seleccionar..."
+                                value={activeCategory?.id || activeCategory || ""}
+                                onChange={(val) => {
+                                    const category = serviceCategories.find((e) => String(e.id) === val);
+                                    handleCategoryClick(category);
+                                }}
+                            />
+                        </div>
+
+                        <div className="flex-1 rounded-lg border border-gray-200 p-6 overflow-y-auto relative">
+                            <Pencil size={16} className="absolute right-5" />
                             <h2 className="text-lg font-semibold text-gray-800 mb-4">Servicios {activeCategory.name}</h2>
                             <div className='flex gap-5 flex-wrap'>
                                 {services.filter(service => service.categoryId === activeCategory.id).map(service => (
@@ -66,7 +84,7 @@ export default function ServicesAdmin() {
                                         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
                                             <div className="flex justify-between items-start mb-2 gap-2">
                                                 <h3 className="font-semibold text-gray-800">{service.name}</h3>
-                                                <span className={`bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full`}>X</span>
+                                                {/* <span className={`bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full`}>X</span> */}
                                             </div>
                                             {/* <p className="text-sm text-g ray-500 mb-3 ">Aplicación de esmalte en gel con duración de 21 días.</p> */}
                                             <div className="flex justify-between items-center text-sm">
