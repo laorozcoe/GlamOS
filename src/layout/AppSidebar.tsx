@@ -43,6 +43,11 @@ const navItems: NavItem[] = [
     name: "Ventas",
     path: "/sales",
   },
+  {
+    icon: <PieChartIcon />, // Ideal para métricas de ventas y dinero
+    name: "Servicios",
+    path: "/services",
+  },
   // {
   //   icon: <GridIcon />,
   //   name: "Dashboard",

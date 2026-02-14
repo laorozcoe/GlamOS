@@ -106,6 +106,42 @@ export async function getAppointmentsPrisma(businessId) {
     return appointment
 }
 
+
+export async function getAppointmentsByDatePrisma(businessId, start) {
+
+    const startDate = new Date(`${start}T00:00:00.000Z`);
+    const endDate = new Date(`${start}T23:59:59.999Z`);
+    const appointment = await prisma.appointment.findMany({
+        where: { businessId: businessId, start: { gte: startDate }, end: { lte: endDate } },
+        include: {
+            employee: {
+                include: {
+                    user: {
+                        select: {
+                            name: true,
+                            lastName: true,
+                            email: true,
+                        },
+                    },
+                }
+            },
+            client: true,
+            services: {
+                include: {
+                    service: true,
+                    appointmentExtras: {
+                        include: {
+                            extra: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+
+    return appointment
+}
+
 export async function updateAppointment(payload, appointmentId) {
     // Validación básica
     if (!appointmentId) throw new Error("Se requiere el ID de la cita para actualizar");
@@ -845,4 +881,53 @@ export async function deleteSaleItemPrisma(businessId, id) {
     })
 
     return saleItem
+}
+
+//--------------------------------------------------------------------------------
+//-------------------------Review-------------------------------------
+//--------------------------------------------------------------------------------  
+
+export async function createReviewPrisma(businessId, clientId, rating, comment) {
+    const review = await prisma.review.create({
+        data: {
+            businessId, clientId, rating, comment
+        },
+    })
+
+    return review
+}
+
+export async function getReviewPrisma(businessId, id) {
+    const review = await prisma.review.findFirst({
+        where: {
+            id: id,
+            businessId: businessId,
+        },
+    })
+
+    return review
+}
+
+export async function updateReviewPrisma(id, businessId, clientId, rating, comment) {
+    const review = await prisma.review.update({
+        where: {
+            id: id,
+        },
+        data: {
+            businessId, clientId, rating, comment
+        },
+    })
+
+    return review
+}
+
+export async function deleteReviewPrisma(businessId, id) {
+    const review = await prisma.review.delete({
+        where: {
+            id: id,
+            businessId: businessId,
+        },
+    })
+
+    return review
 }

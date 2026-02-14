@@ -7,7 +7,8 @@ import {
     getEmployeesPrisma, getServicesPrisma, getServicesCategoriesPrisma,
     getAppointmentsPrisma, createAppointment, updateAppointment,
     createClientPrisma, getClientPrisma, createPaymentPrisma,
-    createSalePrisma, deleteAppointmentPrisma
+    createSalePrisma, deleteAppointmentPrisma,
+    getAppointmentsByDatePrisma
 } from "@/lib/prisma";
 
 export const useCalendarLogic = () => {
@@ -31,6 +32,7 @@ export const useCalendarLogic = () => {
     const [date, setDate] = useState("");
     const [time, setTime] = useState("");
     const [timeEnd, setTimeEnd] = useState("");
+    const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
 
     // Selecciones
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -450,6 +452,17 @@ export const useCalendarLogic = () => {
         }
     };
 
+    const handleUpdateDate = async (days: number) => {
+        debugger;
+        const newDate = new Date(currentDate);
+        newDate.setDate(newDate.getDate() + days);
+        setCurrentDate(newDate.toISOString().split('T')[0]);
+
+
+        const rtnAppoin = await getAppointmentsByDatePrisma(business?.id, newDate.toISOString().split('T')[0]);
+        setEvents(rtnAppoin);
+    };
+
     return {
         calendarRef,
         isOpen, openModal, closeModal,
@@ -459,7 +472,7 @@ export const useCalendarLogic = () => {
         selectedEmployee, setSelectedEmployee,
         appointments, addServiceToCart, removeServiceFromCart,
         customer, handleChangeCustomer,
-        total,
+        total, currentDate, setCurrentDate, handleUpdateDate,
         flashCategory,
         showPayModal, setShowPayModal,
         handleNewEventButton, handleDateClick, handleEventClick,
