@@ -61,7 +61,6 @@ export default function WebUsbPrinter({ ticketData }) {
             setError('');
             return true;
         } catch (err) {
-            debugger;
             console.error("Error de conexión:", err);
             if (err.name === 'SecurityError') {
                 setPrinterError("Acceso denegado: Cambia el driver a WinUSB con Zadig.");

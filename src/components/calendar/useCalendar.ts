@@ -54,7 +54,6 @@ export const useCalendarLogic = () => {
         const loadCatalogs = async () => {
             if (!business?.id) return;
             try {
-                debugger
                 const [emp, srv, cats, evts] = await Promise.all([
                     getEmployeesPrisma(business.id),
                     getServicesPrisma(business.id),
@@ -104,37 +103,46 @@ export const useCalendarLogic = () => {
         openModal();
     };
 
-    const handleDateClick = (arg: any) => {
+    const handleDateClick = (employee: any, timeString: string) => {
+        // const handleDateClick = (arg: any) => {
         resetModalFields();
-        const start = arg.date;
-        const yyyy = start.getFullYear();
-        const mm = String(start.getMonth() + 1).padStart(2, '0');
-        const dd = String(start.getDate()).padStart(2, '0');
-        const hh = String(start.getHours()).padStart(2, '0');
-        const min = String(start.getMinutes()).padStart(2, '0');
+        // const start = arg.date;
+        // const yyyy = start.getFullYear();
+        // const mm = String(start.getMonth() + 1).padStart(2, '0');
+        // const dd = String(start.getDate()).padStart(2, '0');
+        // const hh = String(start.getHours()).padStart(2, '0');
+        // const min = String(start.getMinutes()).padStart(2, '0');
 
-        setDate(`${yyyy}-${mm}-${dd}`);
-        setTime(`${hh}:${min}`);
+        // setDate(`${yyyy}-${mm}-${dd}`);
+        // setTime(`${hh}:${min}`);
+        setDate(currentDate);
+        setTime(timeString);
+        setSelectedEmployee(employee);
+
         openModal();
     };
 
-    const handleEventClick = (clickInfo: any) => {
-        debugger
-        const event = clickInfo.event;
+    const handleEventClick = (event: any) => {
+        // const handleEventClick = (clickInfo: any) => {
+        // const event = clickInfo.event;
 
         // 1. Recuperar info básica
         setSelectedEvent(event); // Guardamos el evento original de FullCalendar
 
 
-        const status = event.extendedProps.paymentStatus; // Asegúrate que tu Prisma traiga esto
+        // const status = event.extendedProps.paymentStatus; // Asegúrate que tu Prisma traiga esto
+        const status = event.paymentStatus; // Asegúrate que tu Prisma traiga esto
         if (status === "PAID") {
             setShowSaleDetails(true);
         } else {
 
-            setSelectedEmployee(event.extendedProps.employee);
+            // setSelectedEmployee(event.extendedProps.employee);
+            setSelectedEmployee(event.employee);
             setCustomer({
-                name: event.extendedProps.guestName,
-                phone: event.extendedProps.guestPhone
+                // name: event.extendedProps.guestName,
+                name: event.guestName,
+                // phone: event.extendedProps.guestPhone
+                phone: event.guestPhone
             });
 
             // 2. Hidratar fechas
@@ -149,7 +157,8 @@ export const useCalendarLogic = () => {
             }
 
             // 3. Hidratar servicios (Recuperar del catálogo o usar backup)
-            const appointmentServices = event.extendedProps.services || [];
+            // const appointmentServices = event.extendedProps.services || [];
+            const appointmentServices = event.services || [];
             const currentCatalog = servicesRef.current;
 
             const fullServices = appointmentServices.map((apptService: any) => {
@@ -165,7 +174,6 @@ export const useCalendarLogic = () => {
 
     // Agregar servicio al carrito
     const addServiceToCart = (service: any) => {
-        debugger
         setAppointments(prev => [...prev, service]);
 
         // Efecto visual flash
@@ -182,7 +190,6 @@ export const useCalendarLogic = () => {
     };
 
     const removeServiceFromCart = (indexToDelete: number) => {
-        debugger
         setAppointments(prev => prev.filter((_, i) => i !== indexToDelete));
         // const startDateTime = new Date(`${date}T${time}:00`);
         // const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
@@ -218,7 +225,6 @@ export const useCalendarLogic = () => {
 
     // Guardar / Actualizar
     const handleSaveOrUpdate = async () => {
-        debugger
         if (!time || !date) return alert("Ingresa fecha y hora");
         if (appointments.length === 0) return alert("Ingresa un servicio");
         if (selectedEmployee?.id == "" || selectedEmployee?.id == null) return alert("Selecciona un empleado");
@@ -440,7 +446,6 @@ export const useCalendarLogic = () => {
     };
 
     const onDelete = async () => {
-        debugger;
         if (!selectedEvent) return;
         try {
             await deleteAppointmentPrisma(selectedEvent.id);
@@ -455,7 +460,6 @@ export const useCalendarLogic = () => {
     };
 
     const handleUpdateDate = async (days: number) => {
-        debugger;
         const newDate = new Date(currentDate);
         newDate.setDate(newDate.getDate() + days);
         setCurrentDate(newDate.toISOString().split('T')[0]);

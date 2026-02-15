@@ -10,7 +10,6 @@ export const usePrinter = () => {
 
     // Función de conexión robusta
     const connectToDevice = async (usbDevice) => {
-        debugger
         setStatus('connecting');
         try {
             await usbDevice.open();
@@ -36,7 +35,6 @@ export const usePrinter = () => {
 
     // 1. Auto-conexión: Busca en TODOS los dispositivos permitidos
     const autoConnect = async () => {
-        debugger
         if (!navigator.usb) return;
         const devices = await navigator.usb.getDevices();
 
@@ -73,7 +71,6 @@ export const usePrinter = () => {
     }, [device]);
 
     const requestPrinter = async () => {
-        debugger
         try {
             const selectedDevice = await navigator.usb.requestDevice({ filters: [] });
             return await connectToDevice(selectedDevice);
@@ -120,7 +117,6 @@ export const usePrinter = () => {
 
 
     const printTicket = async (ticketData) => {
-        debugger
         setIsPrinting(true);
         setPrinterError('');
 
@@ -203,7 +199,7 @@ export const usePrinter = () => {
 
     // --- FUNCIÓN SOLO ABRIR CAJA ---
     const openDrawer = async () => {
-        // debugger; // Descomenta si necesitas depurar
+        ; // Descomenta si necesitas depurar
         setIsPrinting(true);
         setPrinterError('');
 

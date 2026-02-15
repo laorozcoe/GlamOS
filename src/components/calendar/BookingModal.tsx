@@ -96,13 +96,13 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                 </div>
 
                 {/* BODY CONTAINER */}
-                <div className="flex-1 flex flex-col sm:flex-row overflow-hidden">
+                <div className="flex flex-col sm:flex-row overflow-hidden">
 
                     {/* COLUMNA IZQUIERDA (Inputs + Servicios en Desktop) */}
-                    <div className="w-full sm:w-8/12 flex flex-col h-full overflow-hidden bg-white dark:bg-gray-900">
+                    <div className="w-full sm:w-8/12 flex flex-col h-auto sm:h-full overflow-hidden bg-white dark:bg-gray-900">
 
                         {/* 1. SECCION FORMULARIO (Scrollable) */}
-                        <div className="p-6 overflow-y-auto flex-none sm:flex-1">
+                        <div className="p-6 overflow-y-hidden flex-none sm:flex-1">
                             {/* Inputs Empleado / Cliente */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
@@ -169,7 +169,6 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
 
                     {/* COLUMNA DERECHA (Resumen / Carrito) */}
                     <div className="w-full sm:w-4/12 h-auto sm:h-full bg-gray-50 dark:bg-gray-800/50 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-gray-700 flex flex-col max-h-[50vh] sm:max-h-full">
-
                         {/* Fecha y Hora (Solo Desktop - en movil ya lo pusimos arriba) */}
                         <div className="p-5 border-b border-gray-200 dark:border-gray-700 hidden sm:block">
 

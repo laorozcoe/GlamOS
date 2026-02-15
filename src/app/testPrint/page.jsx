@@ -180,7 +180,6 @@ export default function WebUsbPrinter() {
     //     console.log(device);
     //     // Esta función busca dispositivos ya permitidos
     //     const autoConnect = async () => {
-    //         debugger
 
     //         // getDevices() devuelve una lista de dispositivos con permiso previo
     //         const devices = await navigator.usb.getDevices();

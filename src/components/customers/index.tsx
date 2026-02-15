@@ -117,7 +117,6 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
     };
 
     const deleteCustomer = async () => {
-        debugger
         console.log("Eliminando cliente", customerToEdit);
         await deleteClientPrisma(customerToEdit?.id, business?.id)
         setCustomerToEdit(null);

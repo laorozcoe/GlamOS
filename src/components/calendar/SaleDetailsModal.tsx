@@ -15,9 +15,11 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     // Extraer datos del evento (ExtendedProps de FullCalendar)
     const {
         guestName, guestPhone, paymentStatus, services, totalAmount, notes
-    } = event.extendedProps;
+        // } = event.extendedProps;
+    } = event;
 
-    const employeeName = event.extendedProps.employee?.user?.name || "Sin asignar";
+    const employeeName = event.employee?.user?.name || "Sin asignar";
+    // const employeeName = event.extendedProps.employee?.user?.name || "Sin asignar";
 
     // Formatear Fecha
     const dateStr = event.start?.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });

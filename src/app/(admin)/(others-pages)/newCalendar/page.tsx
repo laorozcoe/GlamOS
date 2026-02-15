@@ -1,4 +1,7 @@
 "use client"
+import { BookingModal } from "@/components/calendar/BookingModal";
+import { PaymentModal } from "@/components/calendar/PaymentModal";
+import { SaleDetailsModal } from "@/components/calendar/SaleDetailsModal";
 import { useCalendarLogic } from "@/components/calendar/useCalendar";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import InputField from "@/components/form/input/InputField";
@@ -71,7 +74,6 @@ const formatTime = (dateInput: any) => {
 
 // --- HELPER PARA POSICIONAR ---
 const getPositionStyles = (startTimeString: any, durationMinutes: any) => {
-    debugger
     const [hours, minutes] = startTimeString.split(':').map(Number);
 
     // 1. Calcular cuántos minutos han pasado desde el inicio del calendario (9:00 AM)
@@ -86,7 +88,6 @@ const getPositionStyles = (startTimeString: any, durationMinutes: any) => {
 };
 
 const getDurationInMinutes = (start: any, end: any) => {
-    debugger
     // 1. Asegurarnos de que ambas variables sean objetos Date
     const startDate = new Date(start);
     const endDate = new Date(end);
@@ -108,7 +109,7 @@ export default function CalendarGrid() {
     const logic = useCalendarLogic();
     return (
 
-        <div>
+        <>
             <PageBreadcrumb pageTitle="Calendario" />
             <div className="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/3 xl:px-10 xl:py-12">
                 {/* HEADER */}
@@ -132,6 +133,7 @@ export default function CalendarGrid() {
                     <div className="relative min-h-[640px]"> {/* Altura mínima para que no se corte */}
 
                         {/* 1. GRILLA DE FONDO (Horas y Medias Horas) */}
+                        {/* 1. GRILLA DE FONDO (Horas y Medias Horas) */}
                         {hours.map((hour) => (
                             <div key={hour} className="flex border-b border-gray-100" style={{ height: `${HOUR_HEIGHT}px` }}>
 
@@ -140,9 +142,31 @@ export default function CalendarGrid() {
                                     <span className=" bg-gray-50 px-1">{hour}:00</span>
                                 </div>
 
-                                {/* Columnas de Fondo */}
+                                {/* Columnas de Fondo (Celdas Vacías) */}
                                 {logic.employees.map((employee) => (
-                                    <div key={employee.id} className="flex-1 border-r border-gray-100 relative last:border-r-0">
+                                    <div
+                                        key={employee.id}
+                                        // 1. Agregamos cursor pointer y hover para indicar que es clickeable
+                                        className="flex-1 border-r border-gray-100 relative last:border-r-0 cursor-pointer hover:bg-blue-50/30 transition-colors"
+                                        // 2. Aquí está la magia del Click
+                                        onClick={(e) => {
+                                            // Obtenemos la altura del click relativo a este div
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            const y = e.clientY - rect.top; // Posición Y dentro de la celda (0 a 80px)
+
+                                            // Si el click fue más abajo de la mitad (40px), son las :30, si no, :00
+                                            const isHalfHour = y > (HOUR_HEIGHT / 2);
+                                            const minutes = isHalfHour ? '30' : '00';
+
+                                            // Formateamos la hora para que se vea bonita (ej. 09:30)
+                                            const formattedHour = hour.toString().padStart(2, '0');
+                                            const timeString = `${formattedHour}:${minutes}`;
+
+                                            logic.handleDateClick(employee, timeString);
+
+                                            alert(`📅 Nueva Cita\n👤 Estilista: ${employee.user.name}\n⏰ Hora: ${timeString}`);
+                                        }}
+                                    >
                                         {/* LÍNEA DE MEDIA HORA (Dashed) */}
                                         <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-200 pointer-events-none"></div>
                                     </div>
@@ -174,7 +198,7 @@ export default function CalendarGrid() {
                                                         left: "0%",    // 0% o 50% según el empalme
                                                         zIndex: 10         // Para que quede encima de las líneas
                                                     }}
-                                                    onClick={() => alert(`Click en ${event.title}`)}
+                                                    onClick={() => logic.handleEventClick(event)}
                                                 >
                                                     <div className="font-bold">{event.title}</div>
                                                     <div className="opacity-80">{formatTime(event.start)} - {getDurationInMinutes(event.start, event.end)}m</div>
@@ -184,10 +208,54 @@ export default function CalendarGrid() {
                                 </div>
                             ))}
                         </div>
-
                     </div>
                 </div>
             </div>
-        </div>
+            {/* MODAL DE AGENDA */}
+            <BookingModal
+                isOpen={logic.isOpen}
+                onClose={logic.closeModal}
+                isEditing={!!logic.selectedEvent}
+
+                // Data Passing
+                employees={logic.employees}
+                services={logic.services}
+                servicesCategories={logic.servicesCategories}
+                appointments={logic.appointments}
+                total={logic.total}
+                paymentStatus={logic.selectedEvent?.extendedProps?.paymentStatus || "UNPAID"}
+
+                // State Passing
+                date={logic.date} setDate={logic.setDate}
+                time={logic.time} setTime={logic.setTime}
+                customer={logic.customer} handleChangeCustomer={logic.handleChangeCustomer}
+                selectedEmployee={logic.selectedEmployee} setSelectedEmployee={logic.setSelectedEmployee}
+                selectedCategory={logic.selectedCategory} setSelectedCategory={logic.setSelectedCategory}
+                flashCategory={logic.flashCategory}
+
+                // Action Passing
+                onAddService={logic.addServiceToCart}
+                onDeleteService={logic.removeServiceFromCart}
+                onSave={logic.handleSaveOrUpdate}
+                onOpenPay={() => logic.setShowPayModal(true)}
+                onDeleteAppointment={logic.onDeleteAppointment}
+                timeEnd={logic.timeEnd} setTimeEnd={logic.setTimeEnd}
+            />
+
+            {/* MODAL DE PAGO */}
+            <PaymentModal
+                isOpen={logic.showPayModal}
+                onClose={() => logic.setShowPayModal(false)}
+                total={logic.total}
+                onFinalize={logic.handleFinalizePayment}
+            />
+
+            {/* NUEVO: MODAL DE DETALLE DE VENTA (Solo se abre si ESTÁ pagado) */}
+            <SaleDetailsModal
+                isOpen={logic.showSaleDetails}
+                onClose={() => logic.setShowSaleDetails(false)}
+                event={logic.selectedEvent}
+            />
+        </>
     );
 };

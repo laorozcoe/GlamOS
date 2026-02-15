@@ -39,7 +39,6 @@ export async function createAppointment(payload) {
 }
 
 export async function getAppointmentPrisma(businessId, id) {
-    debugger
     const appointment = await prisma.appointment.findFirst({
         where: {
             businessId: businessId,
