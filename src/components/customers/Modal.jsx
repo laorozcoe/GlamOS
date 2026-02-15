@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, User, Mail, Phone, FileText } from 'lucide-react';
 import Button from '@/components/ui/button/Button'; // Tu componente de botón
 import Select from '@/components/form/Select';
+import { Modal } from '@/components/ui/modal';
 
-export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit, employees }) {
+export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit, employees, handleDeleteCustomer }) {
 
     // Estado inicial del formulario
     const initialFormState = {
@@ -48,32 +49,22 @@ export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit,
         });
     };
 
-    if (!isOpen) return null;
-
     return (
-        // Overlay (Fondo oscuro)
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-
-            {/* Contenedor del Modal */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 dark:border-gray-800 animate-in zoom-in-95 duration-200">
-
-                {/* --- HEADER --- */}
-                <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+        <Modal
+            isOpen={isOpen} onClose={onClose}
+            // onClose={() => { setIsServiceModalOpen(false); setEditingService(null) }}
+            title={customerToEdit?.id ? "Editar Cliente" : "Nuevo Cliente"}
+            className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
+        >
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full overflow-hidden">
+                <div className="flex justify-between items-center px-4 pb-4 sm:pb-8 border-b border-gray-200 dark:border-gray-800">
+                    {/* <h3 className="">{editingService?.id ? "Editar Servicio" : "Nuevo Servicio"}</h3> */}
+                    <h3 className="font-semibold text-lg sm:text-xl">
                         {customerToEdit ? 'Editar Cliente' : 'Nuevo Cliente'}
                     </h3>
-                    <button
-                        onClick={onClose}
-                        className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500"
-                    >
-                        <X size={20} />
-                    </button>
                 </div>
-
                 {/* --- BODY (FORMULARIO) --- */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-
-
+                <form onSubmit={handleSubmit} className="p-5 space-y-4">
                     {/* Nombre */}
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -130,7 +121,12 @@ export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit,
                             name="employeeId"
                             placeholder="Selecciona un empleado"
                             value={formData.employeeId}
-                            onChange={handleChange}
+                            onChange={(val) => {
+                                setFormData({
+                                    ...formData,
+                                    employeeId: val
+                                })
+                            }}
                             options={employees.map(employee => ({
                                 value: employee.id,
                                 label: employee.user.name + ' ' + employee.user.lastName
@@ -155,17 +151,45 @@ export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit,
 
                     {/* --- FOOTER (BOTONES) --- */}
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800 mt-2">
-                        <Button variant="outline" type="button" onClick={onClose}>
-                            Cancelar
+                        <Button
+                            type="button"
+                            onClick={handleDeleteCustomer}
+                            variant="outline"
+                            className="flex items-center gap-2"
+                        >
+                            Eliminar
                         </Button>
                         <Button type="submit" className="flex items-center gap-2">
-                            <Save size={16} />
                             {customerToEdit ? 'Guardar Cambios' : 'Crear Cliente'}
                         </Button>
                     </div>
 
                 </form>
             </div>
-        </div>
+        </Modal>
+
+
+        // // Overlay (Fondo oscuro)
+        // <Modal isOpen={isOpen} onClose={onClose} className="">
+
+        //     {/* Contenedor del Modal */}
+        //     <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full overflow-hidden border border-gray-100 dark:border-gray-800 animate-in zoom-in-95 duration-200">
+
+        //         {/* --- HEADER --- */}
+        //         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
+        //             <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+        //                 {customerToEdit ? 'Editar Cliente' : 'Nuevo Cliente'}
+        //             </h3>
+        //             <button
+        //                 onClick={onClose}
+        //                 className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500"
+        //             >
+        //                 <X size={20} />
+        //             </button>
+        //         </div>
+
+        //         
+        //     </div>
+        // </Modal>
     );
 }

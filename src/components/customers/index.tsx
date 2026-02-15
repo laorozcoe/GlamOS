@@ -5,6 +5,14 @@ import TableMobile from "@/components/customers/TableMobile";
 import Badge from "../ui/badge/Badge";
 import Pagination from "@/components/tables/Pagination"; // Asumiendo que lo guardaste aquí
 import Moddal from "@/components/customers/Modal";
+import { Modal } from "@/components/ui/modal";
+import { createClientPrisma, updateClientPrisma, deleteClientPrisma } from "@/lib/prisma";
+import { useBusiness } from "@/context/BusinessContext";
+import { useRouter } from "next/navigation";
+
+// createClientPrisma(businessId, name, phone, email, notes, employeeId)
+// updateClientPrisma(id, businessId, name, phone, email, notes, employeeId) 
+// deleteClientPrisma(id, businessId) 
 
 // Definimos la interfaz basada en tu esquema de Prisma
 interface Client {
@@ -41,10 +49,17 @@ interface CustomerTableProps {
 }
 
 export default function CustomerTable({ customers, employees }: CustomerTableProps) {
+    const router = useRouter();
+
+    const handleRefresh = () => {
+        router.refresh();
+    };
+    const business = useBusiness();
     const [isMobile, setIsMobile] = useState(false);
     // 1. Estados
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [customerToEdit, setCustomerToEdit] = useState(null); // null = Crear nuevo
+    const [customerToEdit, setCustomerToEdit] = useState<Client | null>(null); // null = Crear nuevo
+    const [openDeleteCustomer, setOpenDeleteCustomer] = useState(false);
 
     useEffect(() => {
         const handleResize = () => {
@@ -75,7 +90,7 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
     };
 
     // Abrir modal para EDITAR (Esta se la pasas a la Tabla y al MobileList)
-    const handleEditClient = (customer: any) => {
+    const handleEditClient = (customer: Client) => {
         setCustomerToEdit(customer); // Cargamos los datos
         setIsModalOpen(true);
     };
@@ -85,19 +100,36 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
         if (formData.id) {
             // Lógica de UPDATE (PUT)
             console.log("Actualizando cliente:", formData);
+            updateClientPrisma(formData.id, business?.id, formData.name, formData.phone, formData.email, formData.notes, formData.employeeId)
         } else {
             // Lógica de CREATE (POST)
             console.log("Creando cliente:", formData);
+            createClientPrisma(business?.id, formData.name, formData.phone, formData.email, formData.notes, formData.employeeId)
         }
-
+        handleRefresh()
         setIsModalOpen(false); // Cerramos modal
         // refreshData(); // Recargar la lista
+    };
+
+    const handleDeleteCustomer = () => {
+        console.log("Eliminando cliente", customerToEdit);
+        setOpenDeleteCustomer(true);
+    };
+
+    const deleteCustomer = async () => {
+        debugger
+        console.log("Eliminando cliente", customerToEdit);
+        await deleteClientPrisma(customerToEdit?.id, business?.id)
+        setCustomerToEdit(null);
+        setIsModalOpen(false)
+        handleRefresh()
+        setOpenDeleteCustomer(false);
     };
 
     return (
         <>
             <div className="mb-6 flex flex-wrap justify-center sm:justify-between items-center">
-                <button className="bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                <button onClick={handleNewClient} className="bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer">
                     Nuevo Cliente
                 </button>
                 <div className="flex flex-wrap justify-center sm:justify-between items-center px-4 py-3 gap-2">
@@ -133,7 +165,33 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
                 onSave={handleSaveCustomer}
                 customerToEdit={customerToEdit}
                 employees={employees}
+                handleDeleteCustomer={handleDeleteCustomer}
             />
+
+            <Modal
+                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
+                isOpen={openDeleteCustomer} onClose={() => setOpenDeleteCustomer(false)}
+            >
+                {/* HEADER */}
+                <div className="flex-none px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center">
+                    <div>
+                        <h5 className="text-xl font-bold text-gray-800 dark:text-white">
+                            Elimiar
+                        </h5>
+                        <p className="text-sm text-gray-500 hidden sm:block">¿Estás seguro de eliminar?</p>
+                    </div>
+                </div>
+
+                <div className="p-4 bg-white border-t border-gray-200 shadow-sm safe-area-pb">
+
+                    <div className="flex gap-2">
+                        <button onClick={deleteCustomer} className="flex-1 py-3 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-700">
+                            Eliminar
+                        </button>
+
+                    </div>
+                </div>
+            </Modal >
 
             {/* Footer con Paginación */}
 
