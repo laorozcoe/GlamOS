@@ -76,8 +76,8 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                     <div className="flex items-center gap-3">
                         {/* Botón Back solo en móvil si no estamos en la primera tab */}
                         <button
-                            className={`sm:hidden p-1 -ml-2 text-gray-500 ${mobileTab === 'info' ? 'hidden' : ''}`}
-                            onClick={() => setMobileTab(mobileTab === 'summary' ? 'services' : 'info')}
+                            className={`sm:hidden p-1 -ml-2 text-gray-500 ${mobileTab === 'services' ? 'hidden' : ''}`}
+                            onClick={() => setMobileTab(mobileTab === 'summary' ? 'info' : 'services')}
                         >
                             <ChevronLeft />
                         </button>
@@ -86,8 +86,8 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                 {isEditing ? "Editar Cita" : "Nueva Cita"}
                             </h5>
                             <p className="text-xs text-brand-500 font-medium sm:hidden">
-                                {mobileTab === 'info' && "Paso 1: Datos"}
-                                {mobileTab === 'services' && "Paso 2: Servicios"}
+                                {mobileTab === 'services' && "Paso 1: Servicios"}
+                                {mobileTab === 'info' && "Paso 2: Datos"}
                                 {mobileTab === 'summary' && "Paso 3: Confirmar"}
                             </p>
                         </div>
@@ -102,7 +102,26 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                     <div className="sm:hidden h-full flex flex-col">
                         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
 
-                            {/* --- TAB 1: INFO --- */}
+                            {/* --- TAB 1: SERVICIOS (Aquí estaba el bug) --- */}
+                            {/* Al estar inline, React mantiene el DOM y el scroll */}
+                            {mobileTab === 'services' && (
+                                <div className="h-full flex flex-col">
+                                    {/* En móvil, el ServiceSelector debe ocupar todo el alto */}
+                                    <div className="flex-1 min-h-0">
+                                        <ServiceSelector
+                                            services={props.services}
+                                            servicesCategories={props.servicesCategories}
+                                            selectedCategory={props.selectedCategory}
+                                            setSelectedCategory={props.setSelectedCategory}
+                                            onAddService={props.onAddService}
+                                            flashCategory={props.flashCategory}
+                                            appointments={appointments}
+                                            onRemoveService={handleRemoveInstance}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            {/* --- TAB 2: INFO --- */}
                             {mobileTab === 'info' && (
                                 <div className="space-y-5 p-1">
                                     <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
@@ -169,25 +188,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                 </div>
                             )}
 
-                            {/* --- TAB 2: SERVICIOS (Aquí estaba el bug) --- */}
-                            {/* Al estar inline, React mantiene el DOM y el scroll */}
-                            {mobileTab === 'services' && (
-                                <div className="h-full flex flex-col">
-                                    {/* En móvil, el ServiceSelector debe ocupar todo el alto */}
-                                    <div className="flex-1 min-h-0">
-                                        <ServiceSelector
-                                            services={props.services}
-                                            servicesCategories={props.servicesCategories}
-                                            selectedCategory={props.selectedCategory}
-                                            setSelectedCategory={props.setSelectedCategory}
-                                            onAddService={props.onAddService}
-                                            flashCategory={props.flashCategory}
-                                            appointments={appointments}
-                                            onRemoveService={handleRemoveInstance}
-                                        />
-                                    </div>
-                                </div>
-                            )}
+
 
                             {/* --- TAB 3: RESUMEN --- */}
                             {mobileTab === 'summary' && (
@@ -359,8 +360,8 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                     {/* FOOTER MÓVIL */}
                     <div className="flex sm:hidden gap-3">
                         {mobileTab === 'info' && (
-                            <Button className="w-full flex justify-between" onClick={() => setMobileTab('services')}>
-                                <span>Siguiente: Servicios</span> <ChevronRight size={18} />
+                            <Button className="w-full flex justify-between" onClick={() => setMobileTab('summary')}>
+                                <span>Subtotal</span> <ChevronRight size={18} />
                             </Button>
                         )}
 
@@ -370,8 +371,8 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     <span className="text-xs text-gray-500">Total</span>
                                     <span className="font-bold text-lg">${total}</span>
                                 </div>
-                                <Button className="flex-1" onClick={() => setMobileTab('summary')}>
-                                    Ver Resumen ({appointments.length})
+                                <Button className="flex-1" onClick={() => setMobileTab('info')}>
+                                    Siguiente ({appointments.length})
                                 </Button>
                             </div>
                         )}
@@ -384,7 +385,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                             <Trash size={18} />
                                         </Button>
                                     )}
-                                    <Button onClick={onSave} className="flex-1 bg-gray-900">
+                                    <Button onClick={onSave} className="flex-1 bg-brand-500">
                                         {isEditing ? "Actualizar" : "Agendar Cita"}
                                     </Button>
                                 </div>

@@ -36,11 +36,11 @@ const navItems: NavItem[] = [
     path: "/calendar",
   },
 
-  {
-    icon: <PieChartIcon />, // Ideal para métricas de ventas y dinero
-    name: "Ventas",
-    path: "/sales",
-  },
+  // {
+  //   icon: <PieChartIcon />, // Ideal para métricas de ventas y dinero
+  //   name: "Ventas",
+  //   path: "/sales",
+  // },
 
   // {
   //   icon: <GridIcon />,

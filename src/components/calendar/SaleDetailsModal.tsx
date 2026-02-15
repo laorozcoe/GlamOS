@@ -29,7 +29,7 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            className="w-[95svw] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
             showCloseButton={true}
         >
             {/* HEADER TIPO TICKET */}
