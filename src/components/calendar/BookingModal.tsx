@@ -95,14 +95,19 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                     </div>
                 </div>
 
-                {/* BODY CONTAINER */}
-                <div className="flex flex-col sm:flex-row overflow-hidden">
+                {/* BODY CONTAINER: Importante h-full para que respete el alto de la pantalla/modal */}
+                <div className="flex flex-col sm:flex-row overflow-hidden h-full">
 
-                    {/* COLUMNA IZQUIERDA (Inputs + Servicios en Desktop) */}
-                    <div className="w-full sm:w-8/12 flex flex-col h-auto sm:h-full overflow-hidden bg-white dark:bg-gray-900">
+                    {/* COLUMNA IZQUIERDA (Inputs): 
+       - En móvil: flex-1 (toma todo el espacio sobrante) y overflow-y-auto (scrollea si no cabe).
+       - En desktop: w-8/12.
+    */}
+                    <div className="flex-1 sm:w-8/12 flex flex-col overflow-hidden bg-white dark:bg-gray-900 order-1 ">
 
                         {/* 1. SECCION FORMULARIO (Scrollable) */}
-                        <div className="p-6 overflow-y-hidden flex-none sm:flex-1">
+                        {/* Cambié overflow-y-hidden a overflow-y-auto para que puedas bajar si hay muchos inputs */}
+                        <div className="p-6 overflow-y-hidden flex-1">
+
                             {/* Inputs Empleado / Cliente */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
@@ -128,8 +133,9 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     </div>
                                 </div>
                             </div>
-                            {/* Inputs Fecha (Visible en móvil aquí para mejor flujo) */}
-                            <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-100 sm:hidden">
+
+                            {/* Inputs Fecha (Visible en móvil) */}
+                            <div className="grid grid-cols-2 gap-4 pb-4 sm:hidden">
                                 <div>
                                     <label className="text-sm font-bold block mb-1">Fecha</label>
                                     <input type="date" value={date} onChange={e => setDate(e.target.value)} className="border p-2 rounded w-full text-sm bg-gray-50" />
@@ -139,20 +145,18 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     <input type="time" value={time} onChange={e => setTime(e.target.value)} className="border p-2 rounded w-full text-sm bg-gray-50" />
                                 </div>
                             </div>
-                            {/* BOTON MÓVIL PARA ABRIR SUBMODAL */}
-                            <div className="mt-6 sm:hidden">
+
+                            {/* BOTON MÓVIL */}
+                            <div className="sm:hidden">
                                 <button
                                     onClick={() => setIsServiceModalOpen(true)}
                                     className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold hover:bg-gray-50 flex items-center justify-center gap-2"
                                 >
                                     <span className="text-xl">+</span> Agregar Servicios
                                 </button>
-                                <p className="text-center text-xs text-gray-400 mt-2">
-                                    {appointments.length} servicios seleccionados
-                                </p>
                             </div>
 
-                            {/* COMPONENTE SELECTOR (SOLO DESKTOP) */}
+                            {/* SELECTOR DESKTOP */}
                             <div className="hidden sm:block mt-6 h-full min-h-[400px]">
                                 <h3 className="font-bold mb-3">Seleccionar Servicios</h3>
                                 <ServiceSelector
@@ -167,11 +171,13 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                         </div>
                     </div>
 
-                    {/* COLUMNA DERECHA (Resumen / Carrito) */}
-                    <div className="w-full sm:w-4/12 h-auto sm:h-full bg-gray-50 dark:bg-gray-800/50 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-gray-700 flex flex-col max-h-[50vh] sm:max-h-full">
-                        {/* Fecha y Hora (Solo Desktop - en movil ya lo pusimos arriba) */}
+                    {/* COLUMNA DERECHA (Resumen / Carrito) 
+       - En móvil: Order-2, h-auto (altura automática según contenido) pero con max-h-[40%] para que NO tape todo.
+       - En desktop: w-4/12, h-full.
+    */}
+                    <div className="w-full sm:w-4/12 flex-none sm:h-full bg-gray-50 dark:bg-gray-800/50 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-gray-700 flex flex-col order-2 max-h-[42vh] sm:max-h-full">
+                        {/* Fecha y Hora (Solo Desktop) */}
                         <div className="p-5 border-b border-gray-200 dark:border-gray-700 hidden sm:block">
-
                             <div className="grid grid-cols-3 gap-2">
                                 <div>
                                     <h3 className="font-bold mb-2 text-gray-800 dark:text-white">Fecha</h3>
@@ -188,12 +194,15 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                             </div>
                         </div>
 
-                        {/* LISTA CARRITO (Flexible) */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0 bg-gray-100/50">
-                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 sm:hidden">Resumen de Cita</h3>
+                        {/* LISTA CARRITO (Flexible) 
+            - overflow-y-auto permite que scrollee internamente si hay muchos items, sin crecer el contenedor padre.
+        */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0 bg-gray-100/50 relative">
+                            {/* TODO: Que no se deslize el Titulo Resumen */}
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 sm:hidden">Resumen ({appointments.length})</h3>
 
                             {appointments.length === 0 ? (
-                                <div className="h-20 sm:h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
+                                <div className="h-10 sm:h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
                                     <span className="text-sm">Carrito vacío</span>
                                 </div>
                             ) : (
@@ -211,20 +220,20 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
 
                         {/* FOOTER TOTALES */}
                         {isPaid ? (
-                            <div className="p-4">
+                            <div className="p-4 flex-none">
                                 <div className="w-full py-3 bg-green-100 border border-green-200 text-green-800 rounded-xl text-center font-bold">
                                     ✅ Pagada
                                 </div>
                             </div>
                         ) : (
-                            <div className="p-4 bg-white border-t border-gray-200 shadow-sm safe-area-pb">
+                            <div className="p-4 bg-white border-t border-gray-200 shadow-sm safe-area-pb flex-none">
                                 <div className="flex justify-between items-end mb-3">
                                     <span className="text-gray-500 text-sm font-medium">Total</span>
                                     <span className="text-2xl font-black text-gray-900">${total}</span>
                                 </div>
                                 <div className="flex gap-2">
-                                    {isEditing ? <Button onClick={() => setIsDeleteModalOpen(true)}><Trash /></Button> : <></>}
-                                    <button onClick={onSave} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black">
+                                    {isEditing ? <Button variant="outline" onClick={() => setIsDeleteModalOpen(true)}><Trash /></Button> : <></>}
+                                    <button onClick={onSave} className="flex-1 py-3 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-700">
                                         {isEditing ? "Actualizar" : "Agendar"}
                                     </button>
                                     <button onClick={onOpenPay} className="flex-1 py-3 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700">
@@ -269,7 +278,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                 <div className="p-4 bg-white border-t border-gray-200 shadow-sm safe-area-pb">
 
                     <div className="flex gap-2">
-                        <button onClick={onDelete} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black">
+                        <button onClick={onDelete} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-brand-700">
                             Eliminar
                         </button>
 

@@ -26,7 +26,7 @@ export const ServiceSelector = ({
             <div className="sticky top-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm z-20 py-3 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex flex-wrap justify-center  items-center gap-2 my-2 overflow-x-auto custom-scrollbar">
                     <button
-                        className={`border px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all ${!selectedCategory ? 'bg-black text-white border-black' : 'text-gray-600 border-gray-200'}`}
+                        className={`border px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all ${!selectedCategory ? 'bg-brand-500 text-white' : 'text-gray-600'}`}
                         onClick={() => setSelectedCategory("")}
                     >
                         Todos
@@ -36,7 +36,7 @@ export const ServiceSelector = ({
                             key={cat.id}
                             className={`border px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all 
                                 ${selectedCategory === cat.id
-                                    ? "bg-black text-white border-black"
+                                    ? "bg-brand-500 text-white"
                                     : "text-gray-600 border-gray-200 hover:bg-gray-50"}`}
                             onClick={() => setSelectedCategory(cat.id)}
                         >
@@ -63,9 +63,9 @@ export const ServiceSelector = ({
             relative group flex flex-row items-center justify-between
             border rounded-2xl p-0 h-32 overflow-hidden bg-white
             transition-all duration-200 select-none
-            ${flashCategory === ss.id ? 'ring-2 ring-black bg-gray-50' : ''}
+            ${flashCategory === ss.id ? 'ring-2 ring-brand-500 bg-gray-50' : ''}
             ${isSelected
-                                            ? 'border-black shadow-md ring-1 ring-black/5'
+                                            ? 'border-brand-500 shadow-md ring-1 ring-brand-500/5'
                                             : 'border-gray-200 hover:border-gray-300'}
         `}
                                 >
