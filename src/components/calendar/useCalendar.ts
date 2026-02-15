@@ -32,7 +32,8 @@ export const useCalendarLogic = () => {
     const [date, setDate] = useState("");
     const [time, setTime] = useState("");
     const [timeEnd, setTimeEnd] = useState("");
-    const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
+    // ✅ Correcto: Usa tu hora local
+    const [currentDate, setCurrentDate] = useState(new Date().toLocaleDateString('en-CA'));
 
     // Selecciones
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -53,11 +54,12 @@ export const useCalendarLogic = () => {
         const loadCatalogs = async () => {
             if (!business?.id) return;
             try {
+                debugger
                 const [emp, srv, cats, evts] = await Promise.all([
                     getEmployeesPrisma(business.id),
                     getServicesPrisma(business.id),
                     getServicesCategoriesPrisma(business.id),
-                    getAppointmentsPrisma(business.id)
+                    getAppointmentsByDatePrisma(business.id, currentDate)
                 ]);
                 setEmployees(emp);
                 setServices(srv);
