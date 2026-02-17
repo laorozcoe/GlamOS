@@ -111,6 +111,7 @@ import { useCalendarLogic } from "@/components/calendar/useCalendar";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import InputField from "@/components/form/input/InputField";
 import Button from "@/components/ui/button/Button";
+import { toast } from "react-toastify";
 
 // --- CONFIGURACIÓN ---
 const START_HOUR = 9;
@@ -269,7 +270,8 @@ export default function CalendarGrid() {
 
                       logic.handleDateClick(employee, timeString);
 
-                      alert(`📅 Nueva Cita\n👤 Estilista: ${employee.user.name}\n⏰ Hora: ${timeString}`);
+                      toast.success(`📅 Nueva Cita\n👤 Estilista: ${employee.user.name}\n⏰ Hora: ${timeString}`);
+                      // alert(`📅 Nueva Cita\n👤 Estilista: ${employee.user.name}\n⏰ Hora: ${timeString}`);
                     }}
                   >
                     {/* LÍNEA DE MEDIA HORA (Dashed) */}

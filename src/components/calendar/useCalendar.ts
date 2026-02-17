@@ -10,6 +10,7 @@ import {
     createSalePrisma, deleteAppointmentPrisma,
     getAppointmentsByDatePrisma
 } from "@/lib/prisma";
+import { toast } from 'react-toastify';
 
 export const useCalendarLogic = () => {
     const business = useBusiness();
@@ -225,9 +226,18 @@ export const useCalendarLogic = () => {
 
     // Guardar / Actualizar
     const handleSaveOrUpdate = async () => {
-        if (!time || !date) return alert("Ingresa fecha y hora");
-        if (appointments.length === 0) return alert("Ingresa un servicio");
-        if (selectedEmployee?.id == "" || selectedEmployee?.id == null) return alert("Selecciona un empleado");
+        if (!time || !date) {
+            toast.warning("Ingresa fecha y hora");
+            return
+        }
+        if (appointments.length === 0) {
+            toast.warning("Ingresa un servicio");
+            return
+        }
+        if (selectedEmployee?.id == "" || selectedEmployee?.id == null) {
+            toast.warning("Selecciona un empleado");
+            return
+        }
 
         const startDateTime = new Date(`${date}T${time}:00`);
         const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
@@ -297,9 +307,18 @@ export const useCalendarLogic = () => {
     // Procesar Pago Final
     const handleFinalizePayment = async (paymentData: any) => {
         // 1. Validaciones iniciales
-        if (!time || !date) return alert("Ingresa fecha y hora");
-        if (appointments.length === 0) return alert("Ingresa un servicio");
-        if (selectedEmployee?.id == "" || selectedEmployee?.id == null) return alert("Selecciona un empleado");
+        if (!time || !date) {
+            toast.warn("Ingresa fecha y hora");
+            return
+        }
+        if (appointments.length === 0) {
+            toast.warn("Ingresa un servicio");
+            return
+        }
+        if (selectedEmployee?.id == "" || selectedEmployee?.id == null) {
+            toast.warn("Selecciona un empleado");
+            return
+        }
 
         try {
             // 2. Cálculos de tiempo
@@ -437,11 +456,11 @@ export const useCalendarLogic = () => {
             setShowPayModal(false);
             closeModal();
             resetModalFields();
-            alert("Venta procesada y ticket impreso con éxito.");
+            toast.success("Venta procesada");
 
         } catch (error) {
             console.error("Error finalizando pago:", error);
-            alert("Ocurrió un error al procesar la venta.");
+            toast.error("Ocurrió un error al procesar la venta.");
         }
     };
 
@@ -455,7 +474,7 @@ export const useCalendarLogic = () => {
             setEvents(newEvents);
         } catch (error) {
             console.error("Error eliminando cita:", error);
-            alert("Ocurrió un error al eliminar la cita.");
+            toast.error("Ocurrió un error al eliminar la cita.");
         }
     };
 

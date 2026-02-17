@@ -6,6 +6,9 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { getBusiness } from "@/lib/getBusiness"
 import BusinessProvider from "@/context/BusinessProvider"
 import Head from 'next/head';
+import { ToastContainer } from 'react-toastify';
+// ⚠️ IMPORTANTE: Importar los estilos CSS obligatoriamente
+import 'react-toastify/dist/ReactToastify.css';
 
 export const dynamic = "force-dynamic"; // 👈 ESTO ARREGLA
 
@@ -30,8 +33,11 @@ export default async function RootLayout({
       </Head>
       <BusinessProvider business={business}>
         <body className={`${outfit.className} dark:bg-gray-900`}>
+          <ToastContainer style={{ zIndex: 999999 }} />
           <ThemeProvider>
-            <SidebarProvider>{children}</SidebarProvider>
+            <SidebarProvider>
+              {children}
+            </SidebarProvider>
           </ThemeProvider>
         </body>
       </BusinessProvider>

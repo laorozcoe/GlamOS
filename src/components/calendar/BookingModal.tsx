@@ -7,7 +7,6 @@ import { ServiceSelector } from "@/components/calendar/mobile/ServiceSelector";
 import Button from "../ui/button/Button";
 import { Trash, User, Calendar, Sparkles, Receipt, ChevronRight, ChevronLeft } from 'lucide-react';
 
-
 interface BookingModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -152,13 +151,14 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
 
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="text-sm font-medium mb-1 block">Nombre</label>
-                                                    <InputField name="name" value={customer.name} onChange={handleChangeCustomer} />
-                                                </div>
-                                                <div>
                                                     <label className="text-sm font-medium mb-1 block">Teléfono</label>
                                                     <InputField name="phone" value={customer.phone} type="number" onChange={handleChangeCustomer} />
                                                 </div>
+                                                <div>
+                                                    <label className="text-sm font-medium mb-1 block">Nombre</label>
+                                                    <InputField name="name" value={customer.name} onChange={handleChangeCustomer} />
+                                                </div>
+
 
                                             </div>
                                         </div>
@@ -267,14 +267,13 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
 
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="text-sm font-medium mb-1 block">Nombre</label>
-                                                    <InputField className="border-gray-300 bg-white" name="name" value={customer.name} onChange={handleChangeCustomer} />
-                                                </div>
-                                                <div>
                                                     <label className="text-sm font-medium mb-1 block">Teléfono</label>
                                                     <InputField className="border-gray-300 bg-white" name="phone" value={customer.phone} type="number" onChange={handleChangeCustomer} />
                                                 </div>
-
+                                                <div>
+                                                    <label className="text-sm font-medium mb-1 block">Nombre</label>
+                                                    <InputField className="border-gray-300 bg-white" name="name" value={customer.name} onChange={handleChangeCustomer} />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
