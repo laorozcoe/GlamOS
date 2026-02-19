@@ -33,3 +33,7 @@ Servicios en pc no se acumulan en mobile si revisar colores de los modales
 Agregar servicio con precio abierto
 
 Ver si es posible desde el mobil imprimir servicio en la lap
+
+
+NO SE PUEDE ACTUALIZAR SERVICIO EXTRA NI COBRAR CON SERVICIO EXTRA
+MODAL SOLO LECTURA DE TICKET CRECIO MUCHO EN VERSION LAPTOP

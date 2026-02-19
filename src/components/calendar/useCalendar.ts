@@ -189,21 +189,31 @@ export const useCalendarLogic = () => {
 
             const fullServices = appointmentServices.map((apptService: any) => {
                 // 1. Intenta buscarlo en el catálogo (si tiene ID de servicio)
-                const catalogService = currentCatalog.find((s: any) => s.id === apptService.serviceId);
+                // const catalogService = currentCatalog.find((s: any) => s.id === apptService.serviceId);
                 
                 // 2. Si está en el catálogo, úsalo
-                if (catalogService) return catalogService;
+                // if (catalogService) return catalogService;
 
                 // 3. Si viene poblado desde la DB (relación), úsalo
-                if (apptService.service) return apptService.service;
+                if (apptService.service){
+                    return {
+                        id: apptService.id,  
+                        name:apptService.service.name,
+                        duration:apptService.service.duration,
+                        price:apptService.price,
+                        descriptionTicket: apptService.service.descriptionTicket,
+                        serviceId: apptService.serviceId
+                    };
+                } 
 
                 // 4. FALLBACK: Es un Servicio Extra (Manual)
                 // Construimos un objeto "falso" que tenga la misma estructura que tus servicios
                 return {
                     id: apptService.id,          // Usamos el ID de la relación para que React no se queje del key
-                    name: "Servicio Extra",      // Nombre por defecto
-                    price: apptService.price,    // Usamos el precio que sí viene en el JSON (110)
+                    name: "Servicio Extra",
                     duration: 0,                 // Duración por defecto
+                    price: apptService.price,    // Usamos el precio que sí viene en el JSON (110)
+                    descriptionTicket:"Servicio Extra",      // Nombre por defecto
                     isCustom: true               // (Opcional) Bandera por si quieres pintarlo diferente
                 };
             }).filter(Boolean);
@@ -273,12 +283,12 @@ export const useCalendarLogic = () => {
         const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
         const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
 
-        const serviceMap = appointments.map((item: any) => {
-            if(item.id){
-             item.serviceId = item.id;
-            }
-            return item;
-        });
+        // const serviceMap = appointments.map((item: any) => {
+        //     if(item.id){
+        //      item.serviceId = item.id;
+        //     }
+        //     return item;
+        // });
 
         const payload = {
             businessId: business?.id,
@@ -293,7 +303,7 @@ export const useCalendarLogic = () => {
             guestName: customer.name,
             guestPhone: customer.phone,
             totalAmount: total,
-            services: serviceMap
+            services: appointments
         };
 
         try {
@@ -380,10 +390,10 @@ export const useCalendarLogic = () => {
 
             const itemsList = Object.values(groupedItems);
 
-            const serviceMap = appointments.map((item: any) => ({
-                serviceId: item.id,
-                price: item.price,
-            }));
+            // const serviceMap = appointments.map((item: any) => ({
+            //     serviceId: item.id,
+            //     price: item.price,
+            // }));
 
             // 4. PASO A: Crear/Actualizar la Cita (Reserva de tiempo)
             const appointmentPayload = {
@@ -402,7 +412,7 @@ export const useCalendarLogic = () => {
                 notes: `Pago: ${paymentData.method}.`,
                 guestName: customer.name,
                 guestPhone: customer.phone,
-                services: serviceMap
+                services: appointments
             };
 
             let currentAppointmentId = selectedEvent?.id;
