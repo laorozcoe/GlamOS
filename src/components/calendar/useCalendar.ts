@@ -40,11 +40,30 @@ export const useCalendarLogic = () => {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
     const [appointments, setAppointments] = useState<any[]>([]); // Carrito de servicios
+    const [extraServices, setExtraServices] = useState<any[]>([]); // Carrito de servicios
+    const [extraServicesModal, setExtraServicesModal] = useState<boolean>(false); // Carrito de servicios
     const [customer, setCustomer] = useState({ name: "", phone: "" });
 
     // UI Helpers
     const [flashCategory, setFlashCategory] = useState<string | null>(null);
     const [showPayModal, setShowPayModal] = useState(false);
+
+    const handleShowPayModal = () => {
+        debugger
+         if (!time || !date) {
+            toast.warning("Ingresa fecha y hora");
+            return
+        }
+        if (appointments.length === 0) {
+            toast.warning("Ingresa un servicio");
+            return
+        }
+        if (selectedEmployee?.id == "" || selectedEmployee?.id == null) {
+            toast.warning("Selecciona un empleado");
+            return
+        }
+        setShowPayModal(true);
+    }
 
     // --- CARGA INICIAL ---
     useEffect(() => {
@@ -70,7 +89,7 @@ export const useCalendarLogic = () => {
             }
         };
         loadCatalogs();
-    }, [business?.id]);
+    }, [business?.id, currentDate]);
 
     // --- CÁLCULOS ---
     const total = useMemo(() => {
@@ -128,6 +147,7 @@ export const useCalendarLogic = () => {
         // const event = clickInfo.event;
 
         // 1. Recuperar info básica
+        debugger
         setSelectedEvent(event); // Guardamos el evento original de FullCalendar
 
 
@@ -162,9 +182,30 @@ export const useCalendarLogic = () => {
             const appointmentServices = event.services || [];
             const currentCatalog = servicesRef.current;
 
+            // const fullServices = appointmentServices.map((apptService: any) => {
+            //     const catalogService = currentCatalog.find((s: any) => s.id === apptService.serviceId);
+            //     return catalogService || apptService.service; // Fallback
+            // }).filter(Boolean);
+
             const fullServices = appointmentServices.map((apptService: any) => {
+                // 1. Intenta buscarlo en el catálogo (si tiene ID de servicio)
                 const catalogService = currentCatalog.find((s: any) => s.id === apptService.serviceId);
-                return catalogService || apptService.service; // Fallback
+                
+                // 2. Si está en el catálogo, úsalo
+                if (catalogService) return catalogService;
+
+                // 3. Si viene poblado desde la DB (relación), úsalo
+                if (apptService.service) return apptService.service;
+
+                // 4. FALLBACK: Es un Servicio Extra (Manual)
+                // Construimos un objeto "falso" que tenga la misma estructura que tus servicios
+                return {
+                    id: apptService.id,          // Usamos el ID de la relación para que React no se queje del key
+                    name: "Servicio Extra",      // Nombre por defecto
+                    price: apptService.price,    // Usamos el precio que sí viene en el JSON (110)
+                    duration: 0,                 // Duración por defecto
+                    isCustom: true               // (Opcional) Bandera por si quieres pintarlo diferente
+                };
             }).filter(Boolean);
 
             setAppointments(fullServices);
@@ -175,29 +216,17 @@ export const useCalendarLogic = () => {
 
     // Agregar servicio al carrito
     const addServiceToCart = (service: any) => {
+        debugger
         setAppointments(prev => [...prev, service]);
 
         // Efecto visual flash
         setFlashCategory(service.id);
 
         setTimeout(() => setFlashCategory(null), 150);
-
-        // const startDateTime = new Date(`${date}T${time}:00`);
-        // const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
-        // const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
-
-        // const end = `${endDateTime.getHours() > 10 ? endDateTime.getHours() : "0" + endDateTime.getHours()}:${endDateTime.getMinutes() > 10 ? endDateTime.getMinutes() : "0" + endDateTime.getMinutes()}`
-        // setTimeEnd(end);
     };
 
     const removeServiceFromCart = (indexToDelete: number) => {
         setAppointments(prev => prev.filter((_, i) => i !== indexToDelete));
-        // const startDateTime = new Date(`${date}T${time}:00`);
-        // const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
-        // const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
-
-        // const end = `${endDateTime.getHours() > 10 ? endDateTime.getHours() : "0" + endDateTime.getHours()}:${endDateTime.getMinutes() > 10 ? endDateTime.getMinutes() : "0" + endDateTime.getMinutes()}`
-        // setTimeEnd(end);
     };
 
     // 2. Agrega este useEffect que "escucha" los cambios
@@ -226,6 +255,7 @@ export const useCalendarLogic = () => {
 
     // Guardar / Actualizar
     const handleSaveOrUpdate = async () => {
+        debugger
         if (!time || !date) {
             toast.warning("Ingresa fecha y hora");
             return
@@ -243,10 +273,12 @@ export const useCalendarLogic = () => {
         const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
         const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
 
-        const serviceMap = appointments.map((item: any) => ({
-            serviceId: item.id,
-            price: item.price,
-        }));
+        const serviceMap = appointments.map((item: any) => {
+            if(item.id){
+             item.serviceId = item.id;
+            }
+            return item;
+        });
 
         const payload = {
             businessId: business?.id,
@@ -278,7 +310,8 @@ export const useCalendarLogic = () => {
             }
 
             // Recargar eventos (idealmente optimista, pero aquí recargamos)
-            const newEvents = await getAppointmentsPrisma(business?.id);
+            // const newEvents = await getAppointmentsPrisma(business?.id);
+            const newEvents = await getAppointmentsByDatePrisma(business?.id,currentDate);
             setEvents(newEvents);
 
         } catch (error) {
@@ -306,6 +339,7 @@ export const useCalendarLogic = () => {
 
     // Procesar Pago Final
     const handleFinalizePayment = async (paymentData: any) => {
+        debugger
         // 1. Validaciones iniciales
         if (!time || !date) {
             toast.warn("Ingresa fecha y hora");
@@ -450,7 +484,8 @@ export const useCalendarLogic = () => {
             await printTicket(ticketData);
 
             // 8. Limpieza y Refresco
-            const newEvents = await getAppointmentsPrisma(business?.id);
+            // const newEvents = await getAppointmentsPrisma(business?.id);
+            const newEvents = await getAppointmentsByDatePrisma(business?.id, currentDate);
             setEvents(newEvents);
 
             setShowPayModal(false);
@@ -470,7 +505,8 @@ export const useCalendarLogic = () => {
             await deleteAppointmentPrisma(selectedEvent.id);
             closeModal();
             resetModalFields();
-            const newEvents = await getAppointmentsPrisma(business?.id);
+            // const newEvents = await getAppointmentsPrisma(business?.id);
+            const newEvents = await getAppointmentsByDatePrisma(business?.id, currentDate);
             setEvents(newEvents);
         } catch (error) {
             console.error("Error eliminando cita:", error);
@@ -503,6 +539,8 @@ export const useCalendarLogic = () => {
         handleNewEventButton, handleDateClick, handleEventClick,
         handleSaveOrUpdate, handleFinalizePayment,
         showSaleDetails, setShowSaleDetails,
-        onDeleteAppointment: onDelete
+        onDeleteAppointment: onDelete, handleShowPayModal,
+        extraServices, setExtraServices,
+        extraServicesModal, setExtraServicesModal
     };
 };

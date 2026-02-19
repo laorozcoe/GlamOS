@@ -215,10 +215,10 @@ model Appointment {
 model AppointmentService {
   id                String             @id @default(uuid())
   appointmentId     String
-  serviceId         String
+  serviceId         String?
   price             Float
   appointment       Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  service           Service            @relation(fields: [serviceId], references: [id])
+  service           Service?            @relation(fields: [serviceId], references: [id])
   appointmentExtras AppointmentExtra[]
 }
 

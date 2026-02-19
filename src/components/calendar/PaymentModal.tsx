@@ -26,13 +26,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         });
     };
 
-    useEffect(() => {
-        if (isOpen) {
-            setAmountReceived(''); // Limpiar input
-            setPaymentMethod('CASH'); // Resetear método por defecto
-        }
-    }, [isOpen]);
-
     return (
         <Modal
             isOpen={isOpen}

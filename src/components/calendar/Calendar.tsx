@@ -1,112 +1,8 @@
-// "use client";
-// import React from "react";
-// import FullCalendar from "@fullcalendar/react";
-// import dayGridPlugin from "@fullcalendar/daygrid";
-// import timeGridPlugin from "@fullcalendar/timegrid";
-// import interactionPlugin from "@fullcalendar/interaction";
-// import esLocale from '@fullcalendar/core/locales/es';
-
-// // Imports locales
-// import { useCalendarLogic } from "./useCalendar";
-// import { BookingModal } from "./BookingModal";
-// import { PaymentModal } from "./PaymentModal";
-// import { renderEventContent } from "./CalendarUtils";
-// import { SaleDetailsModal } from "./SaleDetailsModal"; // <--- Importar
-
-// const Calendar: React.FC = () => {
-//   // Toda la lógica vive aquí
-//   const logic = useCalendarLogic();
-
-//   return (
-//     <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3">
-//       <div className="custom-calendar p-2">
-//         <FullCalendar
-//           ref={logic.calendarRef}
-//           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-//           initialView="timeGridDay"
-//           locale={esLocale}
-//           headerToolbar={{
-//             left: "prev,next addEventButton",
-//             center: "title",
-//             right: "timeGridDay,timeGridWeek",
-//           }}
-//           height="auto"
-//           allDaySlot={false}
-//           slotMinTime="09:00:00"
-//           slotMaxTime="20:00:00"
-
-//           // Data
-//           events={logic.events}
-
-//           // Actions
-//           dateClick={logic.handleDateClick}
-//           eventClick={logic.handleEventClick}
-//           eventContent={renderEventContent}
-
-//           customButtons={{
-//             addEventButton: {
-//               text: "Nueva Cita",
-//               click: logic.handleNewEventButton,
-//             },
-//           }}
-//         />
-//       </div>
-
-//       {/* MODAL DE AGENDA */}
-//       <BookingModal
-//         isOpen={logic.isOpen}
-//         onClose={logic.closeModal}
-//         isEditing={!!logic.selectedEvent}
-
-//         // Data Passing
-//         employees={logic.employees}
-//         services={logic.services}
-//         servicesCategories={logic.servicesCategories}
-//         appointments={logic.appointments}
-//         total={logic.total}
-//         paymentStatus={logic.selectedEvent?.extendedProps?.paymentStatus || "UNPAID"}
-
-//         // State Passing
-//         date={logic.date} setDate={logic.setDate}
-//         time={logic.time} setTime={logic.setTime}
-//         customer={logic.customer} handleChangeCustomer={logic.handleChangeCustomer}
-//         selectedEmployee={logic.selectedEmployee} setSelectedEmployee={logic.setSelectedEmployee}
-//         selectedCategory={logic.selectedCategory} setSelectedCategory={logic.setSelectedCategory}
-//         flashCategory={logic.flashCategory}
-
-//         // Action Passing
-//         onAddService={logic.addServiceToCart}
-//         onDeleteService={logic.removeServiceFromCart}
-//         onSave={logic.handleSaveOrUpdate}
-//         onOpenPay={() => logic.setShowPayModal(true)}
-//         onDeleteAppointment={logic.onDeleteAppointment}
-//         timeEnd={logic.timeEnd} setTimeEnd={logic.setTimeEnd}
-//       />
-
-//       {/* MODAL DE PAGO */}
-//       <PaymentModal
-//         isOpen={logic.showPayModal}
-//         onClose={() => logic.setShowPayModal(false)}
-//         total={logic.total}
-//         onFinalize={logic.handleFinalizePayment}
-//       />
-
-//       {/* NUEVO: MODAL DE DETALLE DE VENTA (Solo se abre si ESTÁ pagado) */}
-//       <SaleDetailsModal
-//         isOpen={logic.showSaleDetails}
-//         onClose={() => logic.setShowSaleDetails(false)}
-//         event={logic.selectedEvent}
-//       />
-//     </div>
-//   );
-// };
-
-// export default Calendar;
-
 "use client"
 import { BookingModal } from "@/components/calendar/BookingModal";
 import { PaymentModal } from "@/components/calendar/PaymentModal";
 import { SaleDetailsModal } from "@/components/calendar/SaleDetailsModal";
+import {ExtraServiceModal} from "@/components/calendar/ExtraServiceModal";
 import { useCalendarLogic } from "@/components/calendar/useCalendar";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import InputField from "@/components/form/input/InputField";
@@ -220,9 +116,9 @@ export default function CalendarGrid() {
       <div className="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/3 xl:px-10 xl:py-12">
         {/* HEADER */}
         <div className="flex justify-center gap-2 mb-2">
-          <Button children={"<"} onClick={() => { logic.handleUpdateDate(-1) }}></Button>
+          <Button onClick={() => { logic.handleUpdateDate(-1) }}>&lt;</Button>
           <InputField type="date" value={logic.currentDate} onChange={(e) => logic.setCurrentDate(e.target.value)} />
-          <Button children=">" onClick={() => { logic.handleUpdateDate(1) }}></Button>
+          <Button onClick={() => { logic.handleUpdateDate(1) }}>&gt;</Button>
         </div>
         <div className="flex-none bg-gray-50 border-b border-gray-200 z-20">
           <div className="grid" style={{ gridTemplateColumns: `60px repeat(${logic.employees.length}, 1fr)` }}>
@@ -236,15 +132,14 @@ export default function CalendarGrid() {
         </div>
         {/* BODY CON SCROLL */}
         <div className="flex-1 overflow-y-auto relative custom-scrollbar">
-          <div className="relative min-h-[640px]"> {/* Altura mínima para que no se corte */}
+          <div className="relative min-h-160"> {/* Altura mínima para que no se corte */}
 
-            {/* 1. GRILLA DE FONDO (Horas y Medias Horas) */}
             {/* 1. GRILLA DE FONDO (Horas y Medias Horas) */}
             {hours.map((hour) => (
               <div key={hour} className="flex border-b border-gray-100" style={{ height: `${HOUR_HEIGHT}px` }}>
 
                 {/* Columna de la Hora */}
-                <div className="w-[60px] flex-none border-r border-gray-100 bg-gray-50 text-xs text-gray-500 flex justify-center pt-2 relative">
+                <div className="w-15 flex-none border-r border-gray-100 bg-gray-50 text-xs text-gray-500 flex justify-center pt-2 relative">
                   <span className=" bg-gray-50 px-1">{hour}:00</span>
                 </div>
 
@@ -270,7 +165,7 @@ export default function CalendarGrid() {
 
                       logic.handleDateClick(employee, timeString);
 
-                      toast.success(`📅 Nueva Cita\n👤 Estilista: ${employee.user.name}\n⏰ Hora: ${timeString}`);
+                      // toast.success(`📅 Nueva Cita\n👤 Estilista: ${employee.user.name}\n⏰ Hora: ${timeString}`);
                       // alert(`📅 Nueva Cita\n👤 Estilista: ${employee.user.name}\n⏰ Hora: ${timeString}`);
                     }}
                   >
@@ -282,7 +177,7 @@ export default function CalendarGrid() {
             ))}
 
             {/* 2. CAPA DE EVENTOS (Flotando encima) */}
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none pl-[60px] flex">
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none pl-15 flex">
               {/* Renderizamos una "columna contenedor" transparente por cada estación */}
               {logic.employees.map((employee: any) => (
                 <div key={employee.id} className="flex-1 relative border-r border-transparent last:border-r-0">
@@ -344,10 +239,13 @@ export default function CalendarGrid() {
         onAddService={logic.addServiceToCart}
         onDeleteService={logic.removeServiceFromCart}
         onSave={logic.handleSaveOrUpdate}
-        onOpenPay={() => logic.setShowPayModal(true)}
+        onOpenPay={logic.handleShowPayModal}
         onDeleteAppointment={logic.onDeleteAppointment}
         timeEnd={logic.timeEnd} setTimeEnd={logic.setTimeEnd}
-      />
+
+        setExtraServicesModal={logic.setExtraServicesModal} 
+        
+        />
 
       {/* MODAL DE PAGO */}
       <PaymentModal
@@ -363,6 +261,18 @@ export default function CalendarGrid() {
         onClose={() => logic.setShowSaleDetails(false)}
         event={logic.selectedEvent}
       />
+
+        {logic.extraServicesModal && (
+        <ExtraServiceModal 
+        isOpen={logic.extraServicesModal} 
+        onClose={() => logic.setExtraServicesModal(false)} 
+        extraService={logic.extraServices} 
+        setExtraService={logic.setExtraServices} 
+        onSave={logic.addServiceToCart} 
+        />
+        )}
+        
+
     </>
   );
 };

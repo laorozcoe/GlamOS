@@ -5,7 +5,7 @@ import InputField from '@/components/form/input/InputField';
 import { ServiceSelector } from "@/components/calendar/mobile/ServiceSelector";
 // Ya no necesitamos el ServiceModal aparte, lo integraremos en el flujo
 import Button from "../ui/button/Button";
-import { Trash, User, Calendar, Sparkles, Receipt, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Trash, User, Calendar, Sparkles, Receipt, ChevronRight, ChevronLeft, SquarePlus } from 'lucide-react';
 
 interface BookingModalProps {
     isOpen: boolean;
@@ -33,6 +33,7 @@ interface BookingModalProps {
     flashCategory: string | null;
     onSave: () => void;
     onOpenPay: () => void;
+    setExtraServicesModal: (val: boolean) => void;
 }
 
 export const BookingModal: React.FC<BookingModalProps> = (props) => {
@@ -42,7 +43,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
         customer, handleChangeCustomer,
         date, setDate, time, setTime, timeEnd, setTimeEnd,
         appointments, onDeleteService, total,
-        onSave, onOpenPay, onDeleteAppointment
+        onSave, onOpenPay, onDeleteAppointment,setExtraServicesModal
     } = props;
 
     // --- ESTADOS ---
@@ -300,7 +301,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="h-[500px]">
+                            <div className="h-125">
                                 <h3 className="font-bold mb-3">Seleccionar Servicios</h3>
                                 <ServiceSelector
                                     services={props.services}
@@ -388,9 +389,15 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                         {isEditing ? "Actualizar" : "Agendar Cita"}
                                     </Button>
                                 </div>
+                               <div className="gap-2 flex">
+                                 <Button onClick={() => setExtraServicesModal(true)} variant="outline" className=" bg-green-600 hover:bg-green-700">
+                                    <SquarePlus/>
+                                </Button>
                                 <Button onClick={onOpenPay} className="w-full bg-green-600 hover:bg-green-700">
                                     Cobrar Ahora
                                 </Button>
+                               </div>
+                                
                             </div>
                         )}
                     </div>
@@ -404,6 +411,9 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                         )}
                         <Button onClick={onSave} className="px-8">
                             {isEditing ? "Guardar Cambios" : "Crear Cita"}
+                        </Button>
+                        <Button onClick={() => setExtraServicesModal(true)} variant="outline" className="">
+                            <SquarePlus/>
                         </Button>
                         <Button onClick={onOpenPay} className="bg-green-600 hover:bg-green-700 px-8">
                             Cobrar

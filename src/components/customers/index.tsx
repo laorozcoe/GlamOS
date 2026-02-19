@@ -158,14 +158,17 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
 
 
             {/* Modal */}
-            <Moddal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSave={handleSaveCustomer}
-                customerToEdit={customerToEdit}
-                employees={employees}
-                handleDeleteCustomer={handleDeleteCustomer}
-            />
+            {isModalOpen && (
+                <Modal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSave={handleSaveCustomer}
+                    customerToEdit={customerToEdit}
+                    employees={employees}
+                    handleDeleteCustomer={handleDeleteCustomer}
+                />
+            )}
+            
 
             <Modal
                 className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
@@ -191,9 +194,6 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
                     </div>
                 </div>
             </Modal >
-
-            {/* Footer con Paginación */}
-
         </>
     );
 }

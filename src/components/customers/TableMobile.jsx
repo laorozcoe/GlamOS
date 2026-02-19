@@ -44,7 +44,7 @@ export default function TableMobile({ customers, onRowClick }) {
                         {/* Empleado */}
                         <div className="flex items-center gap-2">
                             <Briefcase size={14} className="text-gray-400" />
-                            <span className="truncate max-w-[120px]">
+                            <span className="truncate max-w-30">
                                 {customer.employee?.name || "Sin asignar"}
                             </span>
                         </div>

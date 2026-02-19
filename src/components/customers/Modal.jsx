@@ -16,25 +16,6 @@ export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit,
 
     const [formData, setFormData] = useState(initialFormState);
 
-    // EFECTO: Cada vez que se abre el modal o cambia el cliente a editar
-    useEffect(() => {
-        if (isOpen) {
-            if (customerToEdit) {
-                // Modo Edición: Llenamos con datos existentes
-                setFormData({
-                    name: customerToEdit.name || '',
-                    email: customerToEdit.email || '',
-                    phone: customerToEdit.phone || '',
-                    notes: customerToEdit.notes || '',
-                    employeeId: customerToEdit.employeeId || ''
-                });
-            } else {
-                // Modo Crear: Limpiamos el formulario
-                setFormData(initialFormState);
-            }
-        }
-    }, [isOpen, customerToEdit]);
-
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));

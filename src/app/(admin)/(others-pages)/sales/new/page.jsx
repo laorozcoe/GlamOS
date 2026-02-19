@@ -39,7 +39,7 @@ export default function BlankPage(props) {
     const onAddService = logic.addServiceToCart;
     const onDeleteService = logic.removeServiceFromCart;
     const onSave = logic.handleSaveOrUpdate;
-    const onOpenPay = () => logic.setShowPayModal(true);
+    const onOpenPay = () => logic.handleShowPayModal();
     const onDeleteAppointment = logic.onDeleteAppointment;
 
     // --- ESTADOS ---
@@ -260,11 +260,17 @@ export default function BlankPage(props) {
                                     <Button onClick={onOpenPay} className="w-full bg-green-600 hover:bg-green-700">
                                         Cobrar Ahora
                                     </Button>
+                                    <Button onClick={onOpenPay} className="w-full bg-green-600 hover:bg-green-700">
+                                        Cobrar Ahora
+                                    </Button>
                                 </div>
                             )}
                         </div>
                         {/* FOOTER DESKTOP */}
                         <div className="hidden sm:flex justify-end gap-3">
+                            <Button onClick={onOpenPay} className="bg-green-600 hover:bg-green-700 px-8">
+                                Cobrar
+                            </Button>
                             <Button onClick={onOpenPay} className="bg-green-600 hover:bg-green-700 px-8">
                                 Cobrar
                             </Button>
