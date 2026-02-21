@@ -159,7 +159,7 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
 
             {/* Modal */}
             {isModalOpen && (
-                <Modal
+                <Moddal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onSave={handleSaveCustomer}
@@ -168,7 +168,7 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
                     handleDeleteCustomer={handleDeleteCustomer}
                 />
             )}
-            
+
 
             <Modal
                 className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
