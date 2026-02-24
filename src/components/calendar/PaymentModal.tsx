@@ -11,7 +11,7 @@ interface PaymentModalProps {
 export const PaymentModal: React.FC<PaymentModalProps> = ({
     isOpen, onClose, total, onFinalize
 }) => {
-    const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD'>('CASH');
+    const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER'>('CASH');
     const [amountReceived, setAmountReceived] = useState<string>('');
 
     const changeAmount = amountReceived ? Math.max(0, Number(amountReceived) - total) : 0;
@@ -53,11 +53,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 <span>💵</span> Efectivo
                             </button>
                             <button
-                                onClick={() => setPaymentMethod('CARD')}
+                                onClick={() => setPaymentMethod('TRANSFER')}
                                 className={`py-3 px-4 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all
-                  ${paymentMethod === 'CARD' ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-200 text-gray-600'}`}
+                  ${paymentMethod === 'TRANSFER' ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-200 text-gray-600'}`}
                             >
-                                <span>💳</span> Tarjeta
+                                <span>💳</span> Transferencia
                             </button>
                         </div>
                     </div>
