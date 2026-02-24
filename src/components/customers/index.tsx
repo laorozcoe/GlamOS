@@ -155,8 +155,6 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
                 </div>
             </div>
 
-
-
             {/* Modal */}
             {isModalOpen && (
                 <Moddal

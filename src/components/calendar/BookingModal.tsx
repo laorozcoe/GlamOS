@@ -43,7 +43,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
         customer, handleChangeCustomer,
         date, setDate, time, setTime, timeEnd, setTimeEnd,
         appointments, onDeleteService, total,
-        onSave, onOpenPay, onDeleteAppointment,setExtraServicesModal
+        onSave, onOpenPay, onDeleteAppointment, setExtraServicesModal
     } = props;
 
     // --- ESTADOS ---
@@ -57,7 +57,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
     }));
 
     const handleRemoveInstance = (serviceId: any) => {
-        const indexToRemove = [...appointments].reverse().findIndex((a: any) => a.id === serviceId);
+        const indexToRemove = [...appointments].reverse().findIndex((a: any) => a.serviceId === serviceId);
         if (indexToRemove !== -1) {
             const realIndex = appointments.length - 1 - indexToRemove;
             onDeleteService(realIndex);
@@ -389,15 +389,15 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                         {isEditing ? "Actualizar" : "Agendar Cita"}
                                     </Button>
                                 </div>
-                               <div className="gap-2 flex">
-                                 <Button onClick={() => setExtraServicesModal(true)} variant="outline" className=" bg-green-600 hover:bg-green-700">
-                                    <SquarePlus/>
-                                </Button>
-                                <Button onClick={onOpenPay} className="w-full bg-green-600 hover:bg-green-700">
-                                    Cobrar Ahora
-                                </Button>
-                               </div>
-                                
+                                <div className="gap-2 flex">
+                                    <Button onClick={() => setExtraServicesModal(true)} variant="outline" className=" bg-green-600 hover:bg-green-700">
+                                        <SquarePlus />
+                                    </Button>
+                                    <Button onClick={onOpenPay} className="w-full bg-green-600 hover:bg-green-700">
+                                        Cobrar Ahora
+                                    </Button>
+                                </div>
+
                             </div>
                         )}
                     </div>
@@ -413,7 +413,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                             {isEditing ? "Guardar Cambios" : "Crear Cita"}
                         </Button>
                         <Button onClick={() => setExtraServicesModal(true)} variant="outline" className="">
-                            <SquarePlus/>
+                            <SquarePlus />
                         </Button>
                         <Button onClick={onOpenPay} className="bg-green-600 hover:bg-green-700 px-8">
                             Cobrar

@@ -16,7 +16,7 @@ export const ServiceSelector = ({
 
     const getServiceCount = (serviceId: any) => {
         if (!appointments) return 0;
-        return appointments.filter((a: any) => a.id === serviceId).length;
+        return appointments.filter((a: any) => a.serviceId === serviceId).length;
     };
 
     return (
@@ -48,7 +48,7 @@ export const ServiceSelector = ({
 
             {/* --- GRID DE SERVICIOS --- */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 pb-28">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 ">
                     {services
                         .filter((s: any) => !selectedCategory || s.categoryId === selectedCategory)
                         .map((ss: any) => {

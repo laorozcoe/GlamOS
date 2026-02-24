@@ -50,7 +50,7 @@ export const useCalendarLogic = () => {
 
     const handleShowPayModal = () => {
         debugger
-         if (!time || !date) {
+        if (!time || !date) {
             toast.warning("Ingresa fecha y hora");
             return
         }
@@ -190,21 +190,21 @@ export const useCalendarLogic = () => {
             const fullServices = appointmentServices.map((apptService: any) => {
                 // 1. Intenta buscarlo en el catálogo (si tiene ID de servicio)
                 // const catalogService = currentCatalog.find((s: any) => s.id === apptService.serviceId);
-                
+
                 // 2. Si está en el catálogo, úsalo
                 // if (catalogService) return catalogService;
 
                 // 3. Si viene poblado desde la DB (relación), úsalo
-                if (apptService.service){
+                if (apptService.service) {
                     return {
-                        id: apptService.id,  
-                        name:apptService.service.name,
-                        duration:apptService.service.duration,
-                        price:apptService.price,
+                        id: apptService.id,
+                        name: apptService.service.name,
+                        duration: apptService.service.duration,
+                        price: apptService.price,
                         descriptionTicket: apptService.service.descriptionTicket,
                         serviceId: apptService.serviceId
                     };
-                } 
+                }
 
                 // 4. FALLBACK: Es un Servicio Extra (Manual)
                 // Construimos un objeto "falso" que tenga la misma estructura que tus servicios
@@ -213,7 +213,7 @@ export const useCalendarLogic = () => {
                     name: "Servicio Extra",
                     duration: 0,                 // Duración por defecto
                     price: apptService.price,    // Usamos el precio que sí viene en el JSON (110)
-                    descriptionTicket:"Servicio Extra",      // Nombre por defecto
+                    descriptionTicket: "Servicio Extra",      // Nombre por defecto
                     isCustom: true               // (Opcional) Bandera por si quieres pintarlo diferente
                 };
             }).filter(Boolean);
@@ -227,7 +227,11 @@ export const useCalendarLogic = () => {
     // Agregar servicio al carrito
     const addServiceToCart = (service: any) => {
         debugger
-        setAppointments(prev => [...prev, service]);
+        const serviceCopia = Object.assign({}, service);
+        serviceCopia.serviceId = serviceCopia.id;
+        serviceCopia.id = null;
+
+        setAppointments(prev => [...prev, serviceCopia]);
 
         // Efecto visual flash
         setFlashCategory(service.id);
@@ -321,7 +325,7 @@ export const useCalendarLogic = () => {
 
             // Recargar eventos (idealmente optimista, pero aquí recargamos)
             // const newEvents = await getAppointmentsPrisma(business?.id);
-            const newEvents = await getAppointmentsByDatePrisma(business?.id,currentDate);
+            const newEvents = await getAppointmentsByDatePrisma(business?.id, currentDate);
             setEvents(newEvents);
 
         } catch (error) {

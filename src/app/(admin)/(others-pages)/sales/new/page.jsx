@@ -11,7 +11,7 @@ import Button from "@/components/ui/button/Button";
 import { Trash, User, Calendar, Sparkles, Receipt, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useCalendarLogic } from '@/components/calendar/useCalendar'
 
-export default function BlankPage(props) {
+export default function BlankPage() {
     const logic = useCalendarLogic();
     const isOpen = logic.isOpen;
     const onClose = logic.closeModal;
@@ -122,20 +122,20 @@ export default function BlankPage(props) {
 
     // 2. SECCIÓN SERVICIOS (El Selector)
     const ServicesSection = () => (
-        <div className="h-full flex flex-col">
+        <div className="flex flex-col h-96">
             {/* En móvil, el ServiceSelector debe ocupar todo el alto */}
             <div className="flex-1 min-h-0">
-                {/* <ServiceSelector
-                    services={props.services}
-                    servicesCategories={props.servicesCategories}
-                    selectedCategory={props.selectedCategory}
-                    setSelectedCategory={props.setSelectedCategory}
-                    onAddService={props.onAddService}
-                    flashCategory={props.flashCategory}
-                    // Pasamos props extra para permitir restar desde aquí si el componente lo soporta
+                <ServiceSelector
+                    services={logic.services}
+                    servicesCategories={logic.servicesCategories}
+                    selectedCategory={logic.selectedCategory}
+                    setSelectedCategory={logic.setSelectedCategory}
+                    onAddService={logic.onAddService}
+                    flashCategory={logic.flashCategory}
+                    // Pasamos logic extra para permitir restar desde aquí si el componente lo soporta
                     appointments={appointments}
                     onRemoveService={handleRemoveInstance}
-                /> */}
+                />
             </div>
         </div>
     );
@@ -183,10 +183,15 @@ export default function BlankPage(props) {
 
     return (
         <>
-            <div>
+            <div className="bg-red-500 h-full flex flex-col">
                 <PageBreadcrumb pageTitle="Nueva Venta" />
-                <div className=" rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/3 xl:px-10 xl:py-12">
-                    <div className="flex items-center gap-3">
+                <div className=" rounded-2xl border border-gray-200 bg-white flex-1  px-5 py-7 dark:border-gray-800 dark:bg-white/3 xl:px-10 xl:py-12">
+
+
+
+
+
+                    <div className="flex items-center gap-3 sm:hidden">
                         {/* Botón Back solo en móvil si no estamos en la primera tab */}
                         <button
                             className={`sm:hidden p-1 -ml-2 text-gray-500 ${mobileTab === 'info' ? 'hidden' : ''}`}
@@ -220,7 +225,7 @@ export default function BlankPage(props) {
                                 {/* <div className="mb-6">
                                     <InfoSection />
                                 </div> */}
-                                <div className="h-[500px]">
+                                <div className="bg-red-600">
                                     <h3 className="font-bold mb-3">Seleccionar Servicios</h3>
                                     <ServicesSection />
                                 </div>
@@ -233,49 +238,9 @@ export default function BlankPage(props) {
                         </div>
                     </div>
 
-                    {/* --- FOOTER (ACCIONES) --- */}
-                    <div className="flex-none p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
-                        {/* FOOTER MÓVIL */}
-                        <div className="flex sm:hidden gap-3">
-                            {mobileTab === 'info' && (
-                                <Button className="w-full flex justify-between" onClick={() => setMobileTab('services')}>
-                                    <span>Siguiente: Servicios</span> <ChevronRight size={18} />
-                                </Button>
-                            )}
 
-                            {mobileTab === 'services' && (
-                                <div className="w-full flex gap-2">
-                                    <div className="flex-1 flex flex-col justify-center px-2">
-                                        <span className="text-xs text-gray-500">Total</span>
-                                        <span className="font-bold text-lg">${total}</span>
-                                    </div>
-                                    <Button className="flex-1" onClick={() => setMobileTab('summary')}>
-                                        Ver Resumen ({appointments.length})
-                                    </Button>
-                                </div>
-                            )}
 
-                            {mobileTab === 'summary' && (
-                                <div className="w-full flex flex-col gap-2">
-                                    <Button onClick={onOpenPay} className="w-full bg-green-600 hover:bg-green-700">
-                                        Cobrar Ahora
-                                    </Button>
-                                    <Button onClick={onOpenPay} className="w-full bg-green-600 hover:bg-green-700">
-                                        Cobrar Ahora
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                        {/* FOOTER DESKTOP */}
-                        <div className="hidden sm:flex justify-end gap-3">
-                            <Button onClick={onOpenPay} className="bg-green-600 hover:bg-green-700 px-8">
-                                Cobrar
-                            </Button>
-                            <Button onClick={onOpenPay} className="bg-green-600 hover:bg-green-700 px-8">
-                                Cobrar
-                            </Button>
-                        </div>
-                    </div>
+                    {/* FOOTER */}
                 </div>
             </div>
             <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} className="max-w-sm p-6 rounded-2xl">
