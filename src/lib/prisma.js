@@ -960,3 +960,204 @@ export async function deleteReviewPrisma(businessId, id) {
 
     return review
 }
+
+
+//corte de caja
+export async function getCashCloseSummary(businessId) {
+    // A. Buscar el último corte
+    const lastClose = await prisma.cashClose.findFirst({
+        where: { businessId },
+        orderBy: { closingDate: 'desc' },
+    })
+
+    const openingDate = lastClose
+        ? lastClose.closingDate
+        : new Date(new Date().setHours(0, 0, 0, 0))
+    const closingDate = new Date()
+
+    // B. Buscar ventas y sus pagos completados
+    const sales = await prisma.sale.findMany({
+        where: {
+            businessId,
+            status: 'COMPLETED',
+            createdAt: {
+                gte: openingDate,
+                lte: closingDate,
+            },
+        },
+        include: {
+            payments: {
+                where: {
+                    status: 'COMPLETED' // Fundamental: solo sumar pagos exitosos
+                }
+            }
+        }
+    })
+
+    // C. Clasificar los totales por método de pago
+    let cashExpected = 0
+    let cardTotal = 0
+    let transferTotal = 0
+
+    sales.forEach(sale => {
+        sale.payments.forEach(payment => {
+            // Ajusta 'payment.amount' por el nombre real de tu campo de monto en el modelo Payment
+            if (payment.method === 'CASH') cashExpected += payment.amount
+            if (payment.method === 'CARD') cardTotal += payment.amount
+            if (payment.method === 'TRANSFER') transferTotal += payment.amount
+        })
+    })
+
+    return {
+        openingDate,
+        closingDate,
+        cashExpected,
+        cardTotal,
+        transferTotal,
+        totalSales: cashExpected + cardTotal + transferTotal,
+        salesCount: sales.length,
+    }
+}
+
+// // 1. Obtener los datos para la pantalla del corte
+// export async function getCashCloseSummary(businessId) {
+//     // A. Buscar cuándo fue el último corte de caja
+//     const lastClose = await prisma.cashClose.findFirst({
+//         where: { businessId },
+//         orderBy: { closingDate: 'desc' },
+//     })
+
+//     // Si no hay corte previo, asumimos que es el primero del día (ej. desde las 00:00)
+//     const openingDate = lastClose
+//         ? lastClose.closingDate
+//         : new Date(new Date().setHours(0, 0, 0, 0))
+
+//     const closingDate = new Date()
+
+//     // B. Buscar las ventas completadas en ese rango de tiempo
+//     const sales = await prisma.sale.findMany({
+//         where: {
+//             businessId,
+//             status: 'COMPLETED',
+//             createdAt: {
+//                 gte: openingDate,
+//                 lte: closingDate,
+//             },
+//         },
+//         // Si quieres incluir los pagos para filtrar por efectivo:
+//         // include: { payments: true } 
+//     })
+
+//     // C. Calcular el total esperado
+//     // NOTA: Aquí deberías filtrar solo los pagos en EFECTIVO si manejas tarjetas
+//     const cashExpected = sales.reduce((acc, sale) => acc + sale.total, 0)
+
+//     return {
+//         openingDate,
+//         closingDate,
+//         cashExpected,
+//         salesCount: sales.length,
+//     }
+// }
+
+// 2. Guardar el corte de caja en la base de datos
+export async function createCashClose(data) {
+    const difference = data.cashActual - data.cashExpected
+
+    const cashClose = await prisma.cashClose.create({
+        data: {
+            businessId: data.businessId,
+            userId: data.userId,
+            openingDate: data.openingDate,
+            closingDate: new Date(),
+            cashExpected: data.cashExpected,
+            cashActual: data.cashActual,
+            difference: difference,
+            notes: data.notes,
+        },
+    })
+
+    return cashClose
+}
+
+export async function getDailySummary(businessId) {
+    // Rango de fechas para "Hoy" (desde las 00:00:00 hasta las 23:59:59)
+    const today = new Date()
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0))
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999))
+
+    // Buscar empleados con sus ventas y citas de HOY
+    const employees = await prisma.employee.findMany({
+        where: { businessId },
+        include: {
+            user: {
+                select: {
+                    name: true,
+                    lastName: true,
+                    email: true,
+                },
+            },
+            // Ventas completadas hoy
+            sales: {
+                where: {
+                    createdAt: { gte: startOfDay, lte: endOfDay },
+                    status: 'COMPLETED',
+                },
+                include: {
+                    payments: {
+                        where: { status: 'COMPLETED' },
+                    },
+                },
+            },
+            // Citas programadas para hoy que siguen PENDING (o que no se han cobrado)
+            appointments: {
+                where: {
+                    start: { gte: startOfDay, lte: endOfDay },
+                    status: 'PENDING', // Puedes ajustar esto si usas otro estado
+                },
+            },
+        },
+    })
+
+    // Variables para los totales globales del negocio
+    let totalDay = 0
+    let totalCashDay = 0
+    let totalCardDay = 0
+
+    // Procesar los datos por cada empleado
+    const employeeStats = employees.map((emp) => {
+        let cash = 0
+        let card = 0
+
+        emp.sales.forEach((sale) => {
+            sale.payments.forEach((payment) => {
+                // Asumiendo que tu modelo Payment tiene el campo 'amount'
+                if (payment.method === 'CASH') {
+                    cash += payment.amount
+                    totalCashDay += payment.amount
+                }
+                if (payment.method === 'CARD') {
+                    card += payment.amount
+                    totalCardDay += payment.amount
+                }
+                totalDay += payment.amount
+            })
+        })
+
+        return {
+            id: emp.id,
+            name: `${emp.user.name} ${emp.user.lastName}` || 'Empleado sin nombre', // Asumiendo que Employee tiene un campo name
+            cash,
+            card,
+            pendingAppointments: emp.appointments.length,
+        }
+    })
+
+    return {
+        date: startOfDay,
+        totalDay,
+        totalCashDay,
+        totalCardDay,
+        employeeStats,
+    }
+}
