@@ -43,6 +43,7 @@ export async function getAppointmentPrisma(businessId, id) {
         where: {
             businessId: businessId,
             id: id,
+            active: true
         },
         include: {
             employee: {
@@ -75,7 +76,7 @@ export async function getAppointmentPrisma(businessId, id) {
 
 export async function getAppointmentsPrisma(businessId) {
     const appointment = await prisma.appointment.findMany({
-        where: { businessId: businessId },
+        where: { businessId: businessId, active: true },
         include: {
             employee: {
                 include: {
@@ -111,7 +112,7 @@ export async function getAppointmentsByDatePrisma(businessId, start) {
     const startDate = new Date(`${start}T00:00:00.000Z`);
     const endDate = new Date(`${start}T23:59:59.999Z`);
     const appointment = await prisma.appointment.findMany({
-        where: { businessId: businessId, start: { gte: startDate }, end: { lte: endDate } },
+        where: { businessId: businessId, start: { gte: startDate }, end: { lte: endDate }, active: true },
         include: {
             employee: {
                 include: {
@@ -147,7 +148,7 @@ export async function updateAppointment(payload, appointmentId) {
 
     await prisma.appointment.update({
         where: {
-            id: appointmentId
+            id: appointmentId, active: true
         },
         data: {
             // 1. Actualizamos los datos planos de la Cita
@@ -187,7 +188,8 @@ export async function deleteAppointmentPrisma(appointmentId) {
 
     await prisma.appointment.delete({
         where: {
-            id: appointmentId
+            id: appointmentId,
+            active: true
         },
     });
 
@@ -217,7 +219,7 @@ export async function seed() {
 export async function getBusinessPrisma(slug) {
 
     const business = await prisma.business.findUnique({
-        where: { slug },
+        where: { slug, active: true },
     })
 
     return business
@@ -246,6 +248,7 @@ export async function getServiceCategoryPrisma(businessId, name) {
         where: {
             businessId: businessId,
             name: name,
+            active: true,
         },
     })
 
@@ -256,6 +259,7 @@ export async function getServicesCategoriesPrisma(businessId) {
     const serviceCategories = await prisma.serviceCategory.findMany({
         where: {
             businessId: businessId,
+            active: true,
         },
     })
 
@@ -267,6 +271,7 @@ export async function updateServiceCategoryPrisma(id, businessId, name, order, a
         where: {
             id: id,
             businessId: businessId,
+            active: true,
         },
         data: {
             name,
@@ -283,6 +288,7 @@ export async function deleteServiceCategoryPrisma(id, businessId) {
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -316,6 +322,7 @@ export async function getServicePrisma(businessId, name) {
         where: {
             businessId: businessId,
             name: name,
+            active: true
         },
     })
 
@@ -327,6 +334,7 @@ export async function getServicesPrisma(businessId) {
     const services = await prisma.service.findMany({
         where: {
             businessId: businessId,
+            active: true
         },
     })
 
@@ -339,6 +347,7 @@ export async function getServicesByCategoryPrisma(businessId, categoryId) {
         where: {
             businessId: businessId,
             categoryId: categoryId,
+            active: true
         },
     })
 
@@ -351,6 +360,7 @@ export async function updateServicePrisma(id, businessId, categoryId, name, desc
             id: id,
             businessId: businessId,
             categoryId: categoryId,
+            active: true
         },
         data: {
             name,
@@ -369,6 +379,7 @@ export async function deleteServicePrisma(id, businessId) {
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -423,6 +434,7 @@ export async function getEmployeePrisma(businessId, userId) {
         where: {
             businessId: businessId,
             userId: userId,
+            active: true
         },
         include: {
             user: {
@@ -469,6 +481,7 @@ export async function updateEmployeePrisma(id, businessId, userId, phone, bio, c
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
         data: {
             userId,
@@ -487,6 +500,7 @@ export async function deleteEmployeePrisma(id, businessId) {
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -521,6 +535,7 @@ export async function getUserPrisma(username, businessId) {
         where: {
             username: username,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -532,6 +547,7 @@ export async function updateUserPrisma(id, businessId, name, username, lastName,
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
         data: {
             name,
@@ -550,6 +566,7 @@ export async function deleteUserPrisma(id, businessId) {
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -567,7 +584,8 @@ export async function createClientPrisma(businessId, name, phone, email, notes, 
     const existingClient = await prisma.client.findFirst({
         where: {
             businessId: businessId,
-            phone: phone
+            phone: phone,
+            active: true
         }
     });
 
@@ -601,6 +619,7 @@ export async function getClientPrisma(businessId, phone) {
         where: {
             businessId: businessId,
             phone: phone,
+            active: true
         },
         include: {
             employee: {
@@ -624,6 +643,7 @@ export async function getClientsPrisma(businessId) {
     const clients = await prisma.client.findMany({
         where: {
             businessId: businessId,
+            active: true
         },
         include: {
             employee: {
@@ -648,6 +668,7 @@ export async function updateClientPrisma(id, businessId, name, phone, email, not
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
         data: {
             name,
@@ -666,6 +687,7 @@ export async function deleteClientPrisma(id, businessId) {
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -696,6 +718,7 @@ export async function getPaymentPrisma(businessId, appointmentId) {
         where: {
             appointmentId: appointmentId,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -706,6 +729,7 @@ export async function getPaymentsPrisma(businessId) {
     const payments = await prisma.payment.findMany({
         where: {
             businessId: businessId,
+            active: true
         },
     })
 
@@ -717,6 +741,7 @@ export async function updatePaymentPrisma(businessId, id, amount, method, status
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
         data: {
             amount,
@@ -734,6 +759,7 @@ export async function deletePaymentPrisma(businessId, id) {
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -799,7 +825,7 @@ export const createSalePrisma = async (data) => {
             // 4. Si la venta viene de una cita, la marcamos como completada
             if (appointmentId) {
                 await tx.appointment.update({
-                    where: { id: appointmentId },
+                    where: { id: appointmentId, active: true },
                     data: { status: 'COMPLETED', paymentStatus: "PAID" },
                 });
             }
@@ -822,6 +848,7 @@ export async function getSalePrisma(businessId, id) {
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -832,6 +859,7 @@ export async function getSalesPrisma(businessId) {
     const sales = await prisma.sale.findMany({
         where: {
             businessId: businessId,
+            active: true
         },
     })
 
@@ -843,6 +871,7 @@ export async function updateSalePrisma(id, businessId, clientId, employeeId, app
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
         data: {
             businessId, clientId, employeeId, appointmentId, subtotal, discount, total, status, notes
@@ -857,6 +886,7 @@ export async function deleteSalePrisma(businessId, id) {
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -882,6 +912,7 @@ export async function getSaleItemPrisma(businessId, saleId) {
         where: {
             saleId: saleId,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -892,6 +923,7 @@ export async function updateSaleItemPrisma(id, saleId, serviceId, description, p
     const saleItem = await prisma.saleItem.update({
         where: {
             id: id,
+            active: true
         },
         data: {
             saleId, serviceId, description, price, quantity
@@ -906,6 +938,7 @@ export async function deleteSaleItemPrisma(businessId, id) {
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -931,6 +964,7 @@ export async function getReviewPrisma(businessId, id) {
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -941,6 +975,7 @@ export async function updateReviewPrisma(id, businessId, clientId, rating, comme
     const review = await prisma.review.update({
         where: {
             id: id,
+            active: true
         },
         data: {
             businessId, clientId, rating, comment
@@ -955,6 +990,7 @@ export async function deleteReviewPrisma(businessId, id) {
         where: {
             id: id,
             businessId: businessId,
+            active: true
         },
     })
 
@@ -966,7 +1002,7 @@ export async function deleteReviewPrisma(businessId, id) {
 export async function getCashCloseSummary(businessId) {
     // A. Buscar el último corte
     const lastClose = await prisma.cashClose.findFirst({
-        where: { businessId },
+        where: { businessId, active: true },
         orderBy: { closingDate: 'desc' },
     })
 
@@ -980,6 +1016,7 @@ export async function getCashCloseSummary(businessId) {
         where: {
             businessId,
             status: 'COMPLETED',
+            active: true,
             createdAt: {
                 gte: openingDate,
                 lte: closingDate,
@@ -988,7 +1025,8 @@ export async function getCashCloseSummary(businessId) {
         include: {
             payments: {
                 where: {
-                    status: 'COMPLETED' // Fundamental: solo sumar pagos exitosos
+                    status: 'COMPLETED', // Fundamental: solo sumar pagos exitosos
+                    active: true
                 }
             }
         }
@@ -1019,47 +1057,6 @@ export async function getCashCloseSummary(businessId) {
     }
 }
 
-// // 1. Obtener los datos para la pantalla del corte
-// export async function getCashCloseSummary(businessId) {
-//     // A. Buscar cuándo fue el último corte de caja
-//     const lastClose = await prisma.cashClose.findFirst({
-//         where: { businessId },
-//         orderBy: { closingDate: 'desc' },
-//     })
-
-//     // Si no hay corte previo, asumimos que es el primero del día (ej. desde las 00:00)
-//     const openingDate = lastClose
-//         ? lastClose.closingDate
-//         : new Date(new Date().setHours(0, 0, 0, 0))
-
-//     const closingDate = new Date()
-
-//     // B. Buscar las ventas completadas en ese rango de tiempo
-//     const sales = await prisma.sale.findMany({
-//         where: {
-//             businessId,
-//             status: 'COMPLETED',
-//             createdAt: {
-//                 gte: openingDate,
-//                 lte: closingDate,
-//             },
-//         },
-//         // Si quieres incluir los pagos para filtrar por efectivo:
-//         // include: { payments: true } 
-//     })
-
-//     // C. Calcular el total esperado
-//     // NOTA: Aquí deberías filtrar solo los pagos en EFECTIVO si manejas tarjetas
-//     const cashExpected = sales.reduce((acc, sale) => acc + sale.total, 0)
-
-//     return {
-//         openingDate,
-//         closingDate,
-//         cashExpected,
-//         salesCount: sales.length,
-//     }
-// }
-
 // 2. Guardar el corte de caja en la base de datos
 export async function createCashClose(data) {
     const difference = data.cashActual - data.cashExpected
@@ -1088,7 +1085,7 @@ export async function getDailySummary(businessId) {
 
     // Buscar empleados con sus ventas y citas de HOY
     const employees = await prisma.employee.findMany({
-        where: { businessId },
+        where: { businessId, active: true },
         include: {
             user: {
                 select: {
@@ -1102,10 +1099,11 @@ export async function getDailySummary(businessId) {
                 where: {
                     createdAt: { gte: startOfDay, lte: endOfDay },
                     status: 'COMPLETED',
+                    active: true
                 },
                 include: {
                     payments: {
-                        where: { status: 'COMPLETED' },
+                        where: { status: 'COMPLETED', active: true },
                     },
                 },
             },
@@ -1114,6 +1112,7 @@ export async function getDailySummary(businessId) {
                 where: {
                     start: { gte: startOfDay, lte: endOfDay },
                     status: 'PENDING', // Puedes ajustar esto si usas otro estado
+                    active: true
                 },
             },
         },
