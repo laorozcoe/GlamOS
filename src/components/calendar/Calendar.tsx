@@ -110,7 +110,7 @@ export default function CalendarGrid() {
 
   const calculateEventPositions = (events: any[]) => {
     // 1. Agrupar por empleado
-    const groupsByEmployee = events.reduce((acc, event) => {
+    const groupsByEmployee = events.reduce((acc: any, event: any) => {
       const empId = event.employeeId;
       if (!acc[empId]) acc[empId] = [];
       acc[empId].push({ ...event });
@@ -123,15 +123,15 @@ export default function CalendarGrid() {
       const employeeEvents = groupsByEmployee[empId];
 
       // 2. Ordenar por fecha de inicio
-      employeeEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+      employeeEvents.sort((a: any, b: any) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
       // 3. Identificar TODOS los choques (pasada de reconocimiento)
-      employeeEvents.forEach((event) => {
+      employeeEvents.forEach((event: any) => {
         const currentStart = new Date(event.start).getTime();
         const currentEnd = new Date(event.end).getTime();
 
         // Buscamos colisiones en todo el universo del empleado (pasado y futuro)
-        event.allCollisions = employeeEvents.filter(other => {
+        event.allCollisions = employeeEvents.filter((other: any) => {
           if (event.id === other.id) return false;
           const otherStart = new Date(other.start).getTime();
           const otherEnd = new Date(other.end).getTime();
@@ -142,7 +142,7 @@ export default function CalendarGrid() {
       // 4. Asignar posiciones (pasada de renderizado)
       const placedEvents: any[] = [];
 
-      employeeEvents.forEach((event) => {
+      employeeEvents.forEach((event: any) => {
         if (event.allCollisions.length === 0) {
           // Regla 1: Sin traslape total
           event.width = '100%';
