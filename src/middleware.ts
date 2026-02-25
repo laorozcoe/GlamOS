@@ -192,6 +192,8 @@ function isPublicFile(pathname: string) {
     pathname.startsWith("/images") ||
     pathname.startsWith("/icons") ||
     pathname.startsWith("/assets") ||
+    pathname === "/manifest.json" || // <--- PERMITIR MANIFEST ESTÁTICO
+    pathname === "/manifest.webmanifest" || // <--- PERMITIR MANIFEST DINÁMICO
     pathname.match(/\.(png|jpg|jpeg|gif|svg|webp|css|js|map)$/)
   )
 }
