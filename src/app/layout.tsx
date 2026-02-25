@@ -9,6 +9,18 @@ import Head from 'next/head';
 import { ToastContainer } from 'react-toastify';
 // ⚠️ IMPORTANTE: Importar los estilos CSS obligatoriamente
 import 'react-toastify/dist/ReactToastify.css';
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: 'Brillarte Bloom',
+  description: 'Sistema de reservas',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Brillarte',
+  },
+}
 
 export const dynamic = "force-dynamic"; // 👈 ESTO ARREGLA
 
