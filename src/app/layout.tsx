@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   },
 };
 
-// export const dynamic = "force-dynamic"; // 👈 ESTO ARREGLA
+export const dynamic = "force-dynamic"; // 👈 ESTO ARREGLA la busqueda del bussiness id
 
 const outfit = Outfit({
   subsets: ["latin"],
