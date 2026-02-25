@@ -83,7 +83,7 @@ export default function DailySummaryScreen({ businessId }: { businessId: string 
 
       {/* HEADER Y TOTALES DEL DÍA */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center sm:text-start">
           Resumen de Hoy ({new Date(summary.date).toLocaleDateString()})
         </h1>
 
@@ -107,10 +107,10 @@ export default function DailySummaryScreen({ businessId }: { businessId: string 
 
       {/* TARJETAS POR EMPLEADO */}
       <div>
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <div className="text-2xl font-semibold text-gray-800 mb-4 flex items-center justify-center sm:justify-start gap-2 text-center sm:text-start">
           <Users className="w-6 h-6 text-gray-500" />
-          Rendimiento por Empleado
-        </h2>
+          <h2 className="">Rendimiento por Empleado</h2>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {summary.employeeStats.map((emp: any) => (

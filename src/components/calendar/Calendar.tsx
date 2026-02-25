@@ -2,7 +2,7 @@
 import { BookingModal } from "@/components/calendar/BookingModal";
 import { PaymentModal } from "@/components/calendar/PaymentModal";
 import { SaleDetailsModal } from "@/components/calendar/SaleDetailsModal";
-import {ExtraServiceModal} from "@/components/calendar/ExtraServiceModal";
+import { ExtraServiceModal } from "@/components/calendar/ExtraServiceModal";
 import { useCalendarLogic } from "@/components/calendar/useCalendar";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import InputField from "@/components/form/input/InputField";
@@ -107,6 +107,76 @@ const getDurationInMinutes = (start: any, end: any) => {
 }
 
 export default function CalendarGrid() {
+
+  const calculateEventPositions = (events: any[]) => {
+    // 1. Agrupar por empleado
+    const groupsByEmployee = events.reduce((acc, event) => {
+      const empId = event.employeeId;
+      if (!acc[empId]) acc[empId] = [];
+      acc[empId].push({ ...event });
+      return acc;
+    }, {});
+
+    const processedEvents: any[] = [];
+
+    for (const empId in groupsByEmployee) {
+      const employeeEvents = groupsByEmployee[empId];
+
+      // 2. Ordenar por fecha de inicio
+      employeeEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+
+      // 3. Identificar TODOS los choques (pasada de reconocimiento)
+      employeeEvents.forEach((event) => {
+        const currentStart = new Date(event.start).getTime();
+        const currentEnd = new Date(event.end).getTime();
+
+        // Buscamos colisiones en todo el universo del empleado (pasado y futuro)
+        event.allCollisions = employeeEvents.filter(other => {
+          if (event.id === other.id) return false;
+          const otherStart = new Date(other.start).getTime();
+          const otherEnd = new Date(other.end).getTime();
+          return currentStart < otherEnd && currentEnd > otherStart;
+        });
+      });
+
+      // 4. Asignar posiciones (pasada de renderizado)
+      const placedEvents: any[] = [];
+
+      employeeEvents.forEach((event) => {
+        if (event.allCollisions.length === 0) {
+          // Regla 1: Sin traslape total
+          event.width = '100%';
+          event.left = '0%';
+        } else {
+          // Regla 2 y 3: Hay colisión
+          // Revisamos quién de sus colisionadores YA fue posicionado en el left 0
+          const currentStart = new Date(event.start).getTime();
+          const currentEnd = new Date(event.end).getTime();
+
+          const isLeftOccupied = placedEvents.some(other => {
+            // Solo nos importa si el "other" está activo AL MISMO TIEMPO que el actual
+            const otherStart = new Date(other.start).getTime();
+            const otherEnd = new Date(other.end).getTime();
+            const overlaps = currentStart < otherEnd && currentEnd > otherStart;
+
+            return overlaps && other.left === '0%';
+          });
+
+          event.width = '50%';
+          event.left = isLeftOccupied ? '50%' : '0%';
+        }
+
+        placedEvents.push(event);
+        // Limpiamos la propiedad auxiliar antes de devolver el objeto
+        delete event.allCollisions;
+        processedEvents.push(event);
+      });
+    }
+
+    return processedEvents;
+  };
+
+
   const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
   const logic = useCalendarLogic();
   return (
@@ -183,9 +253,9 @@ export default function CalendarGrid() {
                 <div key={employee.id} className="flex-1 relative border-r border-transparent last:border-r-0">
 
                   {/* Filtramos las citas que pertenecen a esta columna */}
-                  {logic.events
-                    .filter(event => event.employeeId === employee.id)
-                    .map(event => {
+                  {calculateEventPositions(logic.events)
+                    .filter((event: any) => event.employeeId === employee.id)
+                    .map((event: any) => {
                       const pos = getPositionStyles(formatTime(event.start), getDurationInMinutes(event.start, event.end));
 
                       return (
@@ -196,8 +266,8 @@ export default function CalendarGrid() {
                           style={{
                             top: pos.top,
                             height: pos.height,
-                            width: "100%",  // 50% si hay empalme
-                            left: "0%",    // 0% o 50% según el empalme
+                            width: event.width || "100%",  // 50% si hay empalme
+                            left: event.left || "0%",    // 0% o 50% según el empalme
                             zIndex: 10         // Para que quede encima de las líneas
                           }}
                           onClick={() => logic.handleEventClick(event)}
@@ -243,9 +313,9 @@ export default function CalendarGrid() {
         onDeleteAppointment={logic.onDeleteAppointment}
         timeEnd={logic.timeEnd} setTimeEnd={logic.setTimeEnd}
 
-        setExtraServicesModal={logic.setExtraServicesModal} 
-        
-        />
+        setExtraServicesModal={logic.setExtraServicesModal}
+
+      />
 
       {/* MODAL DE PAGO */}
       <PaymentModal
@@ -262,16 +332,16 @@ export default function CalendarGrid() {
         event={logic.selectedEvent}
       />
 
-        {logic.extraServicesModal && (
-        <ExtraServiceModal 
-        isOpen={logic.extraServicesModal} 
-        onClose={() => logic.setExtraServicesModal(false)} 
-        extraService={logic.extraServices} 
-        setExtraService={logic.setExtraServices} 
-        onSave={logic.addServiceToCart} 
+      {logic.extraServicesModal && (
+        <ExtraServiceModal
+          isOpen={logic.extraServicesModal}
+          onClose={() => logic.setExtraServicesModal(false)}
+          extraService={logic.extraServices}
+          setExtraService={logic.setExtraServices}
+          onSave={logic.addServiceToCart}
         />
-        )}
-        
+      )}
+
 
     </>
   );
