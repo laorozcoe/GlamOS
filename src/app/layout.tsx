@@ -9,27 +9,27 @@ import Head from 'next/head';
 import { ToastContainer } from 'react-toastify';
 // ⚠️ IMPORTANTE: Importar los estilos CSS obligatoriamente
 import 'react-toastify/dist/ReactToastify.css';
-import { Metadata, Viewport } from 'next';
+// import { Metadata, Viewport } from 'next';
 
-// Nota: En versiones recientes de Next.js, el viewport se exporta por separado
-export const viewport: Viewport = {
-  themeColor: '#ffffff',
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false, // Evita que se haga zoom al tocar inputs en iOS
-};
+// // Nota: En versiones recientes de Next.js, el viewport se exporta por separado
+// export const viewport: Viewport = {
+//   themeColor: '#ffffff',
+//   width: 'device-width',
+//   initialScale: 1,
+//   maximumScale: 1,
+//   userScalable: false, // Evita que se haga zoom al tocar inputs en iOS
+// };
 
-export const metadata: Metadata = {
-  title: 'Brillarte Bloom',
-  description: 'Sistema de reservas',
-  manifest: '/manifest.json', // Aquí enlazas tu archivo de manifiesto
-  appleWebApp: {
-    capable: true, // ESTE ES EL QUE QUITA LAS BARRAS
-    title: 'Brillarte',
-    statusBarStyle: 'black-translucent', // Hace que la barra de la batería/hora se vea bien
-  },
-};
+// export const metadata: Metadata = {
+//   title: 'Brillarte Bloom',
+//   description: 'Sistema de reservas',
+//   manifest: '/manifest.json', // Aquí enlazas tu archivo de manifiesto
+//   appleWebApp: {
+//     capable: true, // ESTE ES EL QUE QUITA LAS BARRAS
+//     title: 'Brillarte',
+//     statusBarStyle: 'black-translucent', // Hace que la barra de la batería/hora se vea bien
+//   },
+// };
 
 export const dynamic = "force-dynamic"; // 👈 ESTO ARREGLA la busqueda del bussiness id
 
