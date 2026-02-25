@@ -23,7 +23,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'Brillarte Bloom',
   description: 'Sistema de reservas',
-  manifest: '/manifest.json',
+  manifest: '/site.webmanifest', // Aquí enlazas tu archivo de manifiesto
   appleWebApp: {
     capable: true, // ESTE ES EL QUE QUITA LAS BARRAS
     title: 'Brillarte',
