@@ -1,4 +1,7 @@
 "use client"
+// NUEVO: Importamos useState de React
+import { useState } from "react";
+
 import { BookingModal } from "@/components/calendar/BookingModal";
 import { PaymentModal } from "@/components/calendar/PaymentModal";
 import { SaleDetailsModal } from "@/components/calendar/SaleDetailsModal";
@@ -107,6 +110,16 @@ const getDurationInMinutes = (start: any, end: any) => {
 }
 
 export default function CalendarGrid() {
+  const logic = useCalendarLogic();
+  const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+
+  // NUEVO: Estado para controlar el empleado seleccionado en el dropdown
+  const [selectedEmpFilter, setSelectedEmpFilter] = useState<string>("ALL");
+
+  // NUEVO: Filtramos los empleados a mostrar basados en el select
+  const displayedEmployees = selectedEmpFilter === "ALL"
+    ? logic.employees
+    : logic.employees.filter((emp: any) => emp.id === selectedEmpFilter);
 
   const calculateEventPositions = (events: any[]) => {
     // 1. Agrupar por empleado
@@ -176,83 +189,90 @@ export default function CalendarGrid() {
     return processedEvents;
   };
 
-
-  const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
-  const logic = useCalendarLogic();
   return (
-
     <>
-      {/* <PageBreadcrumb pageTitle="Calendario" /> */}
       <div className="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/3 xl:px-10 xl:py-12">
-        {/* HEADER */}
-        <div className="flex justify-center gap-2 mb-2">
-          <Button onClick={() => { logic.handleUpdateDate(-1) }}>&lt;</Button>
-          <InputField type="date" value={logic.currentDate} onChange={(e) => logic.setCurrentDate(e.target.value)} />
-          <Button onClick={() => { logic.handleUpdateDate(1) }}>&gt;</Button>
+
+        {/* HEADER: Modificamos el layout para que incluya el Select */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+
+          {/* Controles de Fecha */}
+          <div className="flex justify-center gap-2 w-full md:w-auto">
+            <Button onClick={() => { logic.handleUpdateDate(-1) }}>&lt;</Button>
+            <InputField type="date" value={logic.currentDate} onChange={(e) => logic.setCurrentDate(e.target.value)} />
+            <Button onClick={() => { logic.handleUpdateDate(1) }}>&gt;</Button>
+          </div>
+
+          {/* NUEVO: Select de Empleados (útil para móvil y escritorio) */}
+          <div className="w-full md:w-64">
+            <select
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+              value={selectedEmpFilter}
+              onChange={(e) => setSelectedEmpFilter(e.target.value)}
+            >
+              <option value="ALL">Todas las estaciones</option>
+              {logic.employees.map((employee: any) => (
+                <option key={employee.id} value={employee.id}>
+                  {employee.user.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+
         <div className="flex-none bg-gray-50 border-b border-gray-200 z-20">
-          <div className="grid" style={{ gridTemplateColumns: `60px repeat(${logic.employees.length}, 1fr)` }}>
+          {/* NUEVO: Usamos displayedEmployees.length en lugar de logic.employees.length */}
+          <div className="grid" style={{ gridTemplateColumns: `60px repeat(${displayedEmployees.length}, 1fr)` }}>
             <div className="p-3 border-r border-gray-200"></div>
-            {logic.employees.map((employee) => (
+            {/* NUEVO: Iteramos sobre displayedEmployees */}
+            {displayedEmployees.map((employee: any) => (
               <div key={employee.id} className="p-3 text-center font-bold text-gray-700 border-r border-gray-200 last:border-r-0">
                 {employee.user.name}
               </div>
             ))}
           </div>
         </div>
+
         {/* BODY CON SCROLL */}
         <div className="flex-1 overflow-y-auto relative custom-scrollbar">
-          <div className="relative min-h-160"> {/* Altura mínima para que no se corte */}
+          <div className="relative min-h-160">
 
-            {/* 1. GRILLA DE FONDO (Horas y Medias Horas) */}
+            {/* 1. GRILLA DE FONDO */}
             {hours.map((hour) => (
               <div key={hour} className="flex border-b border-gray-100" style={{ height: `${HOUR_HEIGHT}px` }}>
 
-                {/* Columna de la Hora */}
                 <div className="w-15 flex-none border-r border-gray-100 bg-gray-50 text-xs text-gray-500 flex justify-center pt-2 relative">
                   <span className=" bg-gray-50 px-1">{hour}:00</span>
                 </div>
 
-                {/* Columnas de Fondo (Celdas Vacías) */}
-                {logic.employees.map((employee) => (
+                {/* NUEVO: Iteramos sobre displayedEmployees */}
+                {displayedEmployees.map((employee: any) => (
                   <div
                     key={employee.id}
-                    // 1. Agregamos cursor pointer y hover para indicar que es clickeable
                     className="flex-1 border-r border-gray-100 relative last:border-r-0 cursor-pointer hover:bg-blue-50/30 transition-colors"
-                    // 2. Aquí está la magia del Click
                     onClick={(e) => {
-                      // Obtenemos la altura del click relativo a este div
                       const rect = e.currentTarget.getBoundingClientRect();
-                      const y = e.clientY - rect.top; // Posición Y dentro de la celda (0 a 80px)
-
-                      // Si el click fue más abajo de la mitad (40px), son las :30, si no, :00
+                      const y = e.clientY - rect.top;
                       const isHalfHour = y > (HOUR_HEIGHT / 2);
                       const minutes = isHalfHour ? '30' : '00';
-
-                      // Formateamos la hora para que se vea bonita (ej. 09:30)
                       const formattedHour = hour.toString().padStart(2, '0');
                       const timeString = `${formattedHour}:${minutes}`;
 
                       logic.handleDateClick(employee, timeString);
-
-                      // toast.success(`📅 Nueva Cita\n👤 Estilista: ${employee.user.name}\n⏰ Hora: ${timeString}`);
-                      // alert(`📅 Nueva Cita\n👤 Estilista: ${employee.user.name}\n⏰ Hora: ${timeString}`);
                     }}
                   >
-                    {/* LÍNEA DE MEDIA HORA (Dashed) */}
                     <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-200 pointer-events-none"></div>
                   </div>
                 ))}
               </div>
             ))}
 
-            {/* 2. CAPA DE EVENTOS (Flotando encima) */}
+            {/* 2. CAPA DE EVENTOS */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none pl-15 flex">
-              {/* Renderizamos una "columna contenedor" transparente por cada estación */}
-              {logic.employees.map((employee: any) => (
+              {/* NUEVO: Iteramos sobre displayedEmployees */}
+              {displayedEmployees.map((employee: any) => (
                 <div key={employee.id} className="flex-1 relative border-r border-transparent last:border-r-0">
 
-                  {/* Filtramos las citas que pertenecen a esta columna */}
                   {calculateEventPositions(logic.events)
                     .filter((event: any) => event.employeeId === employee.id)
                     .map((event: any) => {
