@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import Select from "@/components/form/Select";
 import InputField from '@/components/form/input/InputField';
@@ -46,8 +46,14 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
         onSave, onOpenPay, onDeleteAppointment, setExtraServicesModal
     } = props;
 
+    useEffect(() => {
+        if (!isOpen) {
+            setMobileTab('services');
+        }
+    }, [isOpen]);
+
     // --- ESTADOS ---
-    const [mobileTab, setMobileTab] = useState<'info' | 'services' | 'summary'>('info');
+    const [mobileTab, setMobileTab] = useState<'info' | 'services' | 'summary'>('services');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     // --- HELPERS ---
@@ -132,6 +138,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                             <div>
                                                 <label className="text-sm font-medium mb-1 block">Nombre</label>
                                                 <Select
+                                                    className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm"
                                                     options={employeeOptions}
                                                     placeholder="Seleccionar..."
                                                     value={selectedEmployee?.id || selectedEmployee || ""}
@@ -153,11 +160,11 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
                                                     <label className="text-sm font-medium mb-1 block">Teléfono</label>
-                                                    <InputField name="phone" value={customer.phone} type="number" onChange={handleChangeCustomer} />
+                                                    <InputField className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" name="phone" value={customer.phone} type="number" onChange={handleChangeCustomer} />
                                                 </div>
                                                 <div>
                                                     <label className="text-sm font-medium mb-1 block">Nombre</label>
-                                                    <InputField name="name" value={customer.name} onChange={handleChangeCustomer} />
+                                                    <InputField className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" name="name" value={customer.name} onChange={handleChangeCustomer} />
                                                 </div>
 
 
@@ -172,16 +179,16 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                         <div className="grid grid-cols-1 gap-4">
                                             <div>
                                                 <label className="text-sm font-medium mb-1 block">Día</label>
-                                                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
+                                                <InputField type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
                                                     <label className="text-sm font-medium mb-1 block">Inicio</label>
-                                                    <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
+                                                    <InputField type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
                                                 </div>
                                                 <div>
                                                     <label className="text-sm font-medium mb-1 block">Fin</label>
-                                                    <input type="time" value={timeEnd} onChange={e => setTimeEnd(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
+                                                    <InputField type="time" value={timeEnd} onChange={e => setTimeEnd(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
                                                 </div>
                                             </div>
                                         </div>
@@ -248,7 +255,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                             <div>
                                                 <label className="text-sm font-medium mb-1 block">Nombre</label>
                                                 <Select
-                                                    className="border-gray-300 bg-white"
+                                                    className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm"
                                                     options={employeeOptions}
                                                     placeholder="Seleccionar..."
                                                     value={selectedEmployee?.id || selectedEmployee || ""}
@@ -286,16 +293,16 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-sm font-medium mb-1 block">Día</label>
-                                            <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
+                                            <InputField type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div>
                                                 <label className="text-sm font-medium mb-1 block">Inicio</label>
-                                                <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
+                                                <InputField type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
                                             </div>
                                             <div>
                                                 <label className="text-sm font-medium mb-1 block">Fin</label>
-                                                <input type="time" value={timeEnd} onChange={e => setTimeEnd(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
+                                                <InputField type="time" value={timeEnd} onChange={e => setTimeEnd(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
                                             </div>
                                         </div>
                                     </div>
@@ -423,7 +430,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
             </Modal>
 
             {/* Modal Eliminar */}
-            <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} className="max-w-sm p-6 rounded-2xl">
+            <Modal isOpen={isDeleteModalOpen} onClose={() => { setIsDeleteModalOpen(false); setMobileTab('services') }} className="max-w-sm p-6 rounded-2xl">
                 <h3 className="text-lg font-bold mb-2">¿Eliminar cita?</h3>
                 <p className="text-gray-500 text-sm mb-6">Esta acción no se puede deshacer.</p>
                 <div className="flex gap-3">

@@ -11,6 +11,13 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import type { Metadata } from 'next';
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
+
 export const metadata: Metadata = {
   title: 'Brillarte Bloom',
   description: 'Sistema de agenda y punto de venta',
@@ -35,7 +42,7 @@ export default async function RootLayout({
   const business = await getBusiness()
   console.log(business)
   return (
-    <html lang="en">
+    <html lang="es">
       <Head>
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
