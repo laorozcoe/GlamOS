@@ -109,8 +109,13 @@ export async function getAppointmentsPrisma(businessId) {
 
 export async function getAppointmentsByDatePrisma(businessId, start) {
 
-    const startDate = new Date(`${start}T00:00:00.000`);
-    const endDate = new Date(`${start}T23:59:59.999`);
+    // Forzamos el inicio del día con el desfase de UTC-6
+    const startDate = new Date(`${start}T00:00:00.000-06:00`);
+
+    // Forzamos el fin del día con el desfase de UTC-6
+    const endDate = new Date(`${start}T23:59:59.999-06:00`);
+
+
     const appointment = await prisma.appointment.findMany({
         where: { businessId: businessId, start: { gte: startDate }, end: { lte: endDate }, active: true },
         include: {
