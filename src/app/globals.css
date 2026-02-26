@@ -2,6 +2,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@layer base {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
 @theme {
   --font-*: initial;
   --font-outfit: Outfit, sans-serif;

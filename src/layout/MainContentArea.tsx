@@ -19,8 +19,15 @@ const MainContentArea = ({ children }: { children: React.ReactNode }) => {
                 className={`flex-1 transition-all  duration-300 ease-in-out ${mainContentMargin}`}
             >
                 <AppHeader />
-                {/* //TODO REVISAR ESTA MADRE h-[calc(100vh-80px)]*/}
-                <div className="mt-10 p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6 h-[calc(100vh-80px)]">{children}</div>
+                {/* no jala el pt-20 solo funciona mt-10*/}
+                <div className="pt-20">
+
+                    {/* 2. Este div se encarga del padding lateral, el ancho máximo y el scroll */}
+                    <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6 min-h-[calc(100vh-80px)]">
+                        {children}
+                    </div>
+
+                </div>
             </div>
         </>
     );
