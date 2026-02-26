@@ -174,7 +174,8 @@ export const usePrinter = () => {
 
             printJob = printJob
                 .newline().align('center')
-                .text('¡Ten un lindo día!\n')
+                .text('Gracias por confiar en mis manos\n')
+                .text('  para hacer brillar las tuyas  \n')
                 .newline().newline().newline()
                 .cut().pulse();
 

@@ -11,8 +11,7 @@ ticket a whatsapp
 
 Categoria Otros
 
-Gracias por confiar en mis manos
-para hacer brillar las tuyas 
+
 
 
 
