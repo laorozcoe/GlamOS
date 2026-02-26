@@ -20,7 +20,7 @@ const MainContentArea = ({ children }: { children: React.ReactNode }) => {
             >
                 <AppHeader />
                 {/* //TODO REVISAR ESTA MADRE h-[calc(100vh-80px)]*/}
-                <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6 h-[calc(100vh-80px)]">{children}</div>
+                <div className="mt-10 p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6 h-[calc(100vh-80px)]">{children}</div>
             </div>
         </>
     );
