@@ -201,6 +201,12 @@ const AppSidebar: React.FC = () => {
                 {nav.subItems.map((subItem) => (
                   <li key={subItem.name}>
                     <Link
+                      onClick={() => {
+                        if (isMobileOpen) toggleMobileSidebar()
+                        // Si tienes una función específica para cerrar, úsala aquí
+                        // Ejemplo: setIsMobileOpen(false) o toggleSidebar()
+                        // if (isMobileOpen) setIsMobileOpen(false); 
+                      }}
                       href={subItem.path}
                       className={`menu-dropdown-item ${isActive(subItem.path)
                         ? "menu-dropdown-item-active"

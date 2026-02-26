@@ -106,7 +106,7 @@ export const useCalendarLogic = () => {
 
         // Limpiamos el evento cuando desmontamos el componente
         return () => window.removeEventListener('app:pullToRefresh', handleGlobalRefresh);
-    }, [currentDate]); // Pon aquí tus dependencias, como la fecha seleccionada
+    }, [business?.id, currentDate]); // Pon aquí tus dependencias, como la fecha seleccionada
 
     // --- CÁLCULOS ---
     const total = useMemo(() => {

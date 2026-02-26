@@ -58,15 +58,29 @@ import { Users, Banknote, CreditCard, Clock } from 'lucide-react'
 export default function DailySummaryScreen({ businessId }: { businessId: string }) {
   const [summary, setSummary] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-
+  const fetchSummary = async () => {
+    const data = await getDailySummary(businessId)
+    setSummary(data)
+    setLoading(false)
+  }
   useEffect(() => {
-    async function fetchSummary() {
-      const data = await getDailySummary(businessId)
-      setSummary(data)
-      setLoading(false)
-    }
+
     fetchSummary()
   }, [businessId])
+
+  // El "Oído" que escucha el Pull To Refresh
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      console.log("¡Pull to refresh detectado en la vista!");
+      fetchSummary(); // Volvemos a consultar la base de datos
+    };
+
+    // Nos suscribimos al evento
+    window.addEventListener('app:pullToRefresh', handleGlobalRefresh);
+
+    // Limpiamos el evento cuando desmontamos el componente
+    return () => window.removeEventListener('app:pullToRefresh', handleGlobalRefresh);
+  }, [businessId]); // Pon aquí tus dependencias, como la fecha seleccionada
 
   if (loading || !summary) {
     return (
