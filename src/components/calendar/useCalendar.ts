@@ -70,26 +70,43 @@ export const useCalendarLogic = () => {
         servicesRef.current = services;
     }, [services]);
 
+    const loadCatalogs = async () => {
+        if (!business?.id) return;
+        try {
+            const [emp, srv, cats, evts] = await Promise.all([
+                getEmployeesPrisma(business.id),
+                getServicesPrisma(business.id),
+                getServicesCategoriesPrisma(business.id),
+                getAppointmentsByDatePrisma(business.id, currentDate)
+            ]);
+            setEmployees(emp);
+            setServices(srv);
+            setServicesCategories(cats);
+            setEvents(evts);
+        } catch (error) {
+            console.error("Error cargando catálogos:", error);
+        }
+    };
+
     useEffect(() => {
-        const loadCatalogs = async () => {
-            if (!business?.id) return;
-            try {
-                const [emp, srv, cats, evts] = await Promise.all([
-                    getEmployeesPrisma(business.id),
-                    getServicesPrisma(business.id),
-                    getServicesCategoriesPrisma(business.id),
-                    getAppointmentsByDatePrisma(business.id, currentDate)
-                ]);
-                setEmployees(emp);
-                setServices(srv);
-                setServicesCategories(cats);
-                setEvents(evts);
-            } catch (error) {
-                console.error("Error cargando catálogos:", error);
-            }
-        };
+
         loadCatalogs();
     }, [business?.id, currentDate]);
+
+
+    // El "Oído" que escucha el Pull To Refresh
+    useEffect(() => {
+        const handleGlobalRefresh = () => {
+            console.log("¡Pull to refresh detectado en la vista!");
+            loadCatalogs(); // Volvemos a consultar la base de datos
+        };
+
+        // Nos suscribimos al evento
+        window.addEventListener('app:pullToRefresh', handleGlobalRefresh);
+
+        // Limpiamos el evento cuando desmontamos el componente
+        return () => window.removeEventListener('app:pullToRefresh', handleGlobalRefresh);
+    }, [currentDate]); // Pon aquí tus dependencias, como la fecha seleccionada
 
     // --- CÁLCULOS ---
     const total = useMemo(() => {
