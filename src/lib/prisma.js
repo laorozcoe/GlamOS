@@ -109,8 +109,8 @@ export async function getAppointmentsPrisma(businessId) {
 
 export async function getAppointmentsByDatePrisma(businessId, start) {
 
-    const startDate = new Date(`${start}T00:00:00.000Z`);
-    const endDate = new Date(`${start}T23:59:59.999Z`);
+    const startDate = new Date(`${start}T00:00:00.000`);
+    const endDate = new Date(`${start}T23:59:59.999`);
     const appointment = await prisma.appointment.findMany({
         where: { businessId: businessId, start: { gte: startDate }, end: { lte: endDate }, active: true },
         include: {
@@ -1122,11 +1122,13 @@ export async function getDailySummary(businessId) {
     let totalDay = 0
     let totalCashDay = 0
     let totalCardDay = 0
+    let totaTransferDay = 0
 
     // Procesar los datos por cada empleado
     const employeeStats = employees.map((emp) => {
         let cash = 0
         let card = 0
+        let transfer = 0
 
         emp.sales.forEach((sale) => {
             sale.payments.forEach((payment) => {
@@ -1139,6 +1141,10 @@ export async function getDailySummary(businessId) {
                     card += payment.amount
                     totalCardDay += payment.amount
                 }
+                if (payment.method === 'TRANSFER') {
+                    transfer += payment.amount
+                    totaTransferDay += payment.amount
+                }
                 totalDay += payment.amount
             })
         })
@@ -1148,6 +1154,7 @@ export async function getDailySummary(businessId) {
             name: `${emp.user.name} ${emp.user.lastName}` || 'Empleado sin nombre', // Asumiendo que Employee tiene un campo name
             cash,
             card,
+            transfer,
             pendingAppointments: emp.appointments.length,
         }
     })
@@ -1157,6 +1164,7 @@ export async function getDailySummary(businessId) {
         totalDay,
         totalCashDay,
         totalCardDay,
+        totaTransferDay,
         employeeStats,
     }
 }

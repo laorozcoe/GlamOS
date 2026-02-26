@@ -44,7 +44,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     {/* Métodos */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Método de Pago</label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <button
                                 onClick={() => setPaymentMethod('CASH')}
                                 className={`py-3 px-4 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all
@@ -52,6 +52,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             >
                                 <span>💵</span> Efectivo
                             </button>
+                            <button
+                                onClick={() => setPaymentMethod('CARD')}
+                                className={`py-3 px-4 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all
+                  ${paymentMethod === 'CARD' ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-200 text-gray-600'}`}
+                            ><span>💳</span> Tarjeta</button>
                             <button
                                 onClick={() => setPaymentMethod('TRANSFER')}
                                 className={`py-3 px-4 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all

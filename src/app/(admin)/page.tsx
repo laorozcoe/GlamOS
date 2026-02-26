@@ -85,7 +85,7 @@ export default function DailySummaryScreen({ businessId }: { businessId: string 
           Resumen de Hoy ({new Date(summary.date).toLocaleDateString()})
         </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-center items-center">
             <p className="text-gray-500 font-medium uppercase tracking-wider text-sm mb-2">Ingreso Total Hoy</p>
             <p className="text-4xl font-extrabold text-gray-900">${summary.totalDay.toFixed(2)}</p>
@@ -99,6 +99,10 @@ export default function DailySummaryScreen({ businessId }: { businessId: string 
           <div className="bg-blue-50 rounded-xl shadow-sm border border-blue-100 p-6 flex flex-col justify-center items-center">
             <p className="text-blue-700 font-medium uppercase tracking-wider text-sm mb-2">Total Tarjeta</p>
             <p className="text-3xl font-bold text-blue-600">${summary.totalCardDay.toFixed(2)}</p>
+          </div>
+          <div className="bg-violet-50 rounded-xl shadow-sm border border-violet-100 p-6 flex flex-col justify-center items-center">
+            <p className="text-violet-700 font-medium uppercase tracking-wider text-sm mb-2">Total Transferencia</p>
+            <p className="text-3xl font-bold text-violet-600">${summary.totaTransferDay.toFixed(2)}</p>
           </div>
         </div>
       </div>
@@ -135,6 +139,14 @@ export default function DailySummaryScreen({ businessId }: { businessId: string 
                     <span>Tarjeta</span>
                   </div>
                   <span className="font-semibold text-gray-900">${emp.card.toFixed(2)}</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <CreditCard className="w-5 h-5 text-violet-500" />
+                    <span>Tarjeta</span>
+                  </div>
+                  <span className="font-semibold text-gray-900">${emp.transfer.toFixed(2)}</span>
                 </div>
 
                 <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
