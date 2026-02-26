@@ -379,7 +379,8 @@ export const useCalendarLogic = () => {
                 const key = appt.id || appt.name;
                 if (!acc[key]) {
                     acc[key] = {
-                        serviceId: appt.id || null,
+                        id: appt.id || null,
+                        serviceId: appt.serviceId || null,
                         quantity: 0,
                         ticket_desc: appt.descriptionTicket || appt.name,
                         name: appt.name,
@@ -495,7 +496,7 @@ export const useCalendarLogic = () => {
                 }))
             };
 
-            await printTicket(ticketData);
+            await printTicket(ticketData).catch(e => console.log(e));
 
             // 8. Limpieza y Refresco
             // const newEvents = await getAppointmentsPrisma(business?.id);

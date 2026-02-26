@@ -30,7 +30,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            className="w-[95svw] h-[95svh] bg-white rounded-2xl shadow-2xl overflow-hidden p-0"
+            className="w-[95svw]  bg-white rounded-2xl shadow-2xl overflow-hidden p-0"
             showCloseButton={true}
         >
             <div className="flex flex-col h-full">
