@@ -53,7 +53,7 @@ export default async function RootLayout({
         {/* <link rel="manifest" href="/manifest.json" /> */}
       </Head>
       <BusinessProvider business={business}>
-        <body className={`${outfit.className} dark:bg-gray-900`}>
+        <body className={`${outfit.className} dark:bg-gray-900 overscroll-none`}>
           <ToastContainer style={{ zIndex: 999999 }} />
           <ThemeProvider>
             <SidebarProvider>
