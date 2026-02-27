@@ -59,7 +59,13 @@ export default function DailySummaryScreen({ businessId }: { businessId: string 
   const [summary, setSummary] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const fetchSummary = async () => {
-    const data = await getDailySummary(businessId)
+    const newDate = new Date();
+    const year = newDate.getFullYear();
+    const month = String(newDate.getMonth() + 1).padStart(2, "0");
+    const day = String(newDate.getDate()).padStart(2, "0");
+
+    const start = `${year}-${month}-${day}`;
+    const data = await getDailySummary(businessId, start)
     setSummary(data)
     setLoading(false)
   }

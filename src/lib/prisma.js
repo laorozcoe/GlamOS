@@ -1082,11 +1082,18 @@ export async function createCashClose(data) {
     return cashClose
 }
 
-export async function getDailySummary(businessId) {
+export async function getDailySummary(businessId, start) {
     // Rango de fechas para "Hoy" (desde las 00:00:00 hasta las 23:59:59)
-    const today = new Date()
-    const startOfDay = new Date(today.setHours(0, 0, 0, 0))
-    const endOfDay = new Date(today.setHours(23, 59, 59, 999))
+    // const today = new Date()
+    // const startOfDay = new Date(today.setHours(0, 0, 0, 0))
+    // const endOfDay = new Date(today.setHours(23, 59, 59, 999))
+
+    const startOfDay = new Date(`${start}T00:00:00.000-06:00`);
+
+    // Forzamos el fin del día con el desfase de UTC-6
+    const endOfDay = new Date(`${start}T23:59:59.999-06:00`);
+
+
 
     // Buscar empleados con sus ventas y citas de HOY
     const employees = await prisma.employee.findMany({
