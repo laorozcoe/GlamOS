@@ -149,6 +149,7 @@ export async function getAppointmentsByDatePrisma(businessId, start) {
 
 export async function updateAppointment(payload, appointmentId) {
     // Validación básica
+    debugger
     if (!appointmentId) throw new Error("Se requiere el ID de la cita para actualizar");
 
     await prisma.appointment.update({
@@ -208,8 +209,8 @@ export async function deleteAppointmentPrisma(appointmentId) {
 export async function seed() {
     return await prisma.business.create({
         data: {
-            name: "Brillarte Bloom",
-            slug: "brillartebloom",
+            name: "Evora Salon",
+            slug: "evorasalon",
             phone: "",
             email: "",
             address: "",

@@ -301,8 +301,8 @@ export const useCalendarLogic = () => {
         }
 
         const startDateTime = new Date(`${date}T${time}:00`);
-        const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
-        const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
+        // const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
+        const endDateTime = new Date(`${date}T${timeEnd}:00`);
 
         // const serviceMap = appointments.map((item: any) => {
         //     if(item.id){

@@ -200,6 +200,7 @@ function isPublicFile(pathname: string) {
 
 // 🏢 obtener slug del negocio desde subdominio
 function getBusinessSlug(req: NextRequest) {
+  debugger
   const host = req.headers.get("host") || ""
 
   // producción: empresa.tusalon.com
