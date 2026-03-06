@@ -181,12 +181,12 @@ export const usePrinter = () => {
 
             const result = printJob.encode();
 
-            // // Usar el endpoint 'out' de forma dinámica (como en tu test)
-            // const interfaceData = currentDevice.configuration.interfaces[0];
-            // const endpoint = interfaceData.alternates[0].endpoints.find(e => e.direction === 'out');
+            // Usar el endpoint 'out' de forma dinámica (como en tu test)
+            const interfaceData = currentDevice.configuration.interfaces[0];
+            const endpoint = interfaceData.alternates[0].endpoints.find(e => e.direction === 'out');
 
-            // await currentDevice.transferOut(endpoint.endpointNumber, result);
-            // return true;
+            await currentDevice.transferOut(endpoint.endpointNumber, result);
+            return true;
 
         } catch (err) {
             console.error("Error en printTicket:", err);
