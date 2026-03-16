@@ -45,7 +45,7 @@ export default function TableMobile({ customers, onRowClick }) {
                         <div className="flex items-center gap-2">
                             <Briefcase size={14} className="text-gray-400" />
                             <span className="truncate max-w-30">
-                                {customer.employee?.name || "Sin asignar"}
+                                {customer.employee?.user?.name || "Sin asignar"}
                             </span>
                         </div>
 
@@ -64,7 +64,7 @@ export default function TableMobile({ customers, onRowClick }) {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()} // Detiene el evento para no abrir el modal de edición
-                                className="flex items-center justify-center gap-2 w-full py-2.5 bg-green-50 text-green-700 rounded-lg font-medium border border-green-200 hover:bg-green-100 transition-colors"
+                                className="flex items-center justify-center gap-2 w-full py-2.5 bg-green-50 text-green-700 dark:bg-green-700 dark:text-green-50 rounded-lg font-medium border border-green-200 hover:bg-green-100 transition-colors"
                             >
                                 <Phone size={16} />
                                 <span>WhatsApp ({customer.phone})</span>

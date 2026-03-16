@@ -5,12 +5,15 @@ import { useState } from "react";
 import { BookingModal } from "@/components/calendar/BookingModal";
 import { PaymentModal } from "@/components/calendar/PaymentModal";
 import { SaleDetailsModal } from "@/components/calendar/SaleDetailsModal";
+import DatePicker from "@/components/form/date-picker"
 import { ExtraServiceModal } from "@/components/calendar/ExtraServiceModal";
 import { useCalendarLogic } from "@/components/calendar/useCalendar";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import InputField from "@/components/form/input/InputField";
 import Button from "@/components/ui/button/Button";
 import { toast } from "react-toastify";
+import Select from "../form/Select";
+import Label from "../form/Label";
 
 // --- CONFIGURACIÓN ---
 const START_HOUR = 9;
@@ -189,62 +192,58 @@ export default function CalendarGrid() {
     return processedEvents;
   };
 
+  const employeeOptions = [
+    { value: "ALL", label: "Todas las estaciones" },
+    ...logic.employees.map((employee: any) => ({
+      value: String(employee.id), // Nos aseguramos de que sea string, como pide la interfaz Option
+      label: employee.user.name,
+    })),
+  ];
+
   return (
     <>
       <div className="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/3 xl:px-10 xl:py-12">
-
         {/* HEADER: Modificamos el layout para que incluya el Select */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
 
           {/* Controles de Fecha */}
           <div className="flex justify-center gap-2 w-full md:w-auto">
             <Button onClick={() => { logic.handleUpdateDate(-1) }}>&lt;</Button>
-            <InputField type="date" value={logic.currentDate} onChange={(e) => logic.setCurrentDate(e.target.value)} />
+            {/* <InputField type="date" value={logic.currentDate} onChange={(e) => logic.setCurrentDate(e.target.value)} /> */}
+            <DatePicker value={logic.currentDate} onChange={(date) => logic.setCurrentDate(date)} />
             <Button onClick={() => { logic.handleUpdateDate(1) }}>&gt;</Button>
           </div>
 
           {/* NUEVO: Select de Empleados (útil para móvil y escritorio) */}
           <div className="w-full md:w-64">
-            <select
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+            <Select
+              options={employeeOptions}
               value={selectedEmpFilter}
-              onChange={(e) => setSelectedEmpFilter(e.target.value)}
-            >
-              <option value="ALL">Todas las estaciones</option>
-              {logic.employees.map((employee: any) => (
-                <option key={employee.id} value={employee.id}>
-                  {employee.user.name}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedEmpFilter} // Más limpio: recibe el string directamente
+            />
           </div>
         </div>
-
-        <div className="flex-none bg-gray-50 border-b border-gray-200 z-20">
+        <div className="flex-none bg-gray-50 dark:bg-gray-900 border-b border-gray-200 z-20">
           {/* NUEVO: Usamos displayedEmployees.length en lugar de logic.employees.length */}
           <div className="grid" style={{ gridTemplateColumns: `60px repeat(${displayedEmployees.length}, 1fr)` }}>
             <div className="p-3 border-r border-gray-200"></div>
             {/* NUEVO: Iteramos sobre displayedEmployees */}
             {displayedEmployees.map((employee: any) => (
               <div key={employee.id} className="p-3 text-center font-bold text-gray-700 border-r border-gray-200 last:border-r-0">
-                {employee.user.name}
+                <Label> {employee.user.name}</Label>
               </div>
             ))}
           </div>
         </div>
-
         {/* BODY CON SCROLL */}
         <div className="flex-1 overflow-y-auto relative custom-scrollbar">
           <div className="relative min-h-160">
-
             {/* 1. GRILLA DE FONDO */}
             {hours.map((hour) => (
               <div key={hour} className="flex border-b border-gray-100" style={{ height: `${HOUR_HEIGHT}px` }}>
-
-                <div className="w-15 flex-none border-r border-gray-100 bg-gray-50 text-xs text-gray-500 flex justify-center pt-2 relative">
-                  <span className=" bg-gray-50 px-1">{hour}:00</span>
+                <div className="w-15 flex-none border-r border-gray-100 bg-gray-50 dark:bg-gray-900  text-xs text-gray-500 flex justify-center pt-2 relative">
+                  <Label className=" bg-gray-50 dark:bg-gray-900 px-1">{hour}:00</Label>
                 </div>
-
                 {/* NUEVO: Iteramos sobre displayedEmployees */}
                 {displayedEmployees.map((employee: any) => (
                   <div
@@ -334,6 +333,8 @@ export default function CalendarGrid() {
         timeEnd={logic.timeEnd} setTimeEnd={logic.setTimeEnd}
 
         setExtraServicesModal={logic.setExtraServicesModal}
+        customers={logic.customers}
+        setCustomer={logic.setCustomer}
 
       />
 

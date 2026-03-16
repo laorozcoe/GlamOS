@@ -3,18 +3,15 @@ import { X, Save, User, Mail, Phone, FileText } from 'lucide-react';
 import Button from '@/components/ui/button/Button'; // Tu componente de botón
 import Select from '@/components/form/Select';
 import { Modal } from '@/components/ui/modal';
+import Label from "@/components/form/Label";
+import InputField from "@/components/form/input/InputField"
+import TextArea from "@/components/form/input/TextArea"
 
 export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit, employees, handleDeleteCustomer }) {
 
     // Estado inicial del formulario
-    const initialFormState = {
-        name: '',
-        email: '',
-        phone: '',
-        notes: ''
-    };
 
-    const [formData, setFormData] = useState(initialFormState);
+    const [formData, setFormData] = useState(customerToEdit);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -33,71 +30,64 @@ export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit,
     return (
         <Modal
             isOpen={isOpen} onClose={onClose}
-            // onClose={() => { setIsServiceModalOpen(false); setEditingService(null) }}
-            title={customerToEdit?.id ? "Editar Cliente" : "Nuevo Cliente"}
             className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
         >
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full overflow-hidden">
                 <div className="flex justify-between items-center px-4 pb-4 sm:pb-8 border-b border-gray-200 dark:border-gray-800">
-                    {/* <h3 className="">{editingService?.id ? "Editar Servicio" : "Nuevo Servicio"}</h3> */}
-                    <h3 className="font-semibold text-lg sm:text-xl">
+                    <Label className="font-semibold text-lg sm:text-xl">
                         {customerToEdit ? 'Editar Cliente' : 'Nuevo Cliente'}
-                    </h3>
+                    </Label>
                 </div>
                 {/* --- BODY (FORMULARIO) --- */}
                 <form onSubmit={handleSubmit} className="p-5 space-y-4">
                     {/* Nombre */}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                            <User size={14} /> Nombre Completo *asd
-                        </label>
-                        <input
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <User size={14} /> Nombre Completo
+                        </Label>
+                        <InputField
                             required
                             type="text"
                             name="name"
                             placeholder="Ej. María Pérez"
                             value={formData.name}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                        />
+                            onChange={handleChange} />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Teléfono */}
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                                 <Phone size={14} /> Teléfono
-                            </label>
-                            <input
+                            </Label>
+                            <InputField
                                 type="tel"
                                 name="phone"
                                 placeholder="Ej. 614 123 4567"
                                 value={formData.phone}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                             />
                         </div>
 
                         {/* Email */}
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                                 <Mail size={14} /> Correo Electrónico
-                            </label>
-                            <input
+                            </Label>
+                            <InputField
                                 type="email"
                                 name="email"
                                 placeholder="cliente@email.com"
                                 value={formData.email}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                             />
                         </div>
                     </div>
                     {/* Empleado */}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                             <User size={14} /> Empleado Favorito
-                        </label>
+                        </Label>
                         <Select
                             name="employeeId"
                             placeholder="Selecciona un empleado"
@@ -117,10 +107,10 @@ export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit,
                     </div>
                     {/* Notas */}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                             <FileText size={14} /> Notas Internas
-                        </label>
-                        <textarea
+                        </Label>
+                        <TextArea
                             name="notes"
                             rows={3}
                             placeholder="Preferencias, alergias, notas importantes..."

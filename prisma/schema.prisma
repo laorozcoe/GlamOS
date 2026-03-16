@@ -16,15 +16,17 @@ datasource db {
 //////////////////////
 // 🏢 NEGOCIO
 //////////////////////
+
 model Business {
-  id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
-  phone     String?
-  email     String?
-  address   String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  phone       String?
+  countryCode String   @default("MX") @db.VarChar(2)
+  email       String?
+  address     String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
 
   users             User[]
   clients           Client[]
@@ -43,6 +45,7 @@ model Business {
 //////////////////////
 // 👤 USUARIOS
 //////////////////////
+
 model User {
   id         String   @id @default(uuid())
   businessId String
@@ -59,6 +62,12 @@ model User {
   business Business  @relation(fields: [businessId], references: [id])
   employee Employee?
 
+  emailVerified Boolean   @default(false)
+  image         String?
+  phone         String?
+  sessions      Session[]
+  accounts      Account[]
+
   @@unique([businessId, email, username])
 }
 
@@ -71,16 +80,18 @@ enum Role {
 //////////////////////
 // 👥 EMPLEADOS
 //////////////////////
+
 model Employee {
-  id         String   @id @default(uuid())
-  businessId String
-  userId     String   @unique
-  phone      String?
-  bio        String?
-  commission Float    @default(0.0)
-  rating     Float    @default(0.0)
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  id          String   @id @default(uuid())
+  businessId  String
+  userId      String   @unique
+  phone       String?
+  countryCode String   @default("MX") @db.VarChar(2)
+  bio         String?
+  commission  Float    @default(0.0)
+  rating      Float    @default(0.0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
 
   business     Business      @relation(fields: [businessId], references: [id])
   user         User          @relation(fields: [userId], references: [id])
@@ -93,16 +104,18 @@ model Employee {
 //////////////////////
 // 👥 CLIENTES
 //////////////////////
+
 model Client {
-  id         String   @id @default(uuid())
-  businessId String
-  name       String
-  phone      String?
-  email      String?
-  notes      String?
-  createdAt  DateTime @default(now())
-  employeeId String?
-  active     Boolean  @default(true) // <-- NUEVO
+  id          String   @id @default(uuid())
+  businessId  String
+  name        String
+  phone       String?
+  countryCode String   @default("MX") @db.VarChar(2)
+  email       String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  employeeId  String?
+  active      Boolean  @default(true) // <-- NUEVO
 
   business      Business       @relation(fields: [businessId], references: [id])
   employee      Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
@@ -117,6 +130,7 @@ model Client {
 //////////////////////
 // 💅 CATEGORÍAS
 //////////////////////
+
 model ServiceCategory {
   id         String   @id @default(uuid())
   businessId String
@@ -132,6 +146,7 @@ model ServiceCategory {
 //////////////////////
 // 💅 SERVICIOS
 //////////////////////
+
 model Service {
   id                String  @id @default(uuid())
   businessId        String
@@ -156,6 +171,7 @@ model Service {
 //////////////////////
 // 🎁 VARIANTES DE SERVICIO
 //////////////////////
+
 model ServiceVariant {
   id        String  @id @default(uuid())
   serviceId String
@@ -170,6 +186,7 @@ model ServiceVariant {
 //////////////////////
 // 🎁 ADICIONALES DE SERVICIO
 //////////////////////
+
 model ServiceExtra {
   id          String   @id @default(uuid())
   businessId  String
@@ -187,6 +204,7 @@ model ServiceExtra {
 //////////////////////
 // 📅 CITAS (Solo para gestión de tiempo)
 //////////////////////
+
 model Appointment {
   id            String            @id @default(uuid())
   businessId    String
@@ -200,6 +218,7 @@ model Appointment {
   notes         String?
   guestName     String?
   guestPhone    String?
+  countryCode   String            @default("MX") @db.VarChar(2)
   createdAt     DateTime          @default(now())
   paymentStatus PaymentState      @default(UNPAID) // Estado general de la deuda
   totalAmount   Float             @default(0) // El costo total del servicio (ej. $1000)
@@ -215,6 +234,7 @@ model Appointment {
 //////////////////////
 // 🔗 CITA - SERVICIOS
 //////////////////////
+
 model AppointmentService {
   id                String             @id @default(uuid())
   appointmentId     String
@@ -242,6 +262,7 @@ enum AppointmentStatus {
 //////////////////////
 // 🔗 CITA - ADICIONALES
 //////////////////////
+
 model AppointmentExtra {
   id                   String             @id @default(uuid())
   appointmentServiceId String
@@ -256,6 +277,7 @@ model AppointmentExtra {
 //////////////////////
 // 💳 PAGOS Y CAJA
 //////////////////////
+
 model Payment {
   id             String        @id @default(uuid())
   saleId         String
@@ -290,6 +312,7 @@ enum PaymentStatus {
 //////////////////////
 // ⭐ RESEÑAS
 //////////////////////
+
 model Review {
   id         String   @id @default(uuid())
   businessId String
@@ -308,6 +331,7 @@ model Review {
 //////////////////////
 // 🎁 PUNTOS DE LEALTAD
 //////////////////////
+
 model LoyaltyPoint {
   id         String   @id @default(uuid())
   businessId String
@@ -330,6 +354,7 @@ enum SaleStatus {
 //////////////////////
 // 💰 VENTAS (El corazón del POS)
 //////////////////////
+
 model Sale {
   id            String     @id @default(uuid())
   businessId    String
@@ -382,4 +407,52 @@ model CashClose {
   notes String?
 
   business Business @relation(fields: [businessId], references: [id])
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
 }

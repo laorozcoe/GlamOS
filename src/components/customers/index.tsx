@@ -56,9 +56,18 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
     };
     const business = useBusiness();
     const [isMobile, setIsMobile] = useState(false);
+
+    const initialClient: Client = {
+        id: "",
+        name: "",
+        phone: "",
+        email: "",
+        notes: "",
+        createdAt: ""
+    };
     // 1. Estados
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [customerToEdit, setCustomerToEdit] = useState<Client | null>(null); // null = Crear nuevo
+    const [customerToEdit, setCustomerToEdit] = useState<Client>(initialClient); // null = Crear nuevo
     const [openDeleteCustomer, setOpenDeleteCustomer] = useState(false);
 
     useEffect(() => {
@@ -85,7 +94,7 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
 
     // Abrir modal para CREAR
     const handleNewClient = () => {
-        setCustomerToEdit(null); // Limpiamos para que sea "Nuevo"
+        setCustomerToEdit(initialClient); // Limpiamos para que sea "Nuevo"
         setIsModalOpen(true);
     };
 
@@ -119,7 +128,7 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
     const deleteCustomer = async () => {
         console.log("Eliminando cliente", customerToEdit);
         await deleteClientPrisma(customerToEdit?.id, business?.id)
-        setCustomerToEdit(null);
+        setCustomerToEdit(initialClient);
         setIsModalOpen(false)
         handleRefresh()
         setOpenDeleteCustomer(false);

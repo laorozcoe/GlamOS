@@ -1,6 +1,7 @@
 // components/booking/ServiceSelector.tsx
 import React from 'react';
 import { Minus, Plus, Check } from 'lucide-react';
+import Label from '@/components/form/Label';
 
 export const ServiceSelector = ({
     services,
@@ -61,9 +62,9 @@ export const ServiceSelector = ({
                                     // Quitamos el onClick del contenedor padre para evitar conflictos con los botones grandes
                                     className={`
             relative group flex flex-row items-center justify-between
-            border rounded-2xl p-0 h-32 overflow-hidden bg-white
+            border rounded-2xl p-0 h-32 overflow-hidden
             transition-all duration-200 select-none
-            ${flashCategory === ss.id ? 'ring-2 ring-brand-500 bg-gray-50' : ''}
+            ${flashCategory === ss.id ? 'ring-2 ring-brand-500 ' : ''}
             ${isSelected
                                             ? 'border-brand-500 shadow-md ring-1 ring-brand-500/5'
                                             : 'border-gray-200 hover:border-gray-300'}
@@ -74,24 +75,24 @@ export const ServiceSelector = ({
                                         onClick={() => onAddService(ss)}
                                         className="flex-1 flex flex-col justify-center h-full p-4 pr-2 cursor-pointer"
                                     >
-                                        <h4 className={`text-sm font-bold leading-tight line-clamp-2 ${isSelected ? 'text-black' : 'text-gray-700'}`}>
+                                        <Label className={`text-sm font-bold leading-tight line-clamp-2 ${isSelected ? 'text-black' : 'text-gray-700'}`}>
                                             {ss.name}
-                                        </h4>
-                                        <span className="text-xs text-gray-500 mt-1 font-medium">
+                                        </Label>
+                                        <Label className="text-xs text-gray-500 mt-1 font-medium">
                                             ${ss.price}
-                                        </span>
+                                        </Label>
                                     </div>
 
                                     {/* --- DERECHA: CONTROLES ASIDE (Verticales y Grandes) --- */}
                                     {isSelected ? (
-                                        <div className="h-full w-14 bg-black text-white flex flex-col items-center justify-between py-2 animate-in slide-in-from-right-4 duration-200">
+                                        <div className="h-full w-14 bg-brand-500 text-white flex flex-col items-center justify-between py-2 animate-in slide-in-from-right-4 duration-200">
                                             {/* Botón MÁS (Arriba) - Área táctil grande */}
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     onAddService(ss);
                                                 }}
-                                                className="flex-1 w-full flex items-center justify-center hover:bg-gray-800 active:bg-gray-700 transition-colors"
+                                                className="flex-1 w-full flex items-center justify-center hover:bg-brand-800 active:bg-brand-700 transition-colors"
                                             >
                                                 <Plus size={20} strokeWidth={3} />
                                             </button>
@@ -107,7 +108,7 @@ export const ServiceSelector = ({
                                                     e.stopPropagation();
                                                     onRemoveService(ss.id);
                                                 }}
-                                                className="flex-1 w-full flex items-center justify-center hover:bg-gray-800 active:bg-gray-700 transition-colors"
+                                                className="flex-1 w-full flex items-center justify-center hover:bg-brand-800 active:bg-brand-700 transition-colors"
                                             >
                                                 <Minus size={20} strokeWidth={3} />
                                             </button>
@@ -116,7 +117,7 @@ export const ServiceSelector = ({
                                         /* Botón inicial de agregar (Grande y visible) */
                                         <button
                                             onClick={() => onAddService(ss)}
-                                            className="h-full w-12 flex items-center justify-center border-l border-gray-100 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-400 hover:text-black transition-colors"
+                                            className="h-full w-12 flex items-center justify-center border-l border-gray-100 bg-gray-50  dark:bg-gray-800/50 hover:bg-gray-100 active:bg-gray-200 text-gray-400 hover:text-black transition-colors"
                                         >
                                             <Plus size={24} />
                                         </button>

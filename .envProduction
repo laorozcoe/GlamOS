@@ -1,6 +1,3 @@
-BETTER_AUTH_SECRET = NGTqAD/+60QsM5MzV3dK2yuHXtMeZIT1vxsrMU5cK+0=
-BETTER_AUTH_URL=http://localhost:3000
-
 
 # Recommended for most uses
 DATABASE_URL=postgresql://neondb_owner:npg_nwlN8o2AMTyz@ep-wild-union-ahzsl2og-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require

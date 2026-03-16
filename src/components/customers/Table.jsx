@@ -72,7 +72,7 @@ export default function CustomerTable({ customers, onRowClick }) {
                         </TableCell>
 
                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 max-w-[200px] truncate">
-                            {customer.employee?.name || "Sin asignar"}
+                            {customer.employee?.user?.name || "Sin asignar"}
                         </TableCell>
 
                         <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">

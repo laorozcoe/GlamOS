@@ -6,6 +6,7 @@ import MonthlySalesChart from "@/components/ecommerce/MonthlySalesChart";
 import StatisticsChart from "@/components/ecommerce/StatisticsChart";
 import RecentOrders from "@/components/ecommerce/RecentOrders";
 import DemographicCard from "@/components/ecommerce/DemographicCard";
+import Label from "@/components/form/Label"
 
 // import { useBusiness } from "@/context/BusinessContext";
 import { getBusiness } from "@/lib/getBusiness";
@@ -17,6 +18,7 @@ import { getDailySummary } from '@/lib/prisma'
 
 // Iconos (opcionales, puedes usar lucide-react o heroicons)
 import { Users, Banknote, CreditCard, Clock } from 'lucide-react'
+import ComponentCard from "@/components/common/ComponentCard"
 
 
 
@@ -101,29 +103,25 @@ export default function DailySummaryScreen({ businessId }: { businessId: string 
 
       {/* HEADER Y TOTALES DEL DÍA */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center sm:text-start">
+        <Label className="text-3xl font-bold text-gray-800 mb-6 text-center sm:text-start">
           Resumen de Hoy ({new Date(summary.date).toLocaleDateString()})
-        </h1>
+        </Label>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-center items-center">
-            <p className="text-gray-500 font-medium uppercase tracking-wider text-sm mb-2">Ingreso Total Hoy</p>
-            <p className="text-4xl font-extrabold text-gray-900">${summary.totalDay.toFixed(2)}</p>
-          </div>
+          <ComponentCard className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-center items-center" title={"Ingreso Total Hoy"}>
+            <Label className="text-4xl font-extrabold text-gray-900">${summary.totalDay.toFixed(2)}</Label>
+          </ComponentCard>
 
-          <div className="bg-green-50 rounded-xl shadow-sm border border-green-100 p-6 flex flex-col justify-center items-center">
-            <p className="text-green-700 font-medium uppercase tracking-wider text-sm mb-2">Total Efectivo</p>
-            <p className="text-3xl font-bold text-green-600">${summary.totalCashDay.toFixed(2)}</p>
-          </div>
+          <ComponentCard className="bg-green-50 rounded-xl shadow-sm border border-green-100 p-6 flex flex-col justify-center items-center" title="Total Efectivo">
+            <Label className="text-3xl font-bold" color="text-green-600">${summary.totalCashDay.toFixed(2)}</Label>
+          </ComponentCard>
 
-          <div className="bg-blue-50 rounded-xl shadow-sm border border-blue-100 p-6 flex flex-col justify-center items-center">
-            <p className="text-blue-700 font-medium uppercase tracking-wider text-sm mb-2">Total Tarjeta</p>
-            <p className="text-3xl font-bold text-blue-600">${summary.totalCardDay.toFixed(2)}</p>
-          </div>
-          <div className="bg-violet-50 rounded-xl shadow-sm border border-violet-100 p-6 flex flex-col justify-center items-center">
-            <p className="text-violet-700 font-medium uppercase tracking-wider text-sm mb-2">Total Transferencia</p>
-            <p className="text-3xl font-bold text-violet-600">${summary.totaTransferDay.toFixed(2)}</p>
-          </div>
+          <ComponentCard className="bg-blue-50 rounded-xl shadow-sm border border-blue-100 p-6 flex flex-col justify-center items-center" title="Total Tarjeta">
+            <Label className="text-3xl font-bold" color="text-blue-600">${summary.totalCardDay.toFixed(2)}</Label>
+          </ComponentCard>
+          <ComponentCard className="bg-violet-50 rounded-xl shadow-sm border border-violet-100 p-6 flex flex-col justify-center items-center" title="Total Transferencia">
+            <Label className="text-3xl font-bold" color="text-violet-600">${summary.totaTransferDay.toFixed(2)}</Label>
+          </ComponentCard>
         </div>
       </div>
 
@@ -131,56 +129,51 @@ export default function DailySummaryScreen({ businessId }: { businessId: string 
       <div>
         <div className="text-2xl font-semibold text-gray-800 mb-4 flex items-center justify-center sm:justify-start gap-2 text-center sm:text-start">
           <Users className="w-6 h-6 text-gray-500" />
-          <h2 className="">Rendimiento por Empleado</h2>
+          <Label className="">Rendimiento por Empleado</Label>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {summary.employeeStats.map((emp: any) => (
-            <div key={emp.id} className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-              {/* Cabecera de la tarjeta del empleado */}
-              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                <h3 className="text-lg font-bold text-gray-800 truncate">{emp.name}</h3>
-              </div>
-
-              {/* Cuerpo de la tarjeta */}
+            <ComponentCard key={emp.id} title={emp.name}>
               <div className="p-4 space-y-4">
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-gray-600">
                     <Banknote className="w-5 h-5 text-green-500" />
-                    <span>Efectivo</span>
+                    <Label>Efectivo</Label>
                   </div>
-                  <span className="font-semibold text-gray-900">${emp.cash.toFixed(2)}</span>
+                  <Label className="font-semibold text-gray-900">${emp.cash.toFixed(2)}</Label>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-gray-600">
                     <CreditCard className="w-5 h-5 text-blue-500" />
-                    <span>Tarjeta</span>
+                    <Label>Tarjeta</Label>
                   </div>
-                  <span className="font-semibold text-gray-900">${emp.card.toFixed(2)}</span>
+                  <Label className="font-semibold text-gray-900">${emp.card.toFixed(2)}</Label>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-gray-600">
                     <CreditCard className="w-5 h-5 text-violet-500" />
-                    <span>Tarjeta</span>
+                    <Label>Tarjeta</Label>
                   </div>
-                  <span className="font-semibold text-gray-900">${emp.transfer.toFixed(2)}</span>
+                  <Label className="font-semibold text-gray-900">${emp.transfer.toFixed(2)}</Label>
                 </div>
 
                 <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-orange-600 font-medium">
                     <Clock className="w-5 h-5" />
-                    <span>Citas Pendientes</span>
+                    <Label>Citas Pendientes</Label>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${emp.pendingAppointments > 0 ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <Label className={`px-3 py-1 rounded-full text-sm font-bold ${emp.pendingAppointments > 0 ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500'}`}>
                     {emp.pendingAppointments}
-                  </span>
+                  </Label>
                 </div>
 
               </div>
-            </div>
+            </ComponentCard>
+
           ))}
 
           {summary.employeeStats.length === 0 && (
@@ -193,3 +186,13 @@ export default function DailySummaryScreen({ businessId }: { businessId: string 
     </div>
   )
 }
+
+// <div key={emp.id} className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+//   {/* Cabecera de la tarjeta del empleado */}
+//   <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+//     <h3 className="text-lg font-bold text-gray-800 truncate"></h3>
+//   </div>
+
+//   {/* Cuerpo de la tarjeta */}
+
+// </div>

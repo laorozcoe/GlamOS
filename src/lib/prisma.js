@@ -3,6 +3,7 @@
 import prisma from '@/lib/prisma2'
 import { hashPassword } from '@/lib/hashPassword'
 import { revalidatePath } from "next/cache";
+import { randomUUID } from 'crypto'; // Para generar los IDs de Account
 // import { auth } from "@/lib/auth"; // Tu configuración de Auth.js
 
 //--------------------------------------------------------------------------------
@@ -149,7 +150,6 @@ export async function getAppointmentsByDatePrisma(businessId, start) {
 
 export async function updateAppointment(payload, appointmentId) {
     // Validación básica
-    debugger
     if (!appointmentId) throw new Error("Se requiere el ID de la cita para actualizar");
 
     await prisma.appointment.update({
@@ -650,6 +650,9 @@ export async function getClientsPrisma(businessId) {
         where: {
             businessId: businessId,
             active: true
+        },
+        orderBy: {
+            name: 'asc' // Ordena A-Z basándose en el nombre del usuario anidado
         },
         include: {
             employee: {
@@ -1180,4 +1183,52 @@ export async function getDailySummary(businessId, start) {
         totaTransferDay,
         employeeStats,
     }
+}
+
+
+export async function MigrateToBetterAuth() {
+    debugger
+    console.log("Iniciando migración de contraseñas...");
+
+    // 1. Buscamos todos los usuarios que tengan una contraseña en la tabla vieja
+    const users = await prisma.user.findMany();
+
+    console.log(`Se encontraron ${users.length} usuarios para migrar.`);
+
+    let migradas = 0;
+
+    // 2. Recorremos los usuarios uno por uno
+    for (const user of users) {
+        // Verificamos que no le hayamos migrado la cuenta ya en un intento anterior
+        const existingAccount = await prisma.account.findFirst({
+            where: {
+                userId: user.id,
+                providerId: "credential",
+            },
+        });
+
+        if (!existingAccount && user.password) {
+            // 3. Creamos el registro en la tabla Account que Better Auth espera
+            await prisma.account.create({
+                data: {
+                    id: randomUUID(), // ID único para la cuenta
+                    userId: user.id,
+                    accountId: user.email, // Better Auth enlaza el email aquí para credentials
+                    providerId: "credential",
+                    password: user.password, // Movemos el hash tal cual estaba
+
+                    // Estos campos son obligatorios en el esquema pero no aplican para credentials, 
+                    // los dejamos en null o vacíos si tu esquema lo exige (depende de si los pusiste opcionales)
+                    accessToken: null,
+                    refreshToken: null,
+                },
+            });
+            migradas++;
+            console.log(`✅ Contraseña migrada para: ${user.email}`);
+        } else {
+            console.log(`⏭️ Omitiendo ${user.email} (Ya tiene cuenta o no tiene password)`);
+        }
+    }
+
+    console.log(`\n¡Migración completada! Se migraron ${migradas} contraseñas exitosamente.`);
 }

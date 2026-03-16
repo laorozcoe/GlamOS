@@ -1,12 +1,12 @@
-import { seed, createUserPrisma, createServicePrisma, createEmployeePrisma, createServiceCategoryPrisma, createClientPrisma } from "@/lib/prisma";
+import { seed, createUserPrisma, createServicePrisma, createEmployeePrisma, createServiceCategoryPrisma, createClientPrisma, MigrateToBetterAuth } from "@/lib/prisma";
 
 const Seed = async () => {
 
     // createClientPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Luis Estrada", "61431944524", "", "")
     // createClientPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Alejandro Orozco", "61431944525", "", "")
     // seed();
-    // createUserPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Luis Alejandro", "Orozco Estrada", "laorozcoe", "laorozcoe@gmail.com", "123456", "ADMIN")
-
+    // createUserPrisma("271b6033-14be-40e3-8155-9a34f43ab307", "Luis Alejandro", "Orozco Estrada", "laorozcoe", "laorozcoe@gmail.com", "123456", "ADMIN")
+    MigrateToBetterAuth()
     // createServiceCategoryPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Manos", 1, true)
     // createServiceCategoryPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Pies", 2, true)
     // createServiceCategoryPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Acrilico", 3, true)
@@ -102,7 +102,7 @@ const Seed = async () => {
 
     // for (let i = 0; i < 5; i++) {
 
-    //     const user = await createUserPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", employees[i].user.name, employees[i].user.lastName, employees[i].user.username, employees[i].user.email, employees[i].user.password, employees[i].user.role)
+    //     const user = await createUserPrisma("271b6033-14be-40e3-8155-9a34f43ab307", employees[i].user.name, employees[i].user.lastName, employees[i].user.username, employees[i].user.email, employees[i].user.password, employees[i].user.role)
     //     await createEmployeePrisma(user.businessId, user.id, employees[i].employee.phone, employees[i].employee.bio, employees[i].employee.commission, employees[i].employee.rating)
     // }
 

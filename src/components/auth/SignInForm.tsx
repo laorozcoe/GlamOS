@@ -5,13 +5,15 @@ import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
-import { signIn } from "next-auth/react"
 import React, { useEffect, useState } from "react";
 import { useBusiness } from "@/context/BusinessContext";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 
 export default function SignInForm() {
-  const [username, setUsername] = useState("")
+  const router = useRouter();
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
@@ -19,16 +21,30 @@ export default function SignInForm() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-
+    debugger
     const slug = business?.slug
 
-    const res = await signIn("credentials", {
-      username,
+    // const res = await signIn("credentials", {
+    //   email,
+    //   password,
+    //   slug,
+    //   redirect: true,
+    //   callbackUrl: "/",
+    // })
+    const { data, error } = await authClient.signIn.email({
+      email,
       password,
-      slug,
-      redirect: true,
-      callbackUrl: "/",
-    })
+      rememberMe: true,
+    }, {
+      // Usamos hooks para controlar el flujo
+      onSuccess: () => {
+        router.push("/"); // Forzamos la navegación
+        router.refresh(); // Refrescamos para que el middleware vea la nueva cookie
+      },
+      onError: (ctx) => {
+        alert("Error: " + ctx.error.message);
+      }
+    });
   }
 
   return (
@@ -105,9 +121,9 @@ export default function SignInForm() {
               <div className="space-y-6">
                 <div>
                   <Label>
-                    Usuario <span className="text-error-500">*</span>{" "}
+                    Correo <span className="text-error-500">*</span>{" "}
                   </Label>
-                  <Input placeholder="Usuario" type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
+                  <Input placeholder="Correo" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div>
                   <Label>

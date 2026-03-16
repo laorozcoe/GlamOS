@@ -2,37 +2,37 @@ import React, { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import InputField from "@/components/form/input/InputField";
+import Label from "@/components/form/Label"
 
 
-export const ExtraServiceModal =({
-    isOpen, onClose, extraService,setExtraService, onSave
+export const ExtraServiceModal = ({
+    isOpen, onClose, extraService, setExtraService, onSave
 }) => {
 
     const handleOnSave = () => {
-        debugger
         onSave({
             price: extraService,
             name: "Servicio extra",
-            id:null
-        
+            id: null
+
         });
         onClose();
     }
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} className="max-w-sm p-6 rounded-2xl">
-                <h3 className="text-lg font-bold mb-2">Agregar servicio extra?</h3>
-                <div className="py-5">
-                    <InputField type="number" value={extraService} placeholder="Inserta el monto" onChange={(e) => {
-        // Aquí está el cambio: extraemos el valor del evento
-        setExtraService(parseFloat(e.target.value) || 0); 
-    }}></InputField>
-                </div>
-                <div className="flex gap-3">
-                    <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
-                    <Button className="flex-1 bg-brand-500 hover:bg-brand-600 text-white" onClick={handleOnSave}>Agregar</Button>
-                </div>
-            </Modal>
+            <Label className="text-lg font-bold mb-2">Agregar servicio extra?</Label>
+            <div className="py-5">
+                <InputField type="number" value={extraService} placeholder="Inserta el monto" onChange={(e) => {
+                    // Aquí está el cambio: extraemos el valor del evento
+                    setExtraService(parseFloat(e.target.value) || 0);
+                }}></InputField>
+            </div>
+            <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+                <Button className="flex-1 bg-brand-500 hover:bg-brand-600 text-white" onClick={handleOnSave}>Agregar</Button>
+            </div>
+        </Modal>
     );
 };
 

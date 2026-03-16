@@ -4,12 +4,22 @@ import Link from "next/link";
 import React, { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
-import { useSession } from "next-auth/react"
-import { signOut } from "next-auth/react";
+import { authClient } from "@/lib/auth-client"
+import { useRouter } from "next/navigation";
+// import { useSession } from "next-auth/react"
+// import { signOut } from "next-auth/react";
 
 export default function UserDropdown() {
+  const {
+    data: session,
+    isPending,
+    error,
+    refetch
+  } = authClient.useSession();
   const [isOpen, setIsOpen] = useState(false);
-  const { data: session, status } = useSession()
+
+  const router = useRouter();
+  // const { data: session, status } = useSession()
 
   function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
     e.stopPropagation();
@@ -18,6 +28,16 @@ export default function UserDropdown() {
 
   function closeDropdown() {
     setIsOpen(false);
+  }
+
+  const handleSignOuth = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.push("/signin");
+        },
+      },
+    });
   }
   return (
     <div className="relative">
@@ -69,7 +89,7 @@ export default function UserDropdown() {
           </span>
         </div>
 
-        <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
+        {/* <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
@@ -145,9 +165,9 @@ export default function UserDropdown() {
               Ayuda
             </DropdownItem>
           </li>
-        </ul>
+        </ul> */}
         <button
-          onClick={() => signOut()}
+          onClick={handleSignOuth}
           className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
         >
           <svg

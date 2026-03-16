@@ -6,7 +6,7 @@ import { usePrinter } from "@/hooks/usePrinter";
 import {
     getEmployeesPrisma, getServicesPrisma, getServicesCategoriesPrisma,
     getAppointmentsPrisma, createAppointment, updateAppointment,
-    createClientPrisma, getClientPrisma, createPaymentPrisma,
+    createClientPrisma, getClientPrisma, getClientsPrisma, createPaymentPrisma,
     createSalePrisma, deleteAppointmentPrisma,
     getAppointmentsByDatePrisma
 } from "@/lib/prisma";
@@ -43,13 +43,13 @@ export const useCalendarLogic = () => {
     const [extraServices, setExtraServices] = useState<any[]>([]); // Carrito de servicios
     const [extraServicesModal, setExtraServicesModal] = useState<boolean>(false); // Carrito de servicios
     const [customer, setCustomer] = useState({ name: "", phone: "" });
+    const [customers, setCustomers] = useState<any[]>([]);
 
     // UI Helpers
     const [flashCategory, setFlashCategory] = useState<string | null>(null);
     const [showPayModal, setShowPayModal] = useState(false);
 
     const handleShowPayModal = () => {
-        debugger
         if (!time || !date) {
             toast.warning("Ingresa fecha y hora");
             return
@@ -73,16 +73,18 @@ export const useCalendarLogic = () => {
     const loadCatalogs = async () => {
         if (!business?.id) return;
         try {
-            const [emp, srv, cats, evts] = await Promise.all([
+            const [emp, srv, cats, evts, cust] = await Promise.all([
                 getEmployeesPrisma(business.id),
                 getServicesPrisma(business.id),
                 getServicesCategoriesPrisma(business.id),
-                getAppointmentsByDatePrisma(business.id, currentDate)
+                getAppointmentsByDatePrisma(business.id, currentDate),
+                getClientsPrisma(business.id)
             ]);
             setEmployees(emp);
             setServices(srv);
             setServicesCategories(cats);
             setEvents(evts);
+            setCustomers(cust);
         } catch (error) {
             console.error("Error cargando catálogos:", error);
         }
@@ -164,7 +166,6 @@ export const useCalendarLogic = () => {
         // const event = clickInfo.event;
 
         // 1. Recuperar info básica
-        debugger
         setSelectedEvent(event); // Guardamos el evento original de FullCalendar
 
 
@@ -243,7 +244,6 @@ export const useCalendarLogic = () => {
 
     // Agregar servicio al carrito
     const addServiceToCart = (service: any) => {
-        debugger
         const serviceCopia = Object.assign({}, service);
         serviceCopia.serviceId = serviceCopia.id;
         serviceCopia.id = null;
@@ -286,7 +286,6 @@ export const useCalendarLogic = () => {
 
     // Guardar / Actualizar
     const handleSaveOrUpdate = async () => {
-        debugger
         if (!time || !date) {
             toast.warning("Ingresa fecha y hora");
             return
@@ -370,7 +369,6 @@ export const useCalendarLogic = () => {
 
     // Procesar Pago Final
     const handleFinalizePayment = async (paymentData: any) => {
-        debugger
         // 1. Validaciones iniciales
         if (!time || !date) {
             toast.warn("Ingresa fecha y hora");
@@ -573,6 +571,7 @@ export const useCalendarLogic = () => {
         showSaleDetails, setShowSaleDetails,
         onDeleteAppointment: onDelete, handleShowPayModal,
         extraServices, setExtraServices,
-        extraServicesModal, setExtraServicesModal
+        extraServicesModal, setExtraServicesModal,
+        customers, setCustomer
     };
 };

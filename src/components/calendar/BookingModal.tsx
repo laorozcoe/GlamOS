@@ -5,7 +5,8 @@ import InputField from '@/components/form/input/InputField';
 import { ServiceSelector } from "@/components/calendar/mobile/ServiceSelector";
 // Ya no necesitamos el ServiceModal aparte, lo integraremos en el flujo
 import Button from "../ui/button/Button";
-import { Trash, User, Calendar, Sparkles, Receipt, ChevronRight, ChevronLeft, SquarePlus } from 'lucide-react';
+import { Trash, User, Calendar, Sparkles, Receipt, ChevronRight, ChevronLeft, SquarePlus, Search } from 'lucide-react';
+import Label from "@/components/form/Label";
 
 interface BookingModalProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface BookingModalProps {
     // ... Tus props (sin cambios)
     employees: any[];
     services: any[];
+    customers: any[];
     servicesCategories: any[];
     selectedCategory: string | null;
     setSelectedCategory: (id: string) => void;
@@ -29,6 +31,7 @@ interface BookingModalProps {
     onAddService: (s: any) => void;
     onDeleteService: (idx: number) => void;
     onDeleteAppointment: () => void;
+    setCustomer: (customer: any) => void;
     total: number;
     flashCategory: string | null;
     onSave: () => void;
@@ -43,7 +46,8 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
         customer, handleChangeCustomer,
         date, setDate, time, setTime, timeEnd, setTimeEnd,
         appointments, onDeleteService, total,
-        onSave, onOpenPay, onDeleteAppointment, setExtraServicesModal
+        onSave, onOpenPay, onDeleteAppointment, setExtraServicesModal,
+        customers, setCustomer
     } = props;
 
     useEffect(() => {
@@ -55,6 +59,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
     // --- ESTADOS ---
     const [mobileTab, setMobileTab] = useState<'info' | 'services' | 'summary'>('services');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
     // --- HELPERS ---
     const employeeOptions = employees.map((e: any) => ({
@@ -69,6 +74,11 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
             onDeleteService(realIndex);
         }
     };
+
+    const handleSelectCustomer = (customer: any) => {
+        setCustomer(customer)
+        setIsSearchModalOpen(false);
+    }
 
     return (
         <>
@@ -88,9 +98,9 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                             <ChevronLeft />
                         </button>
                         <div>
-                            <h5 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white leading-tight mb-5">
+                            <Label className="text-lg sm:text-xl font-bold leading-tight mb-5">
                                 {isEditing ? "Editar Cita" : "Nueva Cita"}
-                            </h5>
+                            </Label>
                             <p className="text-xs text-brand-500 font-medium sm:hidden">
                                 {mobileTab === 'services' && "Paso 1: Servicios"}
                                 {mobileTab === 'info' && "Paso 2: Datos"}
@@ -131,12 +141,12 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                             {mobileTab === 'info' && (
                                 <div className="space-y-5 p-1">
                                     <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                                        <h4 className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                                            <User size={14} /> Datos Empleado
-                                        </h4>
+                                        <Label className="text-sm font-bold  uppercase mb-3 flex items-center gap-2">
+                                            <User size={18} /> Datos Empleado
+                                        </Label>
                                         <div className="space-y-4">
                                             <div>
-                                                <label className="text-sm font-medium mb-1 block">Nombre</label>
+                                                <Label className="text-sm font-medium mb-1 block">Nombre</Label>
                                                 <Select
                                                     className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm"
                                                     options={employeeOptions}
@@ -152,42 +162,52 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     </div>
 
                                     <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                                        <h4 className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                                            <User size={14} /> Datos Cliente
-                                        </h4>
+                                        <Label className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                            <User size={18} /> Datos Cliente
+                                        </Label>
                                         <div className="space-y-4">
-
-                                            <div className="grid grid-cols-2 gap-3">
+                                            {/* 1. Cambiamos las columnas y agregamos 'items-end' para que el botón se alinee con los inputs y no con los labels */}
+                                            <div className="grid grid-cols-1 gap-3 items-end">
                                                 <div>
-                                                    <label className="text-sm font-medium mb-1 block">Teléfono</label>
+                                                    <Label className="text-sm font-medium mb-1 block">Teléfono</Label>
                                                     <InputField className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" name="phone" value={customer.phone} type="number" onChange={handleChangeCustomer} />
                                                 </div>
+
                                                 <div>
-                                                    <label className="text-sm font-medium mb-1 block">Nombre</label>
+                                                    <Label className="text-sm font-medium mb-1 block">Nombre</Label>
                                                     <InputField className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" name="name" value={customer.name} onChange={handleChangeCustomer} />
                                                 </div>
 
-
+                                                {/* 1. Usamos h-[42px] para que mida exactamente lo mismo que el InputField */}
+                                                {/* 2. Usamos flex, items-center y justify-center para centrar el ícono de la lupa adentro del botón */}
+                                                <Button
+                                                    onClick={() => setIsSearchModalOpen(true)}
+                                                    type="button"
+                                                    className="h-[43px] flex items-center justify-center p-0 align-middle"
+                                                >
+                                                    <span>Buscar cliente</span>
+                                                    <Search size={18} />
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                                        <h4 className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                                            <Calendar size={14} /> Fecha y Hora
-                                        </h4>
+                                        <Label className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                            <Calendar size={18} /> Fecha y Hora
+                                        </Label>
                                         <div className="grid grid-cols-1 gap-4">
                                             <div>
-                                                <label className="text-sm font-medium mb-1 block">Día</label>
+                                                <Label className="text-sm font-medium mb-1 block">Día</Label>
                                                 <InputField type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="text-sm font-medium mb-1 block">Inicio</label>
+                                                    <Label className="text-sm font-medium mb-1 block">Inicio</Label>
                                                     <InputField type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
                                                 </div>
                                                 <div>
-                                                    <label className="text-sm font-medium mb-1 block">Fin</label>
+                                                    <Label className="text-sm font-medium mb-1 block">Fin</Label>
                                                     <InputField type="time" value={timeEnd} onChange={e => setTimeEnd(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
                                                 </div>
                                             </div>
@@ -210,19 +230,19 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                             </div>
                                         ) : (
                                             appointments.map((apt: any, index: number) => (
-                                                <div key={index} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                                                <div key={index} className="bg-white dark:bg-gray-800/50 p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
                                                     <div className="overflow-hidden pr-2">
-                                                        <p className="font-bold text-gray-800">{apt.name}</p>
+                                                        <Label className="font-bold">{apt.name}</Label>
                                                         <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                                                            <span>${apt.price}</span>
-                                                            <span>• {apt.duration} min</span>
+                                                            <Label>${apt.price}</Label>
+                                                            <Label>• {apt.duration} min</Label>
                                                         </div>
                                                     </div>
                                                     <button
                                                         onClick={() => onDeleteService(index)}
-                                                        className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-400 rounded-full hover:bg-red-100 transition-colors"
+                                                        className="w-8 h-8 flex items-center justify-center  text-red-400 rounded-full hover:bg-red-100 transition-colors"
                                                     >
-                                                        <Trash size={14} />
+                                                        <Trash size={18} />
                                                     </button>
                                                 </div>
                                             ))
@@ -230,12 +250,18 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     </div>
 
                                     {/* Total Block */}
-                                    <div className="mt-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                                        <div className="flex justify-between items-end">
-                                            <span className="text-gray-500 font-medium">Total Estimado</span>
-                                            <span className="text-3xl font-black text-gray-900">${total}</span>
+
+
+
+
+
+                                    <div className="mt-4  py-3">
+                                        <div className="flex justify-between align-middle text-center items-center rounded-xl border border-gray-200 py-2 px-5">
+                                            <Label color="text-gray-500 dark:text-brand-400" className="font-medium">Total Estimado</Label>
+                                            <Label color="text-gray-500 dark:text-brand-400" className="text-3xl font-black text-gray-900">${total}</Label>
                                         </div>
                                     </div>
+
                                 </div>
                             )}
                         </div>
@@ -248,12 +274,12 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                             <div className="space-y-5 p-1">
                                 <div className="flex gap-4">
                                     <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                                        <h4 className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                                            <User size={14} /> Datos Empleado
-                                        </h4>
+                                        <Label className="text-sm font-bold uppercase mb-3 flex items-center gap-2">
+                                            <User size={18} /> Datos Empleado
+                                        </Label>
                                         <div className="space-y-4">
                                             <div>
-                                                <label className="text-sm font-medium mb-1 block">Nombre</label>
+                                                <Label className="text-sm font-medium mb-1 block">Nombre</Label>
                                                 <Select
                                                     className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm"
                                                     options={employeeOptions}
@@ -268,18 +294,18 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                         </div>
                                     </div>
                                     <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                                        <h4 className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                                            <User size={14} /> Datos Cliente
-                                        </h4>
+                                        <Label className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                            <User size={18} /> Datos Cliente
+                                        </Label>
                                         <div className="space-y-4">
 
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="text-sm font-medium mb-1 block">Teléfono</label>
+                                                    <Label className="text-sm font-medium mb-1 block">Teléfono</Label>
                                                     <InputField className="border-gray-300 bg-white" name="phone" value={customer.phone} type="number" onChange={handleChangeCustomer} />
                                                 </div>
                                                 <div>
-                                                    <label className="text-sm font-medium mb-1 block">Nombre</label>
+                                                    <Label className="text-sm font-medium mb-1 block">Nombre</Label>
                                                     <InputField className="border-gray-300 bg-white" name="name" value={customer.name} onChange={handleChangeCustomer} />
                                                 </div>
                                             </div>
@@ -287,21 +313,21 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     </div>
                                 </div>
                                 <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                                    <h4 className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                                        <Calendar size={14} /> Fecha y Hora
-                                    </h4>
+                                    <Label className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                        <Calendar size={18} /> Fecha y Hora
+                                    </Label>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="text-sm font-medium mb-1 block">Día</label>
+                                            <Label className="text-sm font-medium mb-1 block">Día</Label>
                                             <InputField type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div>
-                                                <label className="text-sm font-medium mb-1 block">Inicio</label>
+                                                <Label className="text-sm font-medium mb-1 block">Inicio</Label>
                                                 <InputField type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
                                             </div>
                                             <div>
-                                                <label className="text-sm font-medium mb-1 block">Fin</label>
+                                                <Label className="text-sm font-medium mb-1 block">Fin</Label>
                                                 <InputField type="time" value={timeEnd} onChange={e => setTimeEnd(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
                                             </div>
                                         </div>
@@ -309,7 +335,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                 </div>
                             </div>
                             <div className="h-125">
-                                <h3 className="font-bold mb-3">Seleccionar Servicios</h3>
+                                <Label className="font-bold mb-3">Seleccionar Servicios</Label>
                                 <ServiceSelector
                                     services={props.services}
                                     servicesCategories={props.servicesCategories}
@@ -322,10 +348,12 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                 />
                             </div>
                         </div>
-                        <div className="w-4/12 p-6 bg-gray-50/50 flex flex-col">
-                            <h3 className="font-bold mb-4">Resumen</h3>
+                        <div className="w-4/12   flex flex-col ">
+                            <div className="dark:bg-gray-800/50 py-3 px-3">
+                                <Label color={"text-white dark:text-gray-400"} className="font-bold mb-4 ">Resumen</Label>
+                            </div>
                             {/* Copia de la lógica de Resumen */}
-                            <div className="flex-1 overflow-y-auto space-y-3 p-1">
+                            <div className="flex-1 overflow-y-auto space-y-3 py-3 px-3">
                                 {appointments.length === 0 ? (
                                     <div className="h-40 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
                                         <Sparkles className="mb-2 opacity-50" />
@@ -334,28 +362,28 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     </div>
                                 ) : (
                                     appointments.map((apt: any, index: number) => (
-                                        <div key={index} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                                        <div key={index} className=" p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
                                             <div className="overflow-hidden pr-2">
-                                                <p className="font-bold text-gray-800">{apt.name}</p>
+                                                <Label className="font-bold">{apt.name}</Label>
                                                 <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                                                    <span>${apt.price}</span>
-                                                    <span>• {apt.duration} min</span>
+                                                    <Label>${apt.price}</Label>
+                                                    <Label>• {apt.duration} min</Label>
                                                 </div>
                                             </div>
                                             <button
                                                 onClick={() => onDeleteService(index)}
-                                                className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-400 rounded-full hover:bg-red-100 transition-colors"
+                                                className="w-8 h-8 flex items-center justify-center  text-red-400 rounded-full hover:bg-red-100 transition-colors"
                                             >
-                                                <Trash size={14} />
+                                                <Trash size={18} />
                                             </button>
                                         </div>
                                     ))
                                 )}
                             </div>
-                            <div className="mt-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                                <div className="flex justify-between items-end">
-                                    <span className="text-gray-500 font-medium">Total Estimado</span>
-                                    <span className="text-3xl font-black text-gray-900">${total}</span>
+                            <div className="mt-4  py-3 px-3">
+                                <div className="flex justify-between align-middle text-center items-center rounded-xl border border-gray-200 py-2 px-5">
+                                    <Label color="text-gray-500 dark:text-brand-400" className="font-medium">Total Estimado</Label>
+                                    <Label color="text-gray-500 dark:text-brand-400" className="text-3xl font-black text-gray-900">${total}</Label>
                                 </div>
                             </div>
                         </div>
@@ -363,7 +391,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                 </div>
 
                 {/* --- FOOTER (ACCIONES) --- */}
-                <div className="flex-none p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
+                <div className="flex-none p-4 border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
                     {/* FOOTER MÓVIL */}
                     <div className="flex sm:hidden gap-3">
                         {mobileTab === 'info' && (
@@ -375,8 +403,8 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                         {mobileTab === 'services' && (
                             <div className="w-full flex gap-2">
                                 <div className="flex-1 flex flex-col justify-center px-2">
-                                    <span className="text-xs text-gray-500">Total</span>
-                                    <span className="font-bold text-lg">${total}</span>
+                                    <Label className="text-xs ">Total</Label>
+                                    <Label className="font-bold text-lg">${total}</Label>
                                 </div>
                                 <Button className="flex-1" onClick={() => setMobileTab('info')}>
                                     Siguiente ({appointments.length})
@@ -427,17 +455,36 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                         </Button>
                     </div>
                 </div>
-            </Modal>
+            </Modal >
 
             {/* Modal Eliminar */}
-            <Modal isOpen={isDeleteModalOpen} onClose={() => { setIsDeleteModalOpen(false); setMobileTab('services') }} className="max-w-sm p-6 rounded-2xl">
+            < Modal isOpen={isDeleteModalOpen} onClose={() => { setIsDeleteModalOpen(false); setMobileTab('services') }} className="max-w-sm p-6 rounded-2xl" >
                 <h3 className="text-lg font-bold mb-2">¿Eliminar cita?</h3>
                 <p className="text-gray-500 text-sm mb-6">Esta acción no se puede deshacer.</p>
                 <div className="flex gap-3">
                     <Button variant="outline" className="flex-1" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</Button>
                     <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={() => { onDeleteAppointment(); setIsDeleteModalOpen(false); }}>Eliminar</Button>
                 </div>
-            </Modal>
+            </Modal >
+
+            {/* Search Customer */}
+            < Modal isOpen={isSearchModalOpen} onClose={() => { setIsSearchModalOpen(false); setMobileTab('services') }} className="max-w-sm p-6 rounded-2xl" >
+                <Label className="text-lg font-bold mb-2">Buscar cliente</Label>
+                <ul className="mb-6 overflow-y-auto max-h-[50vh] md:h-[200px] rounded-xl divide-y divide-gray-700/50 overscroll-contain shadow-inner">
+                    {customers.map((cc: any) => (
+                        <li
+                            onClick={() => handleSelectCustomer(cc)}
+                            key={cc.id}
+                            className="py-3 px-4 active:bg-gray-700/50 transition-colors"
+                        >
+                            <Label>{cc.name}</Label>
+                        </li>
+                    ))}
+                </ul>
+                <div className="flex gap-3">
+                    <Button className="flex-1 bg-brand-600 hover:bg-red-700 text-white" onClick={() => { onDeleteAppointment(); setIsSearchModalOpen(false); }}>Cerrar</Button>
+                </div>
+            </Modal >
         </>
     );
 };

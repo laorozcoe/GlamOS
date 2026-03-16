@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
+import Label from "../form/Label";
+import Button from "../ui/button/Button";
+import InputField from "../form/input/InputField";
 
 interface PaymentModalProps {
     isOpen: boolean;
@@ -30,25 +33,25 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            className="w-[95svw]  bg-white rounded-2xl shadow-2xl overflow-hidden p-0"
+            className="w-[95svw]   rounded-2xl shadow-2xl overflow-hidden p-0"
             showCloseButton={true}
         >
             <div className="flex flex-col h-full">
                 {/* Header Total */}
-                <div className="bg-gray-50 p-6 border-b text-center">
-                    <h3 className="text-gray-500 font-medium text-xs uppercase tracking-wider mb-1">Total a Pagar</h3>
-                    <div className="text-5xl font-black text-gray-900 tracking-tight">${total}</div>
+                <div className="p-6 border-b text-center">
+                    <Label className="text-gray-500 font-medium text-xs uppercase tracking-wider mb-1">Total a Pagar</Label>
+                    <Label className="text-5xl font-black text-gray-900 tracking-tight">${total}</Label>
                 </div>
 
                 <div className="p-6 space-y-6">
                     {/* Métodos */}
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Método de Pago</label>
+                        <Label className="block text-sm font-bold mb-2">Método de Pago</Label>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <button
                                 onClick={() => setPaymentMethod('CASH')}
                                 className={`py-3 px-4 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all
-                  ${paymentMethod === 'CASH' ? 'border-black bg-black text-white' : 'border-gray-200 text-gray-600'}`}
+                  ${paymentMethod === 'CASH' ? 'border-black bg-black text-white dark:border-white dark:bg-brand-500' : 'border-gray-200 text-gray-600'}`}
                             >
                                 <span>💵</span> Efectivo
                             </button>
@@ -74,9 +77,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Recibido</label>
                                 <div className="relative">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
-                                    <input
+                                    <InputField
                                         type="number"
-                                        autoFocus
+
                                         value={amountReceived}
                                         onChange={(e) => setAmountReceived(e.target.value)}
                                         className="w-full pl-8 pr-4 py-3 text-xl font-bold border-2 border-gray-300 rounded-xl focus:border-black outline-none"
@@ -84,26 +87,26 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                     />
                                 </div>
                             </div>
-                            <div className={`p-4 rounded-xl flex justify-between items-center ${changeAmount < 0 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>
-                                <span className="font-bold text-sm uppercase">Cambio</span>
-                                <span className="text-2xl font-black">${changeAmount.toLocaleString()}</span>
+                            <div className={`p-4 rounded-xl flex justify-between items-center ${changeAmount < 0 ? 'bg-red-50 dark:bg-red-900' : 'bg-green-50 dark:bg-green-900'} `}>
+                                <Label color={`${changeAmount < 0 ? 'text-red-600 dark:text-red-50' : 'text-green-700 dark:text-green-50'}`} className="font-bold text-sm uppercase">Cambio</Label>
+                                <Label color={`${changeAmount < 0 ? 'text-red-600 dark:text-red-50' : 'text-green-700 dark:text-green-50'}`} className="text-2xl font-black">${changeAmount.toLocaleString()}</Label>
                             </div>
                         </div>
                     )}
 
                     {paymentMethod === 'CARD' && (
-                        <div className="p-4 bg-blue-50 text-blue-800 rounded-xl text-center text-sm font-medium">
+                        <div className="p-4 bg-blue-50 text-blue-800 dark:text-blue-50 dark:bg-blue-800 rounded-xl text-center text-sm font-medium">
                             Usa la terminal bancaria para procesar el cobro.
                         </div>
                     )}
                 </div>
 
                 {/* Botones */}
-                <div className="p-6 border-t mt-auto bg-gray-50 flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-3 text-gray-600 font-bold hover:bg-gray-200 rounded-xl">
+                <div className="p-6 border-t mt-auto  flex gap-3">
+                    <Button onClick={onClose} variant="outline" className="flex-1 py-3 text-gray-600 font-bold hover:bg-gray-200 rounded-xl">
                         Cancelar
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={handleConfirm}
                         disabled={isConfirmDisabled}
                         className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition-all
@@ -111,7 +114,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             `}
                     >
                         Confirmar Pago
-                    </button>
+                    </Button>
                 </div>
             </div>
         </Modal>

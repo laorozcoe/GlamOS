@@ -1,6 +1,6 @@
 import React from "react";
 import MainContentArea from "@/layout/MainContentArea";
-import SessionProviderWrapper from "@/components/auth/SessionProviderWrapper"
+// import SessionProviderWrapper from "@/components/auth/SessionProviderWrapper"
 export default function AdminLayout({
   children,
 }: {
@@ -9,11 +9,11 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen xl:flex">
-      <SessionProviderWrapper>
-        <MainContentArea>
-          {children}
-        </MainContentArea>
-      </SessionProviderWrapper>
+      {/* <SessionProviderWrapper> */}
+      <MainContentArea>
+        {children}
+      </MainContentArea>
+      {/* </SessionProviderWrapper> */}
     </div>
   );
 }

@@ -5,7 +5,6 @@ import { getBusinessPrisma } from "@/lib/prisma"
 
 export async function getBusiness() {
     try {
-        debugger
         const h = await headers()
         const slug = h.get("x-business-slug")
 
