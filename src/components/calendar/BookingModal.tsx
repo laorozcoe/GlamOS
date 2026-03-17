@@ -251,10 +251,6 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
 
                                     {/* Total Block */}
 
-
-
-
-
                                     <div className="mt-4  py-3">
                                         <div className="flex justify-between align-middle text-center items-center rounded-xl border border-gray-200 py-2 px-5">
                                             <Label color="text-gray-500 dark:text-brand-400" className="font-medium">Total Estimado</Label>
@@ -298,8 +294,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                             <User size={18} /> Datos Cliente
                                         </Label>
                                         <div className="space-y-4">
-
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
                                                 <div>
                                                     <Label className="text-sm font-medium mb-1 block">Teléfono</Label>
                                                     <InputField className="border-gray-300 bg-white" name="phone" value={customer.phone} type="number" onChange={handleChangeCustomer} />
@@ -308,6 +303,14 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                                     <Label className="text-sm font-medium mb-1 block">Nombre</Label>
                                                     <InputField className="border-gray-300 bg-white" name="name" value={customer.name} onChange={handleChangeCustomer} />
                                                 </div>
+                                                <Button
+                                                    onClick={() => setIsSearchModalOpen(true)}
+                                                    type="button"
+                                                    className="h-[43px] flex items-center justify-center p-0 align-middle"
+                                                >
+
+                                                    <Search size={18} />
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
@@ -469,7 +472,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
 
             {/* Search Customer */}
             < Modal isOpen={isSearchModalOpen} onClose={() => { setIsSearchModalOpen(false); setMobileTab('services') }} className="max-w-sm p-6 rounded-2xl" >
-                <Label className="text-lg font-bold mb-2">Buscar cliente</Label>
+                <Label className="text-lg font-bold mb-7">Buscar cliente</Label>
                 <ul className="mb-6 overflow-y-auto max-h-[50vh] md:h-[200px] rounded-xl divide-y divide-gray-700/50 overscroll-contain shadow-inner">
                     {customers.map((cc: any) => (
                         <li
@@ -477,7 +480,8 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                             key={cc.id}
                             className="py-3 px-4 active:bg-gray-700/50 transition-colors"
                         >
-                            <Label>{cc.name}</Label>
+                            <Label color={"text-brand-500 dark:text-brand-400"}>{cc.name}</Label>
+                            <Label>{cc.phone}</Label>
                         </li>
                     ))}
                 </ul>
