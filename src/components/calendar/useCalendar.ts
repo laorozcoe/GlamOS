@@ -336,7 +336,7 @@ export const useCalendarLogic = () => {
             }
             // Siempre asegurar cliente
             if (customer.name && customer.phone) {
-                await createClientPrisma(business?.id, customer.name, customer.phone, "", "");
+                await createClientPrisma(business?.id, customer.name, customer.phone, "", "", selectedEmployee?.id);
             }
 
             // Recargar eventos (idealmente optimista, pero aquí recargamos)
@@ -486,7 +486,7 @@ export const useCalendarLogic = () => {
 
             // 6. PASO C: Asegurar Cliente en BD
             if (customer.name && customer.phone) {
-                await createClientPrisma(business?.id, customer.name, customer.phone, "", "");
+                await createClientPrisma(business?.id, customer.name, customer.phone, "", "", selectedEmployee?.id);
             }
             // 7. PASO D: Impresión del Ticket (Usando datos de la venta recién creada)
             const ticketData = {

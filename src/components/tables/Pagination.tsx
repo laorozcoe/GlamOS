@@ -1,3 +1,5 @@
+import Label from "../form/Label";
+
 type PaginationProps = {
   currentPage: number;
   totalPages: number;
@@ -24,7 +26,7 @@ const Pagination: React.FC<PaginationProps> = ({
         Anterior
       </button>
       <div className="flex items-center gap-2">
-        {currentPage > 3 && <span className="px-2">...</span>}
+        {currentPage > 3 && <Label className="px-2">...</Label>}
         {pagesAroundCurrent.map((page) => (
           <button
             key={page}
@@ -37,7 +39,7 @@ const Pagination: React.FC<PaginationProps> = ({
             {page}
           </button>
         ))}
-        {currentPage < totalPages - 2 && <span className="px-2">...</span>}
+        {currentPage < totalPages - 2 && <Label className="px-2">...</Label>}
       </div>
       <button
         onClick={() => onPageChange(currentPage + 1)}

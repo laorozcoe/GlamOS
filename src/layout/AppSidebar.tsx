@@ -16,9 +16,10 @@ import {
   PlugInIcon,
   TableIcon,
   UserCircleIcon,
+
 } from "../icons/index";
 import { useBusiness } from "@/context/BusinessContext";
-import { Sparkles } from 'lucide-react';
+import { Sparkles, BadgeDollarSign } from 'lucide-react';
 
 // import SidebarWidget from "./SidebarWidget";
 
@@ -34,6 +35,11 @@ const navItems: NavItem[] = [
     icon: <CalenderIcon />,
     name: "Agenda",
     path: "/calendar",
+  },
+  {
+    icon: <BadgeDollarSign />,
+    name: "Historial Ventas",
+    path: "/sales",
   },
 
   // {

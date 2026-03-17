@@ -68,7 +68,7 @@ export default function BlankPage() {
         <div className="space-y-5 p-1">
             <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
                 <h4 className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                    <User size={14} /> Datos Personales
+                    <User size={18} /> Datos Personales
                 </h4>
                 <div className="space-y-4">
                     <div>
@@ -98,7 +98,7 @@ export default function BlankPage() {
 
             <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
                 <h4 className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                    <Calendar size={14} /> Fecha y Hora
+                    <Calendar size={18} /> Fecha y Hora
                 </h4>
                 <div className="grid grid-cols-1 gap-4">
                     <div>
@@ -164,7 +164,7 @@ export default function BlankPage() {
                                 onClick={() => onDeleteService(index)}
                                 className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-400 rounded-full hover:bg-red-100 transition-colors"
                             >
-                                <Trash size={14} />
+                                <Trash size={18} />
                             </button>
                         </div>
                     ))

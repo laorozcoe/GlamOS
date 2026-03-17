@@ -107,7 +107,6 @@ export async function getAppointmentsPrisma(businessId) {
     return appointment
 }
 
-
 export async function getAppointmentsByDatePrisma(businessId, start) {
 
     // Forzamos el inicio del día con el desfase de UTC-6
@@ -870,6 +869,20 @@ export async function getSalesPrisma(businessId) {
             businessId: businessId,
             active: true
         },
+        orderBy: { createdAt: 'desc' },
+        include: {
+            employee: {
+                include: {
+                    user: {
+                        select: {
+                            name: true,
+                            lastName: true,
+                            email: true,
+                        },
+                    },
+                }
+            }
+        }
     })
 
     return sales

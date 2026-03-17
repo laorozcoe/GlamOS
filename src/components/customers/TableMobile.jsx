@@ -43,7 +43,7 @@ export default function TableMobile({ customers, onRowClick }) {
                     <div className="grid grid-cols-2 gap-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4 border-t border-b border-gray-50 dark:border-gray-800 py-3">
                         {/* Empleado */}
                         <div className="flex items-center gap-2">
-                            <Briefcase size={14} className="text-gray-400" />
+                            <Briefcase size={18} className="text-gray-400" />
                             <span className="truncate max-w-30">
                                 {customer.employee?.user?.name || "Sin asignar"}
                             </span>
@@ -51,7 +51,7 @@ export default function TableMobile({ customers, onRowClick }) {
 
                         {/* Fecha */}
                         <div className="flex items-center gap-2 justify-end text-gray-400 text-xs">
-                            <Calendar size={14} />
+                            <Calendar size={18} />
                             <span>{new Date(customer.createdAt).toLocaleDateString('es-MX')}</span>
                         </div>
                     </div>

@@ -43,7 +43,7 @@ export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit,
                     {/* Nombre */}
                     <div className="space-y-1.5">
                         <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                            <User size={14} /> Nombre Completo
+                            <User size={18} /> Nombre Completo
                         </Label>
                         <InputField
                             required
@@ -58,7 +58,7 @@ export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit,
                         {/* Teléfono */}
                         <div className="space-y-1.5">
                             <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                                <Phone size={14} /> Teléfono
+                                <Phone size={18} /> Teléfono
                             </Label>
                             <InputField
                                 type="tel"
@@ -72,7 +72,7 @@ export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit,
                         {/* Email */}
                         <div className="space-y-1.5">
                             <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                                <Mail size={14} /> Correo Electrónico
+                                <Mail size={18} /> Correo Electrónico
                             </Label>
                             <InputField
                                 type="email"
@@ -86,7 +86,7 @@ export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit,
                     {/* Empleado */}
                     <div className="space-y-1.5">
                         <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                            <User size={14} /> Empleado Favorito
+                            <User size={18} /> Empleado Favorito
                         </Label>
                         <Select
                             name="employeeId"
@@ -108,7 +108,7 @@ export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit,
                     {/* Notas */}
                     <div className="space-y-1.5">
                         <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                            <FileText size={14} /> Notas Internas
+                            <FileText size={18} /> Notas Internas
                         </Label>
                         <TextArea
                             name="notes"
