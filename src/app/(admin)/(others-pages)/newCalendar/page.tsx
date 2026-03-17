@@ -239,13 +239,15 @@ export default function CalendarGrid() {
                 onSave={logic.handleSaveOrUpdate}
                 onOpenPay={logic.handleShowPayModal}
                 onDeleteAppointment={logic.onDeleteAppointment}
-                timeEnd={logic.timeEnd} 
-                setTimeEnd={logic.setTimeEnd} 
+                timeEnd={logic.timeEnd}
+                setTimeEnd={logic.setTimeEnd}
                 setExtraServicesModal={logic.setExtraServicesModal}
+                customers={logic.customers}
+                setCustomer={logic.setCustomer}
             />
 
             {/* MODAL DE PAGO */}
-            {logic.showPayModal &&(
+            {logic.showPayModal && (
                 <PaymentModal
                     isOpen={logic.showPayModal}
                     onClose={() => logic.setShowPayModal(false)}
@@ -253,7 +255,7 @@ export default function CalendarGrid() {
                     onFinalize={logic.handleFinalizePayment}
                 />
             )}
-            
+
             {/* NUEVO: MODAL DE DETALLE DE VENTA (Solo se abre si ESTÁ pagado) */}
             <SaleDetailsModal
                 isOpen={logic.showSaleDetails}
