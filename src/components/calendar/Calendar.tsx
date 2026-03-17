@@ -280,7 +280,7 @@ export default function CalendarGrid() {
                       return (
                         <div
                           key={event.id}
-                          className={`absolute p-2 rounded-md border-l-4 shadow-sm text-xs font-medium cursor-pointer hover:brightness-95 pointer-events-auto transition-all ${colors[event.employeeId]}`}
+                          className={`absolute p-2 rounded-md border-l-4 dark:border shadow-sm text-xs font-medium cursor-pointer hover:brightness-95 pointer-events-auto transition-all ${colors[event.employeeId]}`}
                           // className={`absolute p-2 rounded-md border-l-4 shadow-sm text-xs font-medium cursor-pointer hover:brightness-95 pointer-events-auto transition-all`}
                           style={{
                             top: pos.top,
