@@ -4,10 +4,16 @@
 import { useState, useEffect } from 'react'
 import { getCashCloseSummary, createCashClose } from '@/lib/prisma'
 import { useBusiness } from '@/context/BusinessContext';
-import { useSession } from "next-auth/react"
+import { authClient } from "@/lib/auth-client"
+
 
 export default function CashCloseScreen() {
-    const { data: session, status } = useSession()
+    const {
+        data: session,
+        isPending,
+        error,
+        refetch
+    } = authClient.useSession();
     const bussines = useBusiness();
     const [summary, setSummary] = useState(null)
     const [cashActual, setCashActual] = useState('')
