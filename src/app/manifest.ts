@@ -1,9 +1,8 @@
 import type { MetadataRoute } from 'next'
-import { useBusiness } from '@/context/BusinessContext'
+import { getBusiness } from '@/lib/getBusiness'
 
-export default function manifest(): MetadataRoute.Manifest {
-    const bussiness = useBusiness()
-
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+    const bussiness = await getBusiness();
 
     return {
         name: bussiness?.name,
