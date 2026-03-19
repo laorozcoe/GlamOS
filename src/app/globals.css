@@ -173,6 +173,25 @@
   --z-index-999999: 999999;
 }
 
+@layer base {
+  /* Sobrescribimos las variables cuando el body tenga esta clase */
+  /* NOTA: Aquí puse tonos morados/lilas como ejemplo, cámbialos por los colores de Evora */
+  .theme-evora {
+    --color-brand-25: #f5f3ff;
+    --color-brand-50: #ede9fe;
+    --color-brand-100: #ddd6fe;
+    --color-brand-200: #c4b5fd;
+    --color-brand-300: #a78bfa;
+    --color-brand-400: #8b5cf6;
+    --color-brand-500: #7c3aed; /* Color principal de Evora */
+    --color-brand-600: #6d28d9;
+    --color-brand-700: #5b21b6;
+    --color-brand-800: #4c1d95;
+    --color-brand-900: #2e1065;
+    --color-brand-950: #1e1b4b;
+  }
+}
+
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still

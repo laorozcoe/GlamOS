@@ -178,7 +178,10 @@ export const auth = betterAuth({
       verify: async ({ password, hash }) => verifyPassword(password, hash),
     }
   },
-  // 🔥 ESTO ES LO NUEVO 🔥
+  trustedOrigins: [
+    "https://brillartebloom.vercel.app/",
+    "https://evorasalon.vercel.app/"
+  ],
   user: {
     additionalFields: {
       lastName: {

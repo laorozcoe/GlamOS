@@ -9,9 +9,6 @@ import DemographicCard from "@/components/ecommerce/DemographicCard";
 import Label from "@/components/form/Label"
 
 // import { useBusiness } from "@/context/BusinessContext";
-import { getBusiness } from "@/lib/getBusiness";
-
-
 
 import { useState, useEffect } from 'react'
 import { getDailySummary } from '@/lib/prisma'
@@ -19,11 +16,10 @@ import { getDailySummary } from '@/lib/prisma'
 // Iconos (opcionales, puedes usar lucide-react o heroicons)
 import { Users, Banknote, CreditCard, Clock } from 'lucide-react'
 import ComponentCard from "@/components/common/ComponentCard"
-
-
+import { useBusiness } from "@/context/BusinessContext";
 
 // export default async function Ecommerce() {
-//   const business = await getBusiness();
+
 //   return (
 //     <div className=" grid-cols-12 gap-4 md:gap-6 w-full h-full flex items-center justify-center">
 
@@ -57,7 +53,8 @@ import ComponentCard from "@/components/common/ComponentCard"
 // components/DailySummaryScreen.tsx
 
 
-export default function DailySummaryScreen({ businessId }: { businessId: string }) {
+export default function DailySummaryScreen() {
+  const business = useBusiness();
   const [summary, setSummary] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const fetchSummary = async () => {
@@ -66,15 +63,16 @@ export default function DailySummaryScreen({ businessId }: { businessId: string 
     const month = String(newDate.getMonth() + 1).padStart(2, "0");
     const day = String(newDate.getDate()).padStart(2, "0");
 
+    debugger
     const start = `${year}-${month}-${day}`;
-    const data = await getDailySummary(businessId, start)
+    const data = await getDailySummary(business?.id, start)
     setSummary(data)
     setLoading(false)
   }
   useEffect(() => {
 
     fetchSummary()
-  }, [businessId])
+  }, [])
 
   // El "Oído" que escucha el Pull To Refresh
   useEffect(() => {
@@ -88,7 +86,7 @@ export default function DailySummaryScreen({ businessId }: { businessId: string 
 
     // Limpiamos el evento cuando desmontamos el componente
     return () => window.removeEventListener('app:pullToRefresh', handleGlobalRefresh);
-  }, [businessId]); // Pon aquí tus dependencias, como la fecha seleccionada
+  }, []); // Pon aquí tus dependencias, como la fecha seleccionada
 
   if (loading || !summary) {
     return (

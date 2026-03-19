@@ -26,11 +26,11 @@ const columns = [
   { id: 2, name: 'Estación 2 (Cabello)' },
   { id: 3, name: 'Estación 3 (Pestañas)' },
 ];
-const colors: Record<string, string> = {
-  "3c620a80-d3d2-4d83-92a4-de8cf6311a58": 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-700 dark:border-blue-300 dark:text-blue-100',
-  "a73cec98-b3c6-42c3-8f3a-63b766bca6a1": 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-700 dark:border-purple-300 dark:text-purple-100',
-  "cd0d0b76-50ad-4051-840d-c442d6a5d1ed": 'bg-pink-100 border-pink-300 text-pink-700 dark:bg-pink-700 dark:border-pink-300 dark:text-pink-100',
-}
+const colors: string[] = [
+  'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-700 dark:border-blue-300 dark:text-blue-100',
+  'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-700 dark:border-purple-300 dark:text-purple-100',
+  'bg-pink-100 border-pink-300 text-pink-700 dark:bg-pink-700 dark:border-pink-300 dark:text-pink-100',
+]
 
 // Aquí definimos las citas manualmente para probar el empalme
 const appointments = [
@@ -274,13 +274,13 @@ export default function CalendarGrid() {
 
                   {calculateEventPositions(logic.events)
                     .filter((event: any) => event.employeeId === employee.id)
-                    .map((event: any) => {
+                    .map((event: any, index: number) => {
                       const pos = getPositionStyles(formatTime(event.start), getDurationInMinutes(event.start, event.end));
 
                       return (
                         <div
                           key={event.id}
-                          className={`absolute p-2 rounded-md border-l-4 dark:border shadow-sm text-xs font-medium cursor-pointer hover:brightness-95 pointer-events-auto transition-all ${colors[event.employeeId]}`}
+                          className={`absolute p-2 rounded-md border-l-4 dark:border shadow-sm text-xs font-medium cursor-pointer hover:brightness-95 pointer-events-auto transition-all ${colors[index]}`}
                           // className={`absolute p-2 rounded-md border-l-4 shadow-sm text-xs font-medium cursor-pointer hover:brightness-95 pointer-events-auto transition-all`}
                           style={{
                             top: pos.top,

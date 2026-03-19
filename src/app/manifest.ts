@@ -1,9 +1,13 @@
 import type { MetadataRoute } from 'next'
+import { useBusiness } from '@/context/BusinessContext'
 
 export default function manifest(): MetadataRoute.Manifest {
+    const bussiness = useBusiness()
+
+
     return {
-        name: 'Brillarte Bloom',
-        short_name: 'Brillarte',
+        name: bussiness?.name,
+        short_name: bussiness?.name,
         description: 'Sistema de agenda y punto de venta',
         start_url: '/',
         scope: '/', // <--- ESTA ES LA MAGIA PARA LAS REDIRECCIONES
@@ -12,12 +16,12 @@ export default function manifest(): MetadataRoute.Manifest {
         theme_color: '#ffffff',
         icons: [
             {
-                src: '/android-chrome-192x192.png',
+                src: `/${bussiness?.slug}/android-chrome-192x192.png`,
                 sizes: '192x192',
                 type: 'image/png',
             },
             {
-                src: '/android-chrome-512x512.png',
+                src: `/${bussiness?.slug}/android-chrome-512x512.png`,
                 sizes: '512x512',
                 type: 'image/png',
             },

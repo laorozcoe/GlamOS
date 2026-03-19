@@ -1100,6 +1100,7 @@ export async function createCashClose(data) {
 }
 
 export async function getDailySummary(businessId, start) {
+    if (!businessId) return
     // Rango de fechas para "Hoy" (desde las 00:00:00 hasta las 23:59:59)
     // const today = new Date()
     // const startOfDay = new Date(today.setHours(0, 0, 0, 0))
