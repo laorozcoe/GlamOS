@@ -179,8 +179,8 @@ export const auth = betterAuth({
     }
   },
   trustedOrigins: [
-    "https://brillartebloom.vercel.app/",
-    "https://evorasalon.vercel.app/"
+    "https://brillartebloom.vercel.app",
+    "https://evorasalon.vercel.app"
   ],
   user: {
     additionalFields: {
