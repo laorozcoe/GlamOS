@@ -129,10 +129,9 @@ export default function DailySummaryScreen() {
           <Users className="w-6 h-6 text-gray-500" />
           <Label className="">Rendimiento por Empleado</Label>
         </div>
-
-        <div className="flex flex-wrap justify-center gap-6">
+        <div className="grid grid-cols-[repeat(auto-fit,320px)] justify-center gap-4">
           {summary.employeeStats.map((emp: any) => (
-            <ComponentCard key={emp.id} title={emp.name} className="w-80">
+            <ComponentCard key={emp.id} title={emp.name}>
               <div className="p-4 space-y-4">
 
                 <div className="flex items-center justify-between">

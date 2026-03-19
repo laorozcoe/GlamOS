@@ -6,13 +6,15 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { getBusiness } from "@/lib/getBusiness";
-const business = await getBusiness();
 
-export default function AuthLayout({
+
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const business = await getBusiness();
+
   return (
     <div className="relative p-6 bg-white z-1 dark:bg-gray-900 sm:p-0">
       <ThemeProvider>
