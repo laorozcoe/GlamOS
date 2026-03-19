@@ -1201,7 +1201,6 @@ export async function getDailySummary(businessId, start) {
 
 
 export async function MigrateToBetterAuth() {
-    debugger
     console.log("Iniciando migración de contraseñas...");
 
     // 1. Buscamos todos los usuarios que tengan una contraseña en la tabla vieja

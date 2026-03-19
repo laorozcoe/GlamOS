@@ -6,7 +6,6 @@ const Seed = async () => {
     // createClientPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Alejandro Orozco", "61431944525", "", "")
     // seed();
     // createUserPrisma("271b6033-14be-40e3-8155-9a34f43ab307", "Luis Alejandro", "Orozco Estrada", "laorozcoe", "laorozcoe@gmail.com", "123456", "ADMIN")
-    MigrateToBetterAuth()
     // createServiceCategoryPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Manos", 1, true)
     // createServiceCategoryPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Pies", 2, true)
     // createServiceCategoryPrisma("6d6f0206-b659-455f-9743-283d6949bb4c", "Acrilico", 3, true)
@@ -48,64 +47,67 @@ const Seed = async () => {
     // const employees = [
     //     {
     //         user: {
-    //             name: "Ana",
-    //             lastName: "González",
-    //             email: "",
-    //             username: "agonzalez",
+    //             name: "Alexa",
+    //             lastName: "RMZ",
+    //             email: "alexarmz139@gmail.com",
+    //             username: "alexarmz139",
     //             password: "password1",
     //             role: "ADMIN",
     //         },
     //         employee: {
-    //             phone: "5551234567",
+    //             phone: "",
     //             bio: "",
-    //             commission: 0.35,
-    //             rating: 4.8
+    //             commission: 0,
+    //             rating: 0
     //         }
     //     },
-    //     {
-    //         user: {
-    //             name: "Doris",
-    //             lastName: "González",
-    //             email: "",
-    //             username: "dgonzalez",
-    //             username: "dgonzalez",
-    //             password: "password1",
-    //             role: "ADMIN",
-    //         },
-    //         employee: {
-    //             phone: "5552345678",
-    //             bio: "",
-    //             commission: 0.4,
-    //             rating: 4.9
-    //         }
+    // {
+    //     user: {
+    //         name: "Doris",
+    //         lastName: "González",
+    //         email: "",
+    //         username: "dgonzalez",
+    //         username: "dgonzalez",
+    //         password: "password1",
+    //         role: "ADMIN",
     //     },
-    //     {
-    //         user: {
-    //             name: "Rubi",
-    //             lastName: "Ramos",
-    //             email: "",
-    //             username: "rramos",
-    //             username: "rramos",
-    //             password: "password1",
-    //             role: "ADMIN",
-    //         },
-    //         employee: {
-    //             phone: "5553456789",
-    //             bio: "",
-    //             commission: 0.45,
-    //             rating: 4.7
-    //         }
+    //     employee: {
+    //         phone: "5552345678",
+    //         bio: "",
+    //         commission: 0.4,
+    //         rating: 4.9
     //     }
+    // },
+    // {
+    //     user: {
+    //         name: "Rubi",
+    //         lastName: "Ramos",
+    //         email: "",
+    //         username: "rramos",
+    //         username: "rramos",
+    //         password: "password1",
+    //         role: "ADMIN",
+    //     },
+    //     employee: {
+    //         phone: "5553456789",
+    //         bio: "",
+    //         commission: 0.45,
+    //         rating: 4.7
+    //     }
+    // }
     // ]
 
 
 
-    // for (let i = 0; i < 5; i++) {
 
-    //     const user = await createUserPrisma("271b6033-14be-40e3-8155-9a34f43ab307", employees[i].user.name, employees[i].user.lastName, employees[i].user.username, employees[i].user.email, employees[i].user.password, employees[i].user.role)
+
+    // for (let i = 0; i < employees.length; i++) {
+
+    //     const user = await createUserPrisma("906f5dfc-72ba-4495-8202-c48310c20af2", employees[i].user.name, employees[i].user.lastName, employees[i].user.username, employees[i].user.email, employees[i].user.password, employees[i].user.role)
     //     await createEmployeePrisma(user.businessId, user.id, employees[i].employee.phone, employees[i].employee.bio, employees[i].employee.commission, employees[i].employee.rating)
     // }
 
+    // MigrateToBetterAuth()
     return (
         <div>
             <h1>Seed works!</h1>
