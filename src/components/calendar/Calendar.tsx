@@ -269,12 +269,12 @@ export default function CalendarGrid() {
             {/* 2. CAPA DE EVENTOS */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none pl-15 flex">
               {/* NUEVO: Iteramos sobre displayedEmployees */}
-              {displayedEmployees.map((employee: any) => (
+              {displayedEmployees.map((employee: any, index: number) => (
                 <div key={employee.id} className="flex-1 relative border-r border-transparent last:border-r-0">
 
                   {calculateEventPositions(logic.events)
                     .filter((event: any) => event.employeeId === employee.id)
-                    .map((event: any, index: number) => {
+                    .map((event: any) => {
                       const pos = getPositionStyles(formatTime(event.start), getDurationInMinutes(event.start, event.end));
 
                       return (
