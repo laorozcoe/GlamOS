@@ -1186,6 +1186,7 @@ export async function getDailySummary(businessId, start) {
             card,
             transfer,
             pendingAppointments: emp.appointments.length,
+            sales: emp.sales,
         }
     })
 

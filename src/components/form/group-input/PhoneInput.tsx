@@ -1,31 +1,48 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface CountryCode {
   code: string;
-  label: string; // La lada (ej. "+52")
+  label: string;
+}
+
+// 👇 1. Creamos una interfaz para el valor que vamos a devolver
+export interface PhoneValue {
+  countryCode: string; // ej. "MX"
+  phone: string;       // ej. "5550000000"
 }
 
 interface PhoneInputProps {
   countries: CountryCode[];
   placeholder?: string;
-  onChange?: (phoneNumber: string) => void;
+  // 👇 2. Cambiamos la firma de onChange
+  onChange?: (value: PhoneValue) => void;
   selectPosition?: "start" | "end";
+  // Opcional pero recomendado: recibir el valor inicial si estás editando un invitado
+  value?: PhoneValue;
 }
 
 const PhoneInput: React.FC<PhoneInputProps> = ({
   countries,
-  placeholder = "(555) 000-0000", // Placeholder sin la lada
+  placeholder = "(555) 000-0000",
   onChange,
   selectPosition = "start",
+  value,
 }) => {
-  // 1. Separamos el estado: País seleccionado y solo el número que teclea el usuario
+  // Inicializamos con los valores que nos pasan, o con valores por defecto
   const [selectedCountry, setSelectedCountry] = useState<string>(
-    countries.length > 0 ? countries[0].code : "MX"
+    value?.countryCode || (countries.length > 0 ? countries[0].code : "MX")
   );
-  const [localNumber, setLocalNumber] = useState<string>("");
+  const [localNumber, setLocalNumber] = useState<string>(value?.phone || "");
 
-  // Diccionario para obtener la lada rápidamente según el código
+  // Si el valor externo cambia (ej. al cargar datos del backend), actualizamos
+  useEffect(() => {
+    if (value) {
+      setSelectedCountry(value.countryCode);
+      setLocalNumber(value.phone);
+    }
+  }, [value]);
+
   const countryCodes: Record<string, string> = countries.reduce(
     (acc, { code, label }) => ({ ...acc, [code]: label }),
     {}
@@ -37,18 +54,23 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
     const newCountry = e.target.value;
     setSelectedCountry(newCountry);
     if (onChange) {
-      // Mandamos la lada + el número actual al padre
-      onChange(countryCodes[newCountry] + localNumber);
+      // 👇 3. Enviamos el objeto con las dos piezas
+      onChange({
+        countryCode: newCountry,
+        phone: localNumber,
+      });
     }
   };
 
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Solo permitimos números y cortamos exactamente a 10 dígitos
     const newNumber = e.target.value.replace(/[^\d]/g, "").slice(0, 10);
-
     setLocalNumber(newNumber);
     if (onChange) {
-      onChange(currentLada + newNumber);
+      // 👇 4. Enviamos el objeto con las dos piezas
+      onChange({
+        countryCode: selectedCountry,
+        phone: newNumber,
+      });
     }
   };
 
