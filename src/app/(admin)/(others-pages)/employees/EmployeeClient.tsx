@@ -274,7 +274,6 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
                       type="number"
                       name="baseSalary"
                       min="0"
-                      step="0.01"
                       className="pl-8"
                       value={formData.baseSalary}
                       onChange={handleChange}
@@ -290,7 +289,6 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
                       className="pr-8"
                       min="0"
                       max="100"
-                      step="1"
                       value={formData.commission}
                       onChange={handleChange}
                     />
