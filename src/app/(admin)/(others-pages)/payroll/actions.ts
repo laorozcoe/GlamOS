@@ -8,7 +8,7 @@ export async function getPayrollData(weekDateISO: string) {
   if (!business) throw new Error("No business found");
 
   const d = new Date(weekDateISO);
-  
+
   // Establecer a la media noche del Domingo previo (o el mismo día si es domingo)
   const startDate = new Date(d);
   startDate.setDate(d.getDate() - d.getDay());
@@ -49,13 +49,13 @@ export async function getPayrollData(weekDateISO: string) {
     orderBy: { createdAt: "desc" }
   });
 
-  const payrollData = employees.map((employee) => {
-    const employeeSales = sales.filter((s) => s.employeeId === employee.id);
-    
+  const payrollData = employees.map((employee: any) => {
+    const employeeSales = sales.filter((s: any) => s.employeeId === employee.id);
+
     let totalSalesGenerated = 0;
-    
-    employeeSales.forEach((s) => {
-      totalSalesGenerated += s.total; 
+
+    employeeSales.forEach((s: any) => {
+      totalSalesGenerated += s.total;
     });
 
     const commissionPay = totalSalesGenerated * (employee.commission / 100);
@@ -70,7 +70,7 @@ export async function getPayrollData(weekDateISO: string) {
       totalSalesGenerated,
       commissionPay,
       totalPay,
-      sales: employeeSales, 
+      sales: employeeSales,
     };
   });
 
