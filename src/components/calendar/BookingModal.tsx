@@ -5,7 +5,7 @@ import InputField from '@/components/form/input/InputField';
 import { ServiceSelector } from "@/components/calendar/mobile/ServiceSelector";
 // Ya no necesitamos el ServiceModal aparte, lo integraremos en el flujo
 import Button from "../ui/button/Button";
-import { Trash, User, Calendar, Sparkles, Receipt, ChevronRight, ChevronLeft, SquarePlus, Search } from 'lucide-react';
+import { Trash, User, Calendar, Sparkles, Receipt, ChevronRight, ChevronLeft, SquarePlus, Search, Check, X } from 'lucide-react';
 import Label from "@/components/form/Label";
 
 interface BookingModalProps {
@@ -37,6 +37,8 @@ interface BookingModalProps {
     onSave: () => void;
     onOpenPay: () => void;
     setExtraServicesModal: (val: boolean) => void;
+    isAdmin?: boolean;
+    onResolveGhost?: (id: string, approve: boolean) => void;
 }
 
 export const BookingModal: React.FC<BookingModalProps> = (props) => {
@@ -47,7 +49,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
         date, setDate, time, setTime, timeEnd, setTimeEnd,
         appointments, onDeleteService, total,
         onSave, onOpenPay, onDeleteAppointment, setExtraServicesModal,
-        customers, setCustomer
+        customers, setCustomer, isAdmin, onResolveGhost
     } = props;
 
     useEffect(() => {
@@ -230,20 +232,59 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                             </div>
                                         ) : (
                                             appointments.map((apt: any, index: number) => (
-                                                <div key={index} className="bg-white dark:bg-gray-800/50 p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                                                <div key={index} className={`p-4 rounded-xl shadow-sm border flex justify-between items-center transition-all ${
+                                                    apt.isPending 
+                                                      ? 'border-orange-400 border-dashed bg-orange-50/50 dark:bg-orange-900/20' 
+                                                      : apt.isPendingRemove 
+                                                        ? 'border-red-200 border-dashed bg-red-50/30 opacity-70 dark:bg-red-900/10'
+                                                        : 'bg-white dark:bg-gray-800/50 border-gray-100'
+                                                }`}>
                                                     <div className="overflow-hidden pr-2">
-                                                        <Label className="font-bold">{apt.name}</Label>
+                                                        <Label className="font-bold flex items-center flex-wrap gap-2">
+                                                            <span className={apt.isPendingRemove ? "line-through text-gray-500" : ""}>{apt.name}</span>
+                                                            {apt.isPending && (
+                                                              <span className="text-[10px] bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded font-black tracking-wider shadow-sm uppercase border border-orange-300">
+                                                                Esperando Autorización
+                                                              </span>
+                                                            )}
+                                                            {apt.isPendingRemove && (
+                                                              <span className="text-[10px] bg-red-200 text-red-800 px-1.5 py-0.5 rounded font-black tracking-wider shadow-sm uppercase border border-red-300">
+                                                                Pendiente Quitar
+                                                              </span>
+                                                            )}
+                                                        </Label>
                                                         <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                                                            <Label>${apt.price}</Label>
-                                                            <Label>• {apt.duration} min</Label>
+                                                            <Label className={apt.isPendingRemove ? "line-through text-gray-400" : ""}>${apt.price}</Label>
+                                                            <Label className={apt.isPendingRemove ? "line-through text-gray-400" : ""}>• {apt.duration} min</Label>
                                                         </div>
                                                     </div>
-                                                    <button
-                                                        onClick={() => onDeleteService(index)}
-                                                        className="w-8 h-8 flex items-center justify-center  text-red-400 rounded-full hover:bg-red-100 transition-colors"
-                                                    >
-                                                        <Trash size={18} />
-                                                    </button>
+                                                    <div className="flex gap-2">
+                                                        {isAdmin && (apt.isPending || apt.isPendingRemove) && apt.requestId ? (
+                                                            <>
+                                                              <button
+                                                                  onClick={() => onResolveGhost && onResolveGhost(apt.requestId, false)}
+                                                                  className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-100 rounded-full hover:bg-red-200 transition-colors"
+                                                                  title="Rechazar"
+                                                              >
+                                                                  <X size={18} />
+                                                              </button>
+                                                              <button
+                                                                  onClick={() => onResolveGhost && onResolveGhost(apt.requestId, true)}
+                                                                  className="w-8 h-8 flex items-center justify-center text-green-600 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                                                                  title="Aprobar"
+                                                              >
+                                                                  <Check size={18} />
+                                                              </button>
+                                                            </>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => onDeleteService(index)}
+                                                                className="w-8 h-8 flex items-center justify-center text-red-400 rounded-full hover:bg-red-100 transition-colors"
+                                                            >
+                                                                <Trash size={18} />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             ))
                                         )}
@@ -365,20 +406,59 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     </div>
                                 ) : (
                                     appointments.map((apt: any, index: number) => (
-                                        <div key={index} className=" p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                                        <div key={index} className={`p-4 rounded-xl shadow-sm border flex justify-between items-center transition-all ${
+                                            apt.isPending 
+                                              ? 'border-orange-400 border-dashed bg-orange-50/50 dark:bg-orange-900/20' 
+                                              : apt.isPendingRemove 
+                                                ? 'border-red-200 border-dashed bg-red-50/30 opacity-70 dark:bg-red-900/10'
+                                                : 'bg-white dark:bg-gray-800/50 border-gray-100'
+                                        }`}>
                                             <div className="overflow-hidden pr-2">
-                                                <Label className="font-bold">{apt.name}</Label>
+                                                <Label className="font-bold flex items-center flex-wrap gap-2">
+                                                    <span className={apt.isPendingRemove ? "line-through text-gray-500" : ""}>{apt.name}</span>
+                                                    {apt.isPending && (
+                                                      <span className="text-[10px] bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded font-black tracking-wider shadow-sm uppercase border border-orange-300">
+                                                        Esperando Autorización
+                                                      </span>
+                                                    )}
+                                                    {apt.isPendingRemove && (
+                                                      <span className="text-[10px] bg-red-200 text-red-800 px-1.5 py-0.5 rounded font-black tracking-wider shadow-sm uppercase border border-red-300">
+                                                        Pendiente Quitar
+                                                      </span>
+                                                    )}
+                                                </Label>
                                                 <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                                                    <Label>${apt.price}</Label>
-                                                    <Label>• {apt.duration} min</Label>
+                                                    <Label className={apt.isPendingRemove ? "line-through text-gray-400" : ""}>${apt.price}</Label>
+                                                    <Label className={apt.isPendingRemove ? "line-through text-gray-400" : ""}>• {apt.duration} min</Label>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => onDeleteService(index)}
-                                                className="w-8 h-8 flex items-center justify-center  text-red-400 rounded-full hover:bg-red-100 transition-colors"
-                                            >
-                                                <Trash size={18} />
-                                            </button>
+                                                    <div className="flex gap-2">
+                                                        {isAdmin && (apt.isPending || apt.isPendingRemove) && apt.requestId ? (
+                                                            <>
+                                                              <button
+                                                                  onClick={() => onResolveGhost && onResolveGhost(apt.requestId, false)}
+                                                                  className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-100 rounded-full hover:bg-red-200 transition-colors"
+                                                                  title="Rechazar"
+                                                              >
+                                                                  <X size={18} />
+                                                              </button>
+                                                              <button
+                                                                  onClick={() => onResolveGhost && onResolveGhost(apt.requestId, true)}
+                                                                  className="w-8 h-8 flex items-center justify-center text-green-600 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                                                                  title="Aprobar"
+                                                              >
+                                                                  <Check size={18} />
+                                                              </button>
+                                                            </>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => onDeleteService(index)}
+                                                                className="w-8 h-8 flex items-center justify-center text-red-400 rounded-full hover:bg-red-100 transition-colors"
+                                                            >
+                                                                <Trash size={18} />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                         </div>
                                     ))
                                 )}
@@ -418,7 +498,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                         {mobileTab === 'summary' && (
                             <div className="w-full flex flex-col gap-2">
                                 <div className="flex gap-2 w-full">
-                                    {isEditing && (
+                                    {isAdmin && isEditing && (
                                         <Button variant="outline" onClick={() => setIsDeleteModalOpen(true)}>
                                             <Trash size={18} />
                                         </Button>
@@ -431,9 +511,11 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     <Button onClick={() => setExtraServicesModal(true)} variant="outline" className=" bg-green-600 hover:bg-green-700">
                                         <SquarePlus />
                                     </Button>
-                                    <Button onClick={onOpenPay} className="w-full bg-green-600 hover:bg-green-700">
-                                        Cobrar Ahora
-                                    </Button>
+                                    {isAdmin && (
+                                        <Button onClick={onOpenPay} className="w-full bg-green-600 hover:bg-green-700">
+                                            Cobrar Ahora
+                                        </Button>
+                                    )}
                                 </div>
 
                             </div>
@@ -442,7 +524,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
 
                     {/* FOOTER DESKTOP */}
                     <div className="hidden sm:flex justify-end gap-3">
-                        {isEditing && (
+                        {isAdmin && isEditing && (
                             <Button variant="outline" onClick={() => setIsDeleteModalOpen(true)}>
                                 Eliminar Cita
                             </Button>
@@ -453,9 +535,11 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                         <Button onClick={() => setExtraServicesModal(true)} variant="outline" className="">
                             <SquarePlus />
                         </Button>
-                        <Button onClick={onOpenPay} className="bg-green-600 hover:bg-green-700 px-8">
-                            Cobrar
-                        </Button>
+                        {isAdmin && (
+                            <Button onClick={onOpenPay} className="bg-green-600 hover:bg-green-700 px-8">
+                                Cobrar
+                            </Button>
+                        )}
                     </div>
                 </div>
             </Modal >

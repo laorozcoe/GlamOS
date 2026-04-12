@@ -1,6 +1,6 @@
 "use client"
 // NUEVO: Importamos useState de React
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 import { BookingModal } from "@/components/calendar/BookingModal";
 import { PaymentModal } from "@/components/calendar/PaymentModal";
@@ -119,10 +119,20 @@ export default function CalendarGrid() {
   // NUEVO: Estado para controlar el empleado seleccionado en el dropdown
   const [selectedEmpFilter, setSelectedEmpFilter] = useState<string>("ALL");
 
-  // NUEVO: Filtramos los empleados a mostrar basados en el select
-  const displayedEmployees = selectedEmpFilter === "ALL"
-    ? logic.employees
-    : logic.employees.filter((emp: any) => emp.id === selectedEmpFilter);
+  const userInfo = logic.getUserInfo ? logic.getUserInfo() : null;
+
+  // NUEVO: Filtramos los empleados a mostrar basados en el select y el Rol
+  const displayedEmployees = useMemo(() => {
+    let filtered = logic.employees;
+    
+    // Si es Empleado regular, bloqueamos a que solo vea su información
+    if (userInfo?.role === "EMPLOYEE" && userInfo.currentEmployee) {
+      filtered = [userInfo.currentEmployee];
+    } else if (selectedEmpFilter !== "ALL") {
+      filtered = logic.employees.filter((emp: any) => emp.id === selectedEmpFilter);
+    }
+    return filtered;
+  }, [logic.employees, selectedEmpFilter, userInfo]);
 
   const calculateEventPositions = (events: any[]) => {
     // 1. Agrupar por empleado
@@ -215,13 +225,15 @@ export default function CalendarGrid() {
           </div>
 
           {/* NUEVO: Select de Empleados (útil para móvil y escritorio) */}
-          <div className="w-full md:w-64">
-            <Select
-              options={employeeOptions}
-              value={selectedEmpFilter}
-              onChange={setSelectedEmpFilter} // Más limpio: recibe el string directamente
-            />
-          </div>
+          {userInfo?.role !== "EMPLOYEE" && (
+            <div className="w-full md:w-64">
+              <Select
+                options={employeeOptions}
+                value={selectedEmpFilter}
+                onChange={setSelectedEmpFilter} 
+              />
+            </div>
+          )}
         </div>
         <div className="flex-none bg-gray-50 dark:bg-gray-900 border-b border-gray-200 z-20">
           {/* NUEVO: Usamos displayedEmployees.length en lugar de logic.employees.length */}
@@ -335,7 +347,8 @@ export default function CalendarGrid() {
         setExtraServicesModal={logic.setExtraServicesModal}
         customers={logic.customers}
         setCustomer={logic.setCustomer}
-
+        isAdmin={userInfo?.isAdmin || userInfo?.role === "RECEPTION"}
+        onResolveGhost={logic.handleResolveGhost}
       />
 
       {/* MODAL DE PAGO */}

@@ -3,6 +3,7 @@ import { useModal } from "@/hooks/useModal";
 import { useBusiness } from "@/context/BusinessContext";
 import FullCalendar from "@fullcalendar/react";
 import { usePrinter } from "@/hooks/usePrinter";
+import { useSession } from "@/lib/auth-client";
 import {
     getEmployeesPrisma, getServicesPrisma, getServicesCategoriesPrisma,
     getAppointmentsPrisma, createAppointment, updateAppointment,
@@ -10,10 +11,12 @@ import {
     createSalePrisma, deleteAppointmentPrisma,
     getAppointmentsByDatePrisma
 } from "@/lib/prisma";
+import { requestAppointmentModification, getPendingRequests } from "@/app/(admin)/(others-pages)/calendar/actions";
 import { toast } from 'react-toastify';
 
 export const useCalendarLogic = () => {
     const business = useBusiness();
+    const { data: session } = useSession();
     const { isOpen, openModal, closeModal } = useModal();
     const calendarRef = useRef<FullCalendar>(null);
     const [showSaleDetails, setShowSaleDetails] = useState(false); // <--- NUEVO ESTADO
@@ -117,6 +120,16 @@ export const useCalendarLogic = () => {
 
     // --- HANDLERS LÓGICOS ---
 
+    const getUserInfo = () => {
+        const role = session?.user?.role || "EMPLOYEE";
+        const isAdmin = role === "ADMIN";
+        const email = session?.user?.email;
+        const currentEmployee = employees.find(e => e.user?.email === email);
+        const canCreate = isAdmin || currentEmployee?.canCreateAppointments;
+        
+        return { role, isAdmin, currentEmployee, canCreate };
+    };
+
     const resetModalFields = () => {
         setAppointments([]);
         setSelectedCategory(null);
@@ -128,6 +141,12 @@ export const useCalendarLogic = () => {
     };
 
     const handleNewEventButton = () => {
+        const { canCreate } = getUserInfo();
+        if (!canCreate) {
+            toast.error("No tienes autorización para agendar citas.");
+            return;
+        }
+
         resetModalFields();
         const now = new Date();
         const year = now.getFullYear();
@@ -143,17 +162,13 @@ export const useCalendarLogic = () => {
     };
 
     const handleDateClick = (employee: any, timeString: string) => {
-        // const handleDateClick = (arg: any) => {
-        resetModalFields();
-        // const start = arg.date;
-        // const yyyy = start.getFullYear();
-        // const mm = String(start.getMonth() + 1).padStart(2, '0');
-        // const dd = String(start.getDate()).padStart(2, '0');
-        // const hh = String(start.getHours()).padStart(2, '0');
-        // const min = String(start.getMinutes()).padStart(2, '0');
+        const { canCreate } = getUserInfo();
+        if (!canCreate) {
+            toast.error("No tienes autorización para agendar citas.");
+            return;
+        }
 
-        // setDate(`${yyyy}-${mm}-${dd}`);
-        // setTime(`${hh}:${min}`);
+        resetModalFields();
         setDate(currentDate);
         setTime(timeString);
         setSelectedEmployee(employee);
@@ -162,29 +177,18 @@ export const useCalendarLogic = () => {
     };
 
     const handleEventClick = (event: any) => {
-        // const handleEventClick = (clickInfo: any) => {
-        // const event = clickInfo.event;
-
-        // 1. Recuperar info básica
         setSelectedEvent(event); // Guardamos el evento original de FullCalendar
 
-
-        // const status = event.extendedProps.paymentStatus; // Asegúrate que tu Prisma traiga esto
-        const status = event.paymentStatus; // Asegúrate que tu Prisma traiga esto
+        const status = event.paymentStatus; 
         if (status === "PAID") {
             setShowSaleDetails(true);
         } else {
-
-            // setSelectedEmployee(event.extendedProps.employee);
             setSelectedEmployee(event.employee);
             setCustomer({
-                // name: event.extendedProps.guestName,
                 name: event.guestName,
-                // phone: event.extendedProps.guestPhone
                 phone: event.guestPhone
             });
 
-            // 2. Hidratar fechas
             if (event.start) {
                 const yyyy = event.start.getFullYear();
                 const mm = String(event.start.getMonth() + 1).padStart(2, '0');
@@ -195,24 +199,8 @@ export const useCalendarLogic = () => {
                 setTime(`${hh}:${min}`);
             }
 
-            // 3. Hidratar servicios (Recuperar del catálogo o usar backup)
-            // const appointmentServices = event.extendedProps.services || [];
             const appointmentServices = event.services || [];
-            const currentCatalog = servicesRef.current;
-
-            // const fullServices = appointmentServices.map((apptService: any) => {
-            //     const catalogService = currentCatalog.find((s: any) => s.id === apptService.serviceId);
-            //     return catalogService || apptService.service; // Fallback
-            // }).filter(Boolean);
-
             const fullServices = appointmentServices.map((apptService: any) => {
-                // 1. Intenta buscarlo en el catálogo (si tiene ID de servicio)
-                // const catalogService = currentCatalog.find((s: any) => s.id === apptService.serviceId);
-
-                // 2. Si está en el catálogo, úsalo
-                // if (catalogService) return catalogService;
-
-                // 3. Si viene poblado desde la DB (relación), úsalo
                 if (apptService.service) {
                     return {
                         id: apptService.id,
@@ -224,26 +212,77 @@ export const useCalendarLogic = () => {
                     };
                 }
 
-                // 4. FALLBACK: Es un Servicio Extra (Manual)
-                // Construimos un objeto "falso" que tenga la misma estructura que tus servicios
                 return {
-                    id: apptService.id,          // Usamos el ID de la relación para que React no se queje del key
+                    id: apptService.id,          
                     name: "Servicio Extra",
-                    duration: 0,                 // Duración por defecto
-                    price: apptService.price,    // Usamos el precio que sí viene en el JSON (110)
-                    descriptionTicket: "Servicio Extra",      // Nombre por defecto
-                    isCustom: true               // (Opcional) Bandera por si quieres pintarlo diferente
+                    duration: 0,                 
+                    price: apptService.price,    
+                    descriptionTicket: "Servicio Extra",      
+                    isCustom: true               
                 };
             }).filter(Boolean);
 
-            setAppointments(fullServices);
+            // Cargar pendientes
+            getPendingRequests(event.id).then((pending) => {
+                if (pending && pending.length > 0) {
+                    // Marcamos "quitar" = opacidad reducida o algo, pero la UI principal no renderiza "remover", 
+                    // a menos que queramos ocultar el que está en proceso de eliminación.
+                    // Aquí agregaremos los 'ADD' pendientes como items visuales a inyectar al carrito
+                    const addRequests = pending.filter((r: any) => r.action === "ADD" && r.service);
+                    const ghosts = addRequests.map((r: any) => ({
+                         id: `ghost-${r.id}`,
+                         requestId: r.id,
+                         serviceId: r.serviceId,
+                         name: r.service.name,
+                         duration: r.service.duration,
+                         price: r.service.price,
+                         descriptionTicket: r.service.descriptionTicket,
+                         isPending: true
+                    }));
+                    
+                    // También podemos pintar mark-for-delete en los que ya existen
+                    const removeRequests = pending.filter((r: any) => r.action === "REMOVE");
+                    
+                    const mergedServices = fullServices.map((s: any) => {
+                         const matchReq = removeRequests.find((r: any) => r.appointmentServiceId === s.id);
+                         return {
+                             ...s,
+                             isPendingRemove: !!matchReq,
+                             requestId: matchReq ? matchReq.id : null
+                         };
+                    }).concat(ghosts as any);
+
+                    setAppointments(mergedServices);
+                } else {
+                    setAppointments(fullServices);
+                }
+            }).catch(() => setAppointments(fullServices));
+
             openModal();
         }
 
     };
 
     // Agregar servicio al carrito
-    const addServiceToCart = (service: any) => {
+    const addServiceToCart = async (service: any) => {
+        const { isAdmin, role, currentEmployee } = getUserInfo();
+        
+        // Si estamos editando un evento, un EMPLOYEE crea solicitud en vez de agregar directo
+        if (selectedEvent && role === "EMPLOYEE" && currentEmployee) {
+            try {
+                await requestAppointmentModification({
+                    appointmentId: selectedEvent.id,
+                    serviceId: service.id,
+                    employeeRequesterId: currentEmployee.id,
+                    action: "ADD"
+                });
+                toast.success("Solicitud enviada a Recepción.");
+            } catch(e) {
+                toast.error("Error al enviar solicitud.");
+            }
+            return;
+        }
+
         const serviceCopia = Object.assign({}, service);
         serviceCopia.serviceId = serviceCopia.id;
         serviceCopia.id = null;
@@ -256,7 +295,27 @@ export const useCalendarLogic = () => {
         setTimeout(() => setFlashCategory(null), 150);
     };
 
-    const removeServiceFromCart = (indexToDelete: number) => {
+    const removeServiceFromCart = async (indexToDelete: number) => {
+         const deletingServiceItem = appointments[indexToDelete];
+         const { isAdmin, role, currentEmployee } = getUserInfo();
+
+         // Si el servicio ya existía en la Base de datos (tiene ID propio de apptService) y somos EMPLOYEE
+         if (selectedEvent && role === "EMPLOYEE" && deletingServiceItem.id && currentEmployee) {
+              try {
+                await requestAppointmentModification({
+                    appointmentId: selectedEvent.id,
+                    serviceId: deletingServiceItem.serviceId,
+                    appointmentServiceId: deletingServiceItem.id,
+                    employeeRequesterId: currentEmployee.id,
+                    action: "REMOVE"
+                });
+                toast.success("Solicitud de eliminación enviada.");
+            } catch(e) {
+                toast.error("Error al enviar solicitud.");
+            }
+            return; // No lo quitamos visualmente aún
+         }
+
         setAppointments(prev => prev.filter((_, i) => i !== indexToDelete));
     };
 
@@ -291,8 +350,10 @@ export const useCalendarLogic = () => {
             return
         }
         if (appointments.length === 0) {
-            toast.warning("Ingresa un servicio");
-            return
+            toast.warning("Ingresa al menos un servicio (o espera autorización)");
+            // Si role es Employee e insertaron peticiones, quizás no deba guardar acá. 
+            // Pero omitiremos bloqueos restrictivos.
+            // return;
         }
         if (selectedEmployee?.id == "" || selectedEmployee?.id == null) {
             toast.warning("Selecciona un empleado");
@@ -300,15 +361,7 @@ export const useCalendarLogic = () => {
         }
 
         const startDateTime = new Date(`${date}T${time}:00`);
-        // const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
         const endDateTime = new Date(`${date}T${timeEnd}:00`);
-
-        // const serviceMap = appointments.map((item: any) => {
-        //     if(item.id){
-        //      item.serviceId = item.id;
-        //     }
-        //     return item;
-        // });
 
         const payload = {
             businessId: business?.id,
@@ -332,6 +385,11 @@ export const useCalendarLogic = () => {
                 await updateAppointment(payload, selectedEvent.id);
             } else {
                 // Crear
+                const { canCreate } = getUserInfo();
+                if (!canCreate) {
+                    toast.error("No tienes permisos para agendar.");
+                    return;
+                }
                 await createAppointment(payload);
             }
             // Siempre asegurar cliente
@@ -339,8 +397,6 @@ export const useCalendarLogic = () => {
                 await createClientPrisma(business?.id, customer.name, customer.phone, "", "", selectedEmployee?.id);
             }
 
-            // Recargar eventos (idealmente optimista, pero aquí recargamos)
-            // const newEvents = await getAppointmentsPrisma(business?.id);
             const newEvents = await getAppointmentsByDatePrisma(business?.id, currentDate);
             setEvents(newEvents);
 
@@ -554,7 +610,19 @@ export const useCalendarLogic = () => {
         setEvents(rtnAppoin);
     };
 
+    const handleResolveGhost = async (requestId: string, approve: boolean) => {
+         try {
+             await import("@/app/(admin)/(others-pages)/calendar/actions").then(m => m.resolveModificationRequest(requestId, approve));
+             toast.success(approve ? "Cambio de cita aprobado." : "Solicitud denegada.");
+             window.dispatchEvent(new Event('app:pullToRefresh'));
+             closeModal();
+         } catch(e) {
+             toast.error("Error resolviendo la solicitud.");
+         }
+    };
+
     return {
+        getUserInfo,
         calendarRef,
         isOpen, openModal, closeModal,
         employees, services, servicesCategories, events,
@@ -572,6 +640,7 @@ export const useCalendarLogic = () => {
         onDeleteAppointment: onDelete, handleShowPayModal,
         extraServices, setExtraServices,
         extraServicesModal, setExtraServicesModal,
-        customers, setCustomer
+        customers, setCustomer,
+        handleResolveGhost
     };
 };

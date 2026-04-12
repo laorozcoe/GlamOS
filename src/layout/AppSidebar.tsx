@@ -16,18 +16,18 @@ import {
   PlugInIcon,
   TableIcon,
   UserCircleIcon,
-
 } from "../icons/index";
 import { useBusiness } from "@/context/BusinessContext";
-import { Sparkles, BadgeDollarSign } from 'lucide-react';
-
-// import SidebarWidget from "./SidebarWidget";
+import { Sparkles, BadgeDollarSign, ShieldCheck } from 'lucide-react';
+import { useSession } from "@/lib/auth-client";
 
 type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean, icon: React.ReactNode; }[];
+  adminOnly?: boolean;
+  receptionOrAdminOnly?: boolean;
+  subItems?: { name: string; path: string; pro?: boolean; new?: boolean, icon: React.ReactNode; adminOnly?: boolean; receptionOrAdminOnly?: boolean }[];
 };
 
 const navItems: NavItem[] = [
@@ -40,96 +40,86 @@ const navItems: NavItem[] = [
     icon: <BadgeDollarSign />,
     name: "Historial Ventas",
     path: "/sales",
+    adminOnly: true, // Asumimos Admin Only por confidencialidad financiera a menos que queramos que recepcionista vea.
   },
-
-  // {
-  //   icon: <PieChartIcon />, // Ideal para métricas de ventas y dinero
-  //   name: "Ventas",
-  //   path: "/sales",
-  // },
-
-  // {
-  //   icon: <GridIcon />,
-  //   name: "Dashboard",
-  //   subItems: [{ name: "Ecommerce", path: "/", pro: false }],
-  // },
-  // {
-  //   icon: <UserCircleIcon />,
-  //   name: "User Profile",
-  //   path: "/profile",
-  // },
-
+  {
+    icon: <BadgeDollarSign />,
+    name: "Nómina",
+    path: "/payroll",
+    adminOnly: true,
+  },
+  {
+    icon: <ShieldCheck />,
+    name: "Permisos y Roles",
+    path: "/permissions",
+    adminOnly: true,
+  },
   {
     name: "Catalogos",
     icon: <ListIcon />,
-    subItems: [{
-      icon: <Sparkles />, // Ideal para métricas de ventas y dinero
-      name: "Servicios",
-      path: "/services",
-    },
-    {
-      icon: <UserCircleIcon />, // Más intuitivo para personas/clientes
-      name: "Clientes",
-      path: "/customers",
-    }],
+    receptionOrAdminOnly: true,
+    subItems: [
+      {
+        icon: <Sparkles />,
+        name: "Servicios",
+        path: "/services",
+        adminOnly: true, // Por lo general esto es admin
+      },
+      {
+        icon: <UserCircleIcon />,
+        name: "Clientes",
+        path: "/customers",
+        receptionOrAdminOnly: true,
+      },
+      {
+        icon: <UserCircleIcon />,
+        name: "Empleados/Staff",
+        path: "/employees",
+        adminOnly: true,
+      }
+    ],
   },
-  // {
-  //   name: "Tables",
-  //   icon: <TableIcon />,
-  //   subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  // },
-  // {
-  //   name: "Pages",
-  //   icon: <PageIcon />,
-  //   subItems: [
-  //     { name: "Blank Page", path: "/blank", pro: false },
-  //     { name: "404 Error", path: "/error-404", pro: false },
-  //   ],
-  // },
 ];
 
-const othersItems: NavItem[] = [
-  // {
-  //   icon: <PieChartIcon />,
-  //   name: "Charts",
-  //   subItems: [
-  //     { name: "Line Chart", path: "/line-chart", pro: false },
-  //     { name: "Bar Chart", path: "/bar-chart", pro: false },
-  //   ],
-  // },
-  // {
-  //   icon: <BoxCubeIcon />,
-  //   name: "UI Elements",
-  //   subItems: [
-  //     { name: "Alerts", path: "/alerts", pro: false },
-  //     { name: "Avatar", path: "/avatars", pro: false },
-  //     { name: "Badge", path: "/badge", pro: false },
-  //     { name: "Buttons", path: "/buttons", pro: false },
-  //     { name: "Images", path: "/images", pro: false },
-  //     { name: "Videos", path: "/videos", pro: false },
-  //   ],
-  // },
-  // {
-  //   icon: <PlugInIcon />,
-  //   name: "Authentication",
-  //   subItems: [
-  //     { name: "Sign In", path: "/signin", pro: false },
-  //     { name: "Sign Up", path: "/signup", pro: false },
-  //   ],
-  // },
-];
+const othersItems: NavItem[] = [];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered, toggleMobileSidebar } = useSidebar();
   const pathname = usePathname();
   const business = useBusiness();
+  const { data: session } = useSession();
+
+  const role = session?.user?.role || "EMPLOYEE"; // default
+  const isAdmin = role === "ADMIN";
+  const isReceptionOrAdmin = role === "RECEPTION" || role === "ADMIN";
+
+  // Filter items logic
+  const filteredNavItems = navItems.map(nav => {
+    // If it's a menu with sub-items, filter sub-items first
+    if (nav.subItems) {
+      const filteredSubItems = nav.subItems.filter(sub => {
+        if (sub.adminOnly && !isAdmin) return false;
+        if (sub.receptionOrAdminOnly && !isReceptionOrAdmin) return false;
+        return true;
+      });
+      return { ...nav, subItems: filteredSubItems };
+    }
+    return nav;
+  }).filter(nav => {
+    // Filter root-level items
+    if (nav.adminOnly && !isAdmin) return false;
+    if (nav.receptionOrAdminOnly && !isReceptionOrAdmin) return false;
+    // Hide menus that have subItems but all were filtered out
+    if (nav.subItems && nav.subItems.length === 0) return false;
+    return true;
+  });
 
   const renderMenuItems = (
-    navItems: NavItem[],
+    itemsToRender: NavItem[],
     menuType: "main" | "others"
   ) => (
     <ul className="flex flex-col gap-4">
-      {navItems.map((nav, index) => (
+      {itemsToRender.map((nav, index) => (
         <li key={nav.name}>
           {nav.subItems ? (
             <button
@@ -383,7 +373,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
+              {renderMenuItems(filteredNavItems, "main")}
             </div>
 
             {/* <div className="">
