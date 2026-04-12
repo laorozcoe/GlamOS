@@ -93,7 +93,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
   const handleDelete = async () => {
     if (!editingUserId) return;
     if (!window.confirm("¿Estás seguro de inhabilitar este empleado?")) return;
-    
+
     setLoading(true);
     try {
       await deleteEmployee(editingUserId);
@@ -127,8 +127,8 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-white/[0.05]">
               {users.map((user) => (
-                <tr 
-                  key={user.id} 
+                <tr
+                  key={user.id}
                   onClick={() => openEditEmployee(user)}
                   className="cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
                 >
@@ -138,14 +138,14 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
                   <td className="whitespace-nowrap px-5 py-4 text-sm">{user.email || user.username}</td>
                   <td className="whitespace-nowrap px-5 py-4 text-sm">
                     <span className="inline-flex rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
-                        {user.role}
+                      {user.role}
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-5 py-4 text-sm">
                     {user.employee && user.employee.active ? (
-                        <span className="inline-flex rounded-full bg-success-50 px-2 py-1 text-xs font-semibold text-success-700">Sí</span>
+                      <span className="inline-flex rounded-full bg-success-50 px-2 py-1 text-xs font-semibold text-success-700">Sí</span>
                     ) : (
-                        <span className="inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-500">No</span>
+                      <span className="inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-500">No</span>
                     )}
                   </td>
                   <td className="whitespace-nowrap px-5 py-4 text-sm text-gray-500">
@@ -158,7 +158,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
               ))}
               {users.length === 0 && (
                 <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500">No hay usuarios registrados</td>
+                  <td colSpan={6} className="py-8 text-center text-gray-500">No hay usuarios registrados</td>
                 </tr>
               )}
             </tbody>
@@ -172,7 +172,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
             {editingUserId ? "Editar Usuario" : "Nuevo Usuario"}
           </h3>
           {editingUserId && (
-            <button 
+            <button
               type="button"
               onClick={handleDelete}
               className="text-error-500 hover:text-error-600 transition-colors bg-error-50 dark:bg-error-500/10 p-2 rounded-lg"
@@ -182,7 +182,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
             </button>
           )}
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
@@ -192,7 +192,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="Juan"
-                required
+
               />
             </div>
             <div>
@@ -202,7 +202,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
                 value={formData.lastName}
                 onChange={handleChange}
                 placeholder="Pérez"
-                required
+
               />
             </div>
             <div>
@@ -213,7 +213,6 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="juan@ejemplo.com"
-                required={!editingUserId}
               />
             </div>
             <div>
@@ -224,7 +223,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••"
-                required={!editingUserId}
+
               />
             </div>
             <div>
@@ -252,18 +251,18 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
           </div>
 
           <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/[0.05]">
-             <div className="flex items-center justify-between mb-4">
-                <div>
-                    <h4 className="font-semibold text-gray-700 dark:text-gray-300">Incluir en Nómina Semanal</h4>
-                    <p className="text-xs text-gray-500">Habilita esta opción si este usuario ganará sueldo base o comisiones.</p>
-                </div>
-                <Switch 
-                   label={formData.hasPayroll ? "Sí" : "No"}
-                   defaultChecked={formData.hasPayroll}
-                   onChange={(checked) => setFormData((prev) => ({ ...prev, hasPayroll: checked }))} 
-                />
-             </div>
-             
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h4 className="font-semibold text-gray-700 dark:text-gray-300">Incluir en Nómina Semanal</h4>
+                <p className="text-xs text-gray-500">Habilita esta opción si este usuario ganará sueldo base o comisiones.</p>
+              </div>
+              <Switch
+                label={formData.hasPayroll ? "Sí" : "No"}
+                defaultChecked={formData.hasPayroll}
+                onChange={(checked) => setFormData((prev) => ({ ...prev, hasPayroll: checked }))}
+              />
+            </div>
+
             {formData.hasPayroll && (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 rounded-lg bg-gray-50 p-4 dark:bg-white/[0.02]">
                 <div>
