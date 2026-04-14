@@ -353,7 +353,7 @@ export const useCalendarLogic = () => {
             toast.warning("Ingresa al menos un servicio (o espera autorización)");
             // Si role es Employee e insertaron peticiones, quizás no deba guardar acá. 
             // Pero omitiremos bloqueos restrictivos.
-            // return;
+            return;
         }
         if (selectedEmployee?.id == "" || selectedEmployee?.id == null) {
             toast.warning("Selecciona un empleado");

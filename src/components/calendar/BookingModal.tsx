@@ -87,7 +87,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
             <Modal
                 isOpen={isOpen}
                 onClose={onClose}
-                className="w-[95svw] h-[95svh] sm:w-[95svw] sm:max-w-6xl sm:h-[90svh] bg-white dark:bg-gray-900 sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+                className="w-[95svw] h-[95svh] md:max-w-full sm:h-[90svh] bg-white dark:bg-gray-900 sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col"
             >
                 {/* --- HEADER --- */}
                 <div className="flex-none px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center z-20">
