@@ -8,7 +8,7 @@ import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Switch from "@/components/form/switch/Switch"; // ADDED SWITCH
 import { createEmployee, updateEmployee, deleteEmployee } from "./actions";
-import { TrashIcon } from "lucide-react";
+import { TrashIcon, User, Mail, Shield, DollarSign, CheckCircle, XCircle, Edit } from "lucide-react";
 
 interface EmployeeClientProps {
   users: any[];
@@ -115,11 +115,90 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
         <Button onClick={openNewEmployee}>Añadir Usuario</Button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+      <div className="space-y-4">
+    
+      {/* Lista de empleados - Vista móvil primero */}
+      <ul className="space-y-3 lg:hidden">
+        {users.map((user) => (
+          <li key={user.id} className="bg-white dark:bg-white/3 rounded-lg border border-gray-200 dark:border-white/5 p-4 shadow-sm">
+            <div className="space-y-3">
+              {/* Header con info principal */}
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2 justify-between">
+                   <div className="flex items-center gap-2">
+                     <User className="w-4 h-4 text-gray-400" />
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                      {user.name} {user.lastName}
+                    </h3>
+                   </div>
+                     <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openEditEmployee(user)}
+                  className="text-gray-400 hover:text-red-600"
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-sm mt-5 ">
+                    <span className="inline-flex rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
+                      {user.role}
+                    </span>
+                    {user.employee && user.employee.active ? (
+                      <span className="inline-flex items-center text-success-600 font-medium ">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Activo
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center text-gray-400">
+                        <XCircle className="w-3 h-3 mr-1" />
+                        Inactivo
+                      </span>
+                    )}
+                  </div>
+                </div>
+               
+              </div>
+
+              {/* Información de contacto */}
+              <div className="border-t border-gray-100 dark:border-white/5 pt-3">
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <Mail className="w-3 h-3" />
+                  <span>{user.email || user.username}</span>
+                </div>
+              </div>
+
+              {/* Información de nómina */}
+              {user.employee && user.employee.active && (
+                <div className="border-t border-gray-100 dark:border-white/5 pt-3 ">
+                  <div className="flex justify-between">
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400">Sueldo Base</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        ${user.employee.baseSalary}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400">Comisión</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {user.employee.commission}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {/* Vista desktop - Tabla original */}
+      <div className="hidden lg:block overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
         <div className="max-w-full overflow-x-auto">
           <table className="min-w-full align-middle text-gray-800 dark:text-white/90">
-            <thead className="bg-gray-50 dark:bg-white/[0.02]">
-              <tr className="border-b border-gray-200 dark:border-white/[0.05]">
+            <thead className="bg-gray-50 dark:bg-white/2">
+              <tr className="border-b border-gray-200 dark:border-white/5">
                 <th className="px-5 py-3 text-left text-sm font-medium tracking-wider text-gray-500">Nombre</th>
                 <th className="px-5 py-3 text-left text-sm font-medium tracking-wider text-gray-500">Email</th>
                 <th className="px-5 py-3 text-left text-sm font-medium tracking-wider text-gray-500">Rol</th>
@@ -128,12 +207,12 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
                 <th className="px-5 py-3 text-left text-sm font-medium tracking-wider text-gray-500">Comisión</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-white/[0.05]">
+            <tbody className="divide-y divide-gray-200 dark:divide-white/5">
               {users.map((user) => (
                 <tr
                   key={user.id}
                   onClick={() => openEditEmployee(user)}
-                  className="cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
+                  className="cursor-pointer hover:bg-gray-50 dark:hover:bg-white/2 transition-colors"
                 >
                   <td className="whitespace-nowrap px-5 py-4 text-sm font-medium text-brand-600 dark:text-brand-400">
                     {user.name} {user.lastName}
@@ -159,21 +238,26 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
                   </td>
                 </tr>
               ))}
-              {users.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500">No hay usuarios registrados</td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} className="max-w-xl p-6">
+      {/* Estado vacío */}
+      {users.length === 0 && (
+        <div className="text-center py-12">
+          <User className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+          <p className="text-gray-500 text-lg font-medium">No hay empleados registrados</p>
+          <p className="text-gray-400 text-sm mt-2">Comienza agregando empleados para gestionar tu nómina</p>
+        </div>
+      )}
+    </div>
+
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} className="max-h-[95svh] overflow-y-auto p-6">
         <div className="mb-5">
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white/90">
+          <Label className="text-lg font-bold text-gray-800 dark:text-white/90">
             {editingUserId ? "Editar Usuario" : "Nuevo Usuario"}
-          </h3>
+          </Label>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -244,7 +328,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/[0.05]">
+          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h4 className="font-semibold text-gray-700 dark:text-gray-300">Incluir en Nómina Semanal</h4>
@@ -258,7 +342,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
             </div>
 
             {formData.hasPayroll && (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 rounded-lg bg-gray-50 p-4 dark:bg-white/[0.02]">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 rounded-lg bg-gray-50 p-4 dark:bg-white/2">
                 <div>
                   <Label>Sueldo Base (Semanal)</Label>
                   <div className="relative mt-1">
@@ -292,7 +376,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
             )}
           </div>
 
-          <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-white/[0.05]">
+          <div className="mt-6 flex justify-center sm:justify-end gap-3 pt-4 border-t border-gray-100 dark:border-white/5">
             {editingUserId && (
               <Button
                 type="button"
@@ -301,7 +385,6 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
                 className="text-error-600 border-error-300 hover:bg-error-50"
               >
                 <TrashIcon size={16} />
-                Borrar
               </Button>
             )}
             <Button variant="outline" onClick={() => setIsOpen(false)}>
