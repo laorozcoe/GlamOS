@@ -10,6 +10,9 @@ import { createClientPrisma, updateClientPrisma, deleteClientPrisma } from "@/li
 import { useBusiness } from "@/context/BusinessContext";
 import { useRouter } from "next/navigation";
 import Button from "../ui/button/Button";
+import { usePrinter } from "@/hooks/usePrinter";
+import { toast } from "react-toastify";
+import Label from "@/components/form/Label";
 
 // createClientPrisma(businessId, name, phone, email, notes, employeeId)
 // updateClientPrisma(id, businessId, name, phone, email, notes, employeeId) 
@@ -57,6 +60,8 @@ export default function SalesTable({ sales }: any) {
     // };
     // const business = useBusiness();
     const [isMobile, setIsMobile] = useState(false);
+    const business = useBusiness();
+    const { printTicket } = usePrinter();
 
     // const initialClient: Client = {
     //     id: "",
@@ -86,12 +91,54 @@ export default function SalesTable({ sales }: any) {
         };
     }, []);
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedSale, setSelectedSale] = useState<any | null>(null);
+    const [isSaleDetailOpen, setIsSaleDetailOpen] = useState(false);
     const itemsPerPage = 7; // Ajusta cuántos clientes ver por página
 
     // // Lógica de paginación
     const totalPages = Math.ceil(sales.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const currentData = sales.slice(startIndex, startIndex + itemsPerPage);
+
+    const handleReprintSale = async (sale: any) => {
+        try {
+            const completedPayment = sale?.payments?.find((p: any) => p.status === "COMPLETED") || sale?.payments?.[0];
+            const items = (sale?.items || []).map((item: any) => ({
+                quantity: item.quantity || 1,
+                ticket_desc: item.description || "Servicio",
+                price: Number(item.price || 0) * Number(item.quantity || 1)
+            }));
+
+            const totalFallback = items.reduce((acc: number, item: any) => acc + Number(item.price || 0), 0);
+            const createdAt = new Date(sale.createdAt || new Date());
+
+            await printTicket({
+                businessName: business?.name || "Brillarte Bloom",
+                folio: sale.folio || sale.id?.slice(-6) || "SALE",
+                total: Number(sale.total ?? totalFallback),
+                paymentMethod: completedPayment?.method || "N/A",
+                received: Number(completedPayment?.amountReceived ?? sale.total ?? totalFallback),
+                change: Number(completedPayment?.changeReturned ?? 0),
+                date: createdAt.toLocaleDateString("es-MX"),
+                time: createdAt.toLocaleTimeString("es-MX", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true
+                }),
+                items
+            });
+
+            toast.success("Ticket reenviado a impresora.");
+        } catch (error) {
+            console.error("Error reimprimiendo ticket de venta:", error);
+            toast.error("No se pudo reimprimir el ticket.");
+        }
+    };
+
+    const handleOpenSaleDetail = (sale: any) => {
+        setSelectedSale(sale);
+        setIsSaleDetailOpen(true);
+    };
 
     // // Abrir modal para CREAR
     // const handleNewClient = () => {
@@ -157,12 +204,74 @@ export default function SalesTable({ sales }: any) {
                     {/* {isMobile ? <TableMobile customers={currentData} onRowClick={(customer: any) => console.log(customer)} /> : <Table customers={currentData} onRowClick={(customer: any) => console.log(customer)} />} */}
                     {/* Tablas */}
                     {isMobile ? (
-                        <TableMobile sales={currentData} />
+                        <TableMobile sales={currentData} onReprint={handleReprintSale} onRowClick={handleOpenSaleDetail} />
                     ) : (
-                        <Table sales={currentData} />
+                        <Table sales={currentData} onReprint={handleReprintSale} onRowClick={handleOpenSaleDetail} />
                     )}
                 </div>
             </div>
+
+            <Modal
+                isOpen={isSaleDetailOpen}
+                onClose={() => setIsSaleDetailOpen(false)}
+                className="w-[95svw] max-w-xl p-0 overflow-hidden"
+            >
+                <div className="bg-gray-50 dark:bg-gray-800 p-5 border-b border-gray-200 dark:border-gray-700">
+                    <Label className="text-lg font-bold">Detalle de Venta</Label>
+                    <Label color="text-brand-500 dark:text-brand-400" className="text-sm text-gray-500 mt-1">
+                        Folio: {selectedSale?.folio || selectedSale?.id?.slice(-6)}
+                    </Label>
+                </div>
+
+                <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <Label className="text-gray-500">Empleado</Label>
+                            <Label className="font-semibold">{selectedSale?.employee?.user?.name} {selectedSale?.employee?.user?.lastName}</Label>
+                        </div>
+                        <div className="text-right">
+                            <Label className="text-gray-500">Fecha</Label>
+                            <Label className="font-semibold">
+                                {selectedSale?.createdAt ? new Date(selectedSale.createdAt).toLocaleString("es-MX") : "-"}
+                            </Label>
+                        </div>
+                    </div>
+
+                    <div className="border rounded-xl p-4 space-y-2">
+                        <Label className="text-xs font-bold uppercase text-gray-500">Servicios</Label>
+                        {(selectedSale?.items || []).length > 0 ? (
+                            selectedSale.items.map((item: any) => (
+                                <div key={item.id} className="flex justify-between text-sm">
+                                    <Label>{item.description} x{item.quantity || 1}</Label>
+                                    <Label color="text-brand-500 dark:text-brand-400" className="font-semibold">${Number(item.price || 0) * Number(item.quantity || 1)}</Label>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-sm text-gray-500">Sin items registrados.</p>
+                        )}
+                    </div>
+
+                    <div className="border rounded-xl p-4 space-y-2 text-sm">
+                        <div className="flex justify-between">
+                            <Label className="text-gray-500">Método</Label>
+                            <Label color="text-brand-500 dark:text-brand-400" className="font-semibold">{selectedSale?.payments?.[0]?.method || "N/A"}</Label>
+                        </div>
+                        <div className="flex justify-between">
+                            <Label className="text-gray-500">Total</Label>
+                            <Label color="text-brand-500 dark:text-brand-400" className="font-bold">${selectedSale?.total ?? 0}</Label>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setIsSaleDetailOpen(false)}>
+                        Cerrar
+                    </Button>
+                    <Button className="flex-1" onClick={() => selectedSale && handleReprintSale(selectedSale)}>
+                        Reimprimir
+                    </Button>
+                </div>
+            </Modal>
 
             {/* {isModalOpen && (
                 <Moddal

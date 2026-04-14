@@ -16,6 +16,8 @@ interface EmployeeClientProps {
 
 export default function EmployeeClient({ users }: EmployeeClientProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDisableConfirmOpen, setIsDisableConfirmOpen] = useState(false);
+  const [isDisableFinalConfirmOpen, setIsDisableFinalConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
@@ -92,11 +94,12 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
 
   const handleDelete = async () => {
     if (!editingUserId) return;
-    if (!window.confirm("¿Estás seguro de inhabilitar este empleado?")) return;
 
     setLoading(true);
     try {
       await deleteEmployee(editingUserId);
+      setIsDisableConfirmOpen(false);
+      setIsDisableFinalConfirmOpen(false);
       setIsOpen(false);
     } catch (error) {
       console.error(error);
@@ -167,20 +170,10 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
       </div>
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} className="max-w-xl p-6">
-        <div className="flex items-center justify-between mb-5">
+        <div className="mb-5">
           <h3 className="text-lg font-bold text-gray-800 dark:text-white/90">
             {editingUserId ? "Editar Usuario" : "Nuevo Usuario"}
           </h3>
-          {editingUserId && (
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="text-error-500 hover:text-error-600 transition-colors bg-error-50 dark:bg-error-500/10 p-2 rounded-lg"
-              title="Inhabilitar Empleado"
-            >
-              <TrashIcon size={20} />
-            </button>
-          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -300,6 +293,17 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
           </div>
 
           <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-white/[0.05]">
+            {editingUserId && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDisableConfirmOpen(true)}
+                className="text-error-600 border-error-300 hover:bg-error-50"
+              >
+                <TrashIcon size={16} />
+                Borrar
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setIsOpen(false)}>
               Cancelar
             </Button>
@@ -308,6 +312,67 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Confirmación 1 */}
+      <Modal
+        isOpen={isDisableConfirmOpen}
+        onClose={() => setIsDisableConfirmOpen(false)}
+        className="max-w-sm p-6 rounded-2xl"
+      >
+        <Label className="text-lg font-bold mb-2">¿Borrar empleado?</Label>
+        <Label className="text-gray-500 text-sm my-6">
+          El empleado dejará de estar activo, pero sus registros se conservarán.
+        </Label>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => setIsDisableConfirmOpen(false)}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button
+            className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+            onClick={() => {
+              setIsDisableConfirmOpen(false);
+              setIsDisableFinalConfirmOpen(true);
+            }}
+            disabled={loading}
+          >
+            Continuar
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Confirmación 2 */}
+      <Modal
+        isOpen={isDisableFinalConfirmOpen}
+        onClose={() => setIsDisableFinalConfirmOpen(false)}
+        className="max-w-sm p-6 rounded-2xl"
+      >
+        <Label className="text-lg font-bold mb-2">Confirmación final</Label>
+        <Label className="text-gray-500 text-sm my-6">
+          Esta acción desactivará el empleado para operaciones futuras. ¿Deseas continuar?
+        </Label>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => setIsDisableFinalConfirmOpen(false)}
+            disabled={loading}
+          >
+            Regresar
+          </Button>
+          <Button
+            className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+            onClick={handleDelete}
+            disabled={loading}
+          >
+            {loading ? "Borrando..." : "Sí, Borrar"}
+          </Button>
+        </div>
       </Modal>
     </div>
   );

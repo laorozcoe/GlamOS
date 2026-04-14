@@ -26,10 +26,18 @@ const columns = [
   { id: 2, name: 'Estación 2 (Cabello)' },
   { id: 3, name: 'Estación 3 (Pestañas)' },
 ];
+
 const colors: string[] = [
   'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-700 dark:border-blue-300 dark:text-blue-100',
   'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-700 dark:border-purple-300 dark:text-purple-100',
   'bg-pink-100 border-pink-300 text-pink-700 dark:bg-pink-700 dark:border-pink-300 dark:text-pink-100',
+  'bg-green-100 border-green-300 text-green-700 dark:bg-green-700 dark:border-green-300 dark:text-green-100',
+  'bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-700 dark:border-amber-300 dark:text-amber-100',
+  'bg-cyan-100 border-cyan-300 text-cyan-700 dark:bg-cyan-700 dark:border-cyan-300 dark:text-cyan-100',
+  'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-700 dark:border-indigo-300 dark:text-indigo-100',
+  'bg-rose-100 border-rose-300 text-rose-700 dark:bg-rose-700 dark:border-rose-300 dark:text-rose-100',
+  'bg-lime-100 border-lime-300 text-lime-700 dark:bg-lime-700 dark:border-lime-300 dark:text-lime-100',
+  'bg-orange-100 border-orange-300 text-orange-700 dark:bg-orange-700 dark:border-orange-300 dark:text-orange-100',
 ]
 
 // Aquí definimos las citas manualmente para probar el empalme
@@ -348,6 +356,7 @@ export default function CalendarGrid() {
         customers={logic.customers}
         setCustomer={logic.setCustomer}
         isAdmin={userInfo?.isAdmin || userInfo?.role === "RECEPTION"}
+        canCreateAppointments={userInfo?.role !== "EMPLOYEE" || !!userInfo?.canCreate}
         onResolveGhost={logic.handleResolveGhost}
       />
 
@@ -364,6 +373,7 @@ export default function CalendarGrid() {
         isOpen={logic.showSaleDetails}
         onClose={() => logic.setShowSaleDetails(false)}
         event={logic.selectedEvent}
+        onReprint={logic.handleReprintTicket}
       />
 
       {logic.extraServicesModal && (

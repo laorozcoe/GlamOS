@@ -261,6 +261,7 @@ export default function CalendarGrid() {
                 isOpen={logic.showSaleDetails}
                 onClose={() => logic.setShowSaleDetails(false)}
                 event={logic.selectedEvent}
+                onReprint={logic.handleReprintTicket}
             />
         </>
     );

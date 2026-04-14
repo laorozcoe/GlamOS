@@ -3,8 +3,10 @@ import Badge from "../ui/badge/Badge";
 import { User, Calendar, Briefcase, Phone, ChevronRight } from 'lucide-react'; // Asumiendo que usas Lucide
 import Label from "@/components/form/Label"
 import moment from "moment"
+import Button from "@/components/ui/button/Button";
+import { Printer } from "lucide-react";
 
-export default function TableMobile({ sales }) {
+export default function TableMobile({ sales, onReprint, onRowClick }) {
 
     if (!sales || sales.length === 0) {
         return <div className="p-4 text-center text-gray-500">No hay clientes para mostrar.</div>;
@@ -56,6 +58,21 @@ export default function TableMobile({ sales }) {
                             <Calendar size={18} />
                             <Label>{moment(sale.createdAt).format("hh:mm:SS a")}</Label>
                         </div>
+                    </div>
+
+                    <div className="mt-3 flex justify-center">
+                        <Button
+                            type="button"
+                            variant="primary"
+                            className="p-0 inline-flex items-center justify-center"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onReprint && onReprint(sale);
+                            }}
+                            title="Reimprimir ticket"
+                        >
+                            <Printer size={15} />
+                        </Button>
                     </div>
 
                     {/* Fecha */}

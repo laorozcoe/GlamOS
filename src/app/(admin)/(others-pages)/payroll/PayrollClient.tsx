@@ -137,9 +137,14 @@ export default function PayrollClient() {
         </div>
       )}
 
-      <Modal isOpen={!!selectedEmployee} onClose={() => setSelectedEmployee(null)} className="max-w-3xl p-6">
+      <Modal
+        isOpen={!!selectedEmployee}
+        onClose={() => setSelectedEmployee(null)}
+        showCloseButton={false}
+        className="w-[95svw] h-[95svh] max-w-3xl p-6"
+      >
         {selectedEmployee && (
-          <div>
+          <div className="h-full flex flex-col">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-800 dark:text-white/90">
@@ -176,7 +181,7 @@ export default function PayrollClient() {
               Ticket / Servicios Realizados
             </h4>
 
-            <div className="max-h-[400px] overflow-y-auto">
+            <div className=" flex-1 overflow-y-auto">
               {selectedEmployee.sales.length > 0 ? (
                 <div className="space-y-3">
                   {selectedEmployee.sales.map((sale: any) => (
@@ -215,7 +220,7 @@ export default function PayrollClient() {
               )}
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-center">
               <Button variant="outline" onClick={() => setSelectedEmployee(null)}>
                 Cerrar Detalle
               </Button>

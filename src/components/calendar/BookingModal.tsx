@@ -38,6 +38,7 @@ interface BookingModalProps {
     onOpenPay: () => void;
     setExtraServicesModal: (val: boolean) => void;
     isAdmin?: boolean;
+    canCreateAppointments?: boolean;
     onResolveGhost?: (id: string, approve: boolean) => void;
 }
 
@@ -49,7 +50,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
         date, setDate, time, setTime, timeEnd, setTimeEnd,
         appointments, onDeleteService, total,
         onSave, onOpenPay, onDeleteAppointment, setExtraServicesModal,
-        customers, setCustomer, isAdmin, onResolveGhost
+        customers, setCustomer, isAdmin, canCreateAppointments, onResolveGhost
     } = props;
 
     useEffect(() => {
@@ -503,9 +504,11 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                             <Trash size={18} />
                                         </Button>
                                     )}
-                                    <Button onClick={onSave} className="flex-1 bg-brand-500">
-                                        {isEditing ? "Actualizar" : "Agendar Cita"}
-                                    </Button>
+                                    {canCreateAppointments && (
+                                        <Button onClick={onSave} className="flex-1 bg-brand-500">
+                                            {isEditing ? "Actualizar" : "Agendar Cita"}
+                                        </Button>
+                                    )}
                                 </div>
                                 <div className="gap-2 flex">
                                     <Button onClick={() => setExtraServicesModal(true)} variant="outline" className=" bg-green-600 hover:bg-green-700">
@@ -529,9 +532,11 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                 Eliminar Cita
                             </Button>
                         )}
-                        <Button onClick={onSave} className="px-8">
-                            {isEditing ? "Guardar Cambios" : "Crear Cita"}
-                        </Button>
+                        {canCreateAppointments && (
+                            <Button onClick={onSave} className="px-8">
+                                {isEditing ? "Guardar Cambios" : "Crear Cita"}
+                            </Button>
+                        )}
                         <Button onClick={() => setExtraServicesModal(true)} variant="outline" className="">
                             <SquarePlus />
                         </Button>
@@ -546,8 +551,8 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
 
             {/* Modal Eliminar */}
             < Modal isOpen={isDeleteModalOpen} onClose={() => { setIsDeleteModalOpen(false); setMobileTab('services') }} className="max-w-sm p-6 rounded-2xl" >
-                <h3 className="text-lg font-bold mb-2">¿Eliminar cita?</h3>
-                <p className="text-gray-500 text-sm mb-6">Esta acción no se puede deshacer.</p>
+                <Label className="text-lg font-bold mb-2">¿Eliminar cita?</Label>
+                <Label className="text-gray-500 text-sm mb-6">Esta acción no se puede deshacer.</Label>
                 <div className="flex gap-3">
                     <Button variant="outline" className="flex-1" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</Button>
                     <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={() => { onDeleteAppointment(); setIsDeleteModalOpen(false); }}>Eliminar</Button>

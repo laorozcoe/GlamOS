@@ -8,9 +8,11 @@ import {
 import Badge from "../ui/badge/Badge";
 import moment from "moment"
 import Label from "@/components/form/Label"
+import Button from "@/components/ui/button/Button";
+import { Printer } from "lucide-react";
 
 // Recibimos una nueva prop: onRowClick
-export default function SalesTable({ sales }) {
+export default function SalesTable({ sales, onReprint, onRowClick }) {
     console.log(sales);
     return (
         <Table>
@@ -27,6 +29,9 @@ export default function SalesTable({ sales }) {
                     </TableCell>
                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
                         Fecha
+                    </TableCell>
+                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                        Ticket
                     </TableCell>
                 </TableRow>
             </TableHeader>
@@ -55,6 +60,20 @@ export default function SalesTable({ sales }) {
                         </TableCell>
                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 truncate">
                             {moment(sale.createdAt).format("YYYY-MM-DD hh:mm:SS a")}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-start">
+                            <Button
+                                type="button"
+                                variant="primary"
+                                className=" p-0 inline-flex items-center justify-center"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onReprint && onReprint(sale);
+                                }}
+                                title="Reimprimir ticket"
+                            >
+                                <Printer size={16} />
+                            </Button>
                         </TableCell>
 
                         {/*   <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">

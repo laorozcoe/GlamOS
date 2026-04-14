@@ -904,11 +904,36 @@ export async function getSalesPrisma(businessId) {
                         },
                     },
                 }
+            },
+            items: true,
+            payments: {
+                where: {
+                    active: true
+                }
             }
         }
     })
 
     return sales
+}
+
+export async function getSaleByAppointmentPrisma(businessId, appointmentId) {
+    const sale = await prisma.sale.findFirst({
+        where: {
+            businessId,
+            appointmentId,
+            active: true
+        },
+        include: {
+            items: true,
+            payments: {
+                where: { active: true }
+            }
+        },
+        orderBy: { createdAt: "desc" }
+    });
+
+    return sale;
 }
 
 export async function updateSalePrisma(id, businessId, clientId, employeeId, appointmentId, subtotal, discount, total, status, notes) {

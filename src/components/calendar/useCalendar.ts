@@ -8,7 +8,7 @@ import {
     getEmployeesPrisma, getServicesPrisma, getServicesCategoriesPrisma,
     getAppointmentsPrisma, createAppointment, updateAppointment,
     createClientPrisma, getClientPrisma, getClientsPrisma, createPaymentPrisma,
-    createSalePrisma, deleteAppointmentPrisma,
+    createSalePrisma, deleteAppointmentPrisma, getSaleByAppointmentPrisma,
     getAppointmentsByDatePrisma
 } from "@/lib/prisma";
 import { requestAppointmentModification, getPendingRequests } from "@/app/(admin)/(others-pages)/calendar/actions";
@@ -265,17 +265,31 @@ export const useCalendarLogic = () => {
 
     // Agregar servicio al carrito
     const addServiceToCart = async (service: any) => {
-        const { isAdmin, role, currentEmployee } = getUserInfo();
+        const { canCreate, currentEmployee } = getUserInfo();
         
-        // Si estamos editando un evento, un EMPLOYEE crea solicitud en vez de agregar directo
-        if (selectedEvent && role === "EMPLOYEE" && currentEmployee) {
+        // Si no tiene permisos de crear citas, al editar manda solicitud en vez de agregar directo.
+        if (selectedEvent && !canCreate && currentEmployee) {
             try {
-                await requestAppointmentModification({
+                const request = await requestAppointmentModification({
                     appointmentId: selectedEvent.id,
                     serviceId: service.id,
                     employeeRequesterId: currentEmployee.id,
                     action: "ADD"
                 });
+                // Reflejamos inmediatamente en UI que existe un alta pendiente.
+                setAppointments(prev => [
+                    ...prev,
+                    {
+                        id: `ghost-${request.id}`,
+                        requestId: request.id,
+                        serviceId: service.id,
+                        name: service.name,
+                        duration: service.duration,
+                        price: service.price,
+                        descriptionTicket: service.descriptionTicket,
+                        isPending: true
+                    }
+                ]);
                 toast.success("Solicitud enviada a Recepción.");
             } catch(e) {
                 toast.error("Error al enviar solicitud.");
@@ -297,18 +311,31 @@ export const useCalendarLogic = () => {
 
     const removeServiceFromCart = async (indexToDelete: number) => {
          const deletingServiceItem = appointments[indexToDelete];
-         const { isAdmin, role, currentEmployee } = getUserInfo();
+         const { canCreate, currentEmployee } = getUserInfo();
 
-         // Si el servicio ya existía en la Base de datos (tiene ID propio de apptService) y somos EMPLOYEE
-         if (selectedEvent && role === "EMPLOYEE" && deletingServiceItem.id && currentEmployee) {
+         // Si no puede crear citas y el servicio ya existe en BD, manda solicitud de eliminación.
+         if (selectedEvent && !canCreate && deletingServiceItem.id && currentEmployee) {
+              if (deletingServiceItem.isPendingRemove) {
+                  toast.info("Esta eliminación ya está pendiente de autorización.");
+                  return;
+              }
               try {
-                await requestAppointmentModification({
+                const request = await requestAppointmentModification({
                     appointmentId: selectedEvent.id,
                     serviceId: deletingServiceItem.serviceId,
                     appointmentServiceId: deletingServiceItem.id,
                     employeeRequesterId: currentEmployee.id,
                     action: "REMOVE"
                 });
+                // Marcamos visualmente el servicio como pendiente por eliminar.
+                setAppointments(prev => prev.map((item, idx) => {
+                    if (idx !== indexToDelete) return item;
+                    return {
+                        ...item,
+                        isPendingRemove: true,
+                        requestId: request.id
+                    };
+                }));
                 toast.success("Solicitud de eliminación enviada.");
             } catch(e) {
                 toast.error("Error al enviar solicitud.");
@@ -615,10 +642,61 @@ export const useCalendarLogic = () => {
              await import("@/app/(admin)/(others-pages)/calendar/actions").then(m => m.resolveModificationRequest(requestId, approve));
              toast.success(approve ? "Cambio de cita aprobado." : "Solicitud denegada.");
              window.dispatchEvent(new Event('app:pullToRefresh'));
-             closeModal();
+             if (selectedEvent?.id) {
+                 handleEventClick(selectedEvent);
+             }
          } catch(e) {
              toast.error("Error resolviendo la solicitud.");
          }
+    };
+
+    const handleReprintTicket = async () => {
+        if (!selectedEvent) {
+            toast.warning("No hay cita seleccionada para imprimir.");
+            return;
+        }
+
+        try {
+            const sale = await getSaleByAppointmentPrisma(business?.id, selectedEvent.id);
+            const completedPayment = sale?.payments?.find((p: any) => p.status === "COMPLETED") || sale?.payments?.[0];
+
+            const ticketItems = sale?.items?.length
+                ? sale.items.map((item: any) => ({
+                    quantity: item.quantity || 1,
+                    ticket_desc: item.description || "Servicio",
+                    price: Number(item.price || 0) * Number(item.quantity || 1)
+                }))
+                : (selectedEvent.services || []).map((svc: any) => ({
+                    quantity: 1,
+                    ticket_desc: svc.service?.descriptionTicket || svc.service?.name || "Servicio",
+                    price: Number(svc.price || 0)
+                }));
+
+            const dateSource = sale?.createdAt || selectedEvent.start || new Date();
+            const totalFallback = ticketItems.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+
+            const ticketData = {
+                businessName: business?.name || "Brillarte Bloom",
+                folio: sale?.folio || selectedEvent.id?.slice(-6) || "REPRINT",
+                total: Number(sale?.total ?? selectedEvent.totalAmount ?? totalFallback),
+                paymentMethod: completedPayment?.method || "N/A",
+                received: Number(completedPayment?.amountReceived ?? sale?.total ?? selectedEvent.totalAmount ?? totalFallback),
+                change: Number(completedPayment?.changeReturned ?? 0),
+                date: new Date(dateSource).toLocaleDateString('es-MX'),
+                time: new Date(dateSource).toLocaleTimeString('es-MX', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                }),
+                items: ticketItems
+            };
+
+            await printTicket(ticketData);
+            toast.success("Ticket enviado a impresora.");
+        } catch (error) {
+            console.error("Error reimprimiendo ticket:", error);
+            toast.error("No se pudo reimprimir el ticket.");
+        }
     };
 
     return {
@@ -641,6 +719,7 @@ export const useCalendarLogic = () => {
         extraServices, setExtraServices,
         extraServicesModal, setExtraServicesModal,
         customers, setCustomer,
-        handleResolveGhost
+        handleResolveGhost,
+        handleReprintTicket
     };
 };

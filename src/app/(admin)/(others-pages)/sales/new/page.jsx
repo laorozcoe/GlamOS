@@ -244,8 +244,8 @@ export default function BlankPage() {
                 </div>
             </div>
             <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} className="max-w-sm p-6 rounded-2xl">
-                <h3 className="text-lg font-bold mb-2">¿Eliminar cita?</h3>
-                <p className="text-gray-500 text-sm mb-6">Esta acción no se puede deshacer.</p>
+                <Label className="text-lg font-bold mb-2">¿Eliminar cita?</Label>
+                <Label className="text-gray-500 text-sm mb-6">Esta acción no se puede deshacer.</Label>
                 <div className="flex gap-3">
                     <Button variant="outline" className="flex-1" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</Button>
                     <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={() => { onDeleteAppointment(); setIsDeleteModalOpen(false); }}>Eliminar</Button>

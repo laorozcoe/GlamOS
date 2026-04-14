@@ -1,14 +1,17 @@
 import React from "react";
 import { Modal } from "@/components/ui/modal";
+import Label from "../form/Label";
+import Button from "../ui/button/Button";
 
 interface SaleDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
     event: any; // El evento seleccionado con toda la info
+    onReprint: () => void;
 }
 
 export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
-    isOpen, onClose, event
+    isOpen, onClose, event, onReprint
 }) => {
     if (!event) return null;
 
@@ -37,9 +40,9 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                 <div className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold mb-2 border border-green-200">
                     ✅ {paymentStatus}
                 </div>
-                <h3 className="text-2xl font-black text-gray-900 dark:text-white">
+                <Label className="text-2xl font-black text-gray-900 dark:text-white">
                     ${totalAmount}
-                </h3>
+                </Label>
                 <p className="text-gray-500 text-sm mt-1">Total Pagado</p>
             </div>
 
@@ -83,17 +86,17 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                 {/* Fecha y Notas */}
                 <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl text-xs space-y-2">
                     <div className="flex justify-between">
-                        <span className="text-gray-500">Fecha:</span>
-                        <span className="font-medium">{dateStr}</span>
+                        <Label className="text-gray-500">Fecha:</Label>
+                        <Label color="text-brand-500 dark:text-brand-400" className="font-medium">{dateStr}</Label>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-gray-500">Hora:</span>
-                        <span className="font-medium">{timeStr}</span>
+                        <Label className="text-gray-500">Hora:</Label>
+                        <Label color="text-brand-500 dark:text-brand-400" className="font-medium">{timeStr}</Label>
                     </div>
                     {notes && (
                         <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
-                            <p className="text-gray-500 mb-1">Notas de Pago:</p>
-                            <p className="font-medium italic text-gray-600">{notes}</p>
+                            <Label className="text-gray-500 mb-1">Notas de Pago:</Label>
+                            <Label color="text-brand-500 dark:text-brand-400" className="font-medium italic text-gray-600">{notes}</Label>
                         </div>
                     )}
                 </div>
@@ -102,19 +105,20 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
 
             {/* FOOTER ACCIONES */}
             <div className="p-5 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex gap-3">
-                <button
+                <Button
+                    variant="outline"
                     onClick={onClose}
                     className="flex-1 py-3 border border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-colors"
                 >
                     Cerrar
-                </button>
+                </Button>
                 {/* Aquí podrías agregar un botón de Imprimir en el futuro */}
-                <button
-                    onClick={() => alert("Imprimiendo ticket...")}
+                <Button
+                    onClick={onReprint}
                     className="flex-1 py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors flex justify-center gap-2"
                 >
                     <span>🖨️</span> Imprimir
-                </button>
+                </Button>
             </div>
         </Modal>
     );

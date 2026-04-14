@@ -8,7 +8,13 @@ export async function getEmployeesWithPermissions() {
   if (!business) throw new Error("No business found");
 
   const employees = await prisma.employee.findMany({
-    where: { businessId: business.id },
+    where: {
+      businessId: business.id,
+      active: true,
+      user: {
+        active: true,
+      },
+    },
     include: { user: true },
     orderBy: { createdAt: "desc" },
   });
