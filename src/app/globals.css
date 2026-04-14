@@ -175,20 +175,20 @@
 
 @layer base {
   /* Sobrescribimos las variables cuando el body tenga esta clase */
-  /* NOTA: Tonos verde pistache para el tema Evora */
+  /* NOTA: Tonos verde pistache más suave y menos vivo para el tema Evora */
   .theme-evora {
-    --color-brand-25: #f0fdf4;
-    --color-brand-50: #dcfce7;
-    --color-brand-100: #bbf7d0;
-    --color-brand-200: #86efac;
-    --color-brand-300: #4ade80;
-    --color-brand-400: #22c55e;
-    --color-brand-500: #16a34a; /* Color principal de Evora - Verde pistache */
-    --color-brand-600: #15803d;
-    --color-brand-700: #166534;
-    --color-brand-800: #14532d;
-    --color-brand-900: #052e16;
-    --color-brand-950: #022c22;
+    --color-brand-25: #f7faf9;
+    --color-brand-50: #f0f7f2;
+    --color-brand-100: #e3f4e9;
+    --color-brand-200: #c8e6c5;
+    --color-brand-300: #a5d6a7;
+    --color-brand-400: #81c784;
+    --color-brand-500: #66bb6a; /* Color principal de Evora - Verde pistache más suave */
+    --color-brand-600: #4caf50;
+    --color-brand-700: #43a047;
+    --color-brand-800: #388e3c;
+    --color-brand-900: #2e7d32;
+    --color-brand-950: #1b5e20;
   }
 }
 
