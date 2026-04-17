@@ -205,7 +205,7 @@ export default function AttendanceClient() {
                     <tr key={rec.employeeId} className={rec.hasRecord ? 'bg-brand-50/20 dark:bg-brand-900/10' : 'hover:bg-gray-50 dark:hover:bg-white/2'}>
                       <td className="whitespace-nowrap px-4 py-3">
                         <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                          {rec.hasRecord && <CheckCircle className="w-4 h-4 text-green-500" title="Registro Completo" />}
+                          {rec.hasRecord && <span title="Registro Completo" className="flex"><CheckCircle className="w-4 h-4 text-green-500" /></span>}
                           {rec.employeeName}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">

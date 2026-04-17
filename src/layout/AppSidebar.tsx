@@ -18,7 +18,7 @@ import {
   UserCircleIcon,
 } from "../icons/index";
 import { useBusiness } from "@/context/BusinessContext";
-import { Sparkles, BadgeDollarSign, ShieldCheck, Clock } from 'lucide-react';
+import { Sparkles, BadgeDollarSign, ShieldCheck, Clock, Settings } from 'lucide-react';
 import { useSession } from "@/lib/auth-client";
 
 type NavItem = {
@@ -58,6 +58,12 @@ const navItems: NavItem[] = [
     icon: <ShieldCheck />,
     name: "Permisos y Roles",
     path: "/permissions",
+    adminOnly: true,
+  },
+  {
+    icon: <Settings />,
+    name: "Configuración",
+    path: "/settings",
     adminOnly: true,
   },
   {
