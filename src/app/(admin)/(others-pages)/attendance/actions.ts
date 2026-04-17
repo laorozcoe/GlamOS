@@ -30,7 +30,7 @@ export async function getAttendanceByDate(dateStr: string) {
   });
 
   // 3. Crear el listado combinado
-  const attendanceList = employees.map(emp => {
+  const attendanceList = employees.map((emp: any) => {
     // Buscar la asistencia de este empleado el día de hoy
     const entry = attendances.find(a => a.employeeId === emp.id);
 
