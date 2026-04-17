@@ -53,14 +53,14 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
         customers, setCustomer, isAdmin, canCreateAppointments, onResolveGhost
     } = props;
 
+    const [mobileTab, setMobileTab] = useState<'info' | 'services' | 'summary'>('services');
     useEffect(() => {
         if (!isOpen) {
-            setMobileTab('services');
+            // setMobileTab('services');
         }
     }, [isOpen]);
 
     // --- ESTADOS ---
-    const [mobileTab, setMobileTab] = useState<'info' | 'services' | 'summary'>('services');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
@@ -186,7 +186,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                                 <Button
                                                     onClick={() => setIsSearchModalOpen(true)}
                                                     type="button"
-                                                    className="h-[43px] flex items-center justify-center p-0 align-middle"
+                                                    className="h-10.75 flex items-center justify-center p-0 align-middle"
                                                 >
                                                     <span>Buscar cliente</span>
                                                     <Search size={18} />

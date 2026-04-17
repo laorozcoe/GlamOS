@@ -466,37 +466,69 @@ export const useCalendarLogic = () => {
             return
         }
 
+        // Validaciones adicionales para paymentData
+        if (!paymentData || typeof paymentData !== 'object') {
+            toast.error("Datos de pago inválidos");
+            return
+        }
+
+        if (!paymentData.total || paymentData.total <= 0) {
+            toast.error("El total del pago debe ser mayor a 0");
+            return
+        }
+
+        if (!paymentData.method || paymentData.method.trim() === '') {
+            toast.error("El método de pago es requerido");
+            return
+        }
+
         try {
-            // 2. Cálculos de tiempo
+            // 2. Cálculos de tiempo con validación
             const startDateTime = new Date(`${date}T${time}:00`);
+            if (isNaN(startDateTime.getTime())) {
+                toast.error("Fecha u hora inválida");
+                return
+            }
+
             const totalMinutes = appointments.reduce((sum: number, ap: any) => sum + (ap.duration || 30), 0);
             const endDateTime = new Date(startDateTime.getTime() + totalMinutes * 60000);
 
-            // 3. Preparar Agrupación de Ítems (Para la Venta y el Ticket)
+            if (isNaN(endDateTime.getTime())) {
+                toast.error("Error calculando hora de fin");
+                return
+            }
+
+            // 3. Preparar Agrupación de Ítems con validación
             const groupedItems = appointments.reduce((acc: any, appt: any) => {
+                if (!appt || (!appt.id && !appt.name)) {
+                    console.warn("Servicio inválido encontrado, omitiendo:", appt);
+                    return acc;
+                }
+
                 const key = appt.id || appt.name;
                 if (!acc[key]) {
+                    const price = Number(appt.price) || 0;
                     acc[key] = {
                         id: appt.id || null,
                         serviceId: appt.serviceId || null,
                         quantity: 0,
-                        ticket_desc: appt.descriptionTicket || appt.name,
-                        name: appt.name,
-                        unitPrice: Number(appt.price),
+                        ticket_desc: appt.descriptionTicket || appt.name || "Servicio",
+                        name: appt.name || "Servicio",
+                        unitPrice: price,
                         totalPrice: 0
                     };
                 }
                 acc[key].quantity += 1;
-                acc[key].totalPrice += Number(appt.price);
+                acc[key].totalPrice += Number(appt.price) || 0;
                 return acc;
             }, {});
 
             const itemsList = Object.values(groupedItems);
 
-            // const serviceMap = appointments.map((item: any) => ({
-            //     serviceId: item.id,
-            //     price: item.price,
-            // }));
+            if (itemsList.length === 0) {
+                toast.error("No hay servicios válidos para procesar");
+                return
+            }
 
             // 4. PASO A: Crear/Actualizar la Cita (Reserva de tiempo)
             const appointmentPayload = {
@@ -567,11 +599,37 @@ export const useCalendarLogic = () => {
             // Aquí llamas a tu nueva función de backend que hace la transacción de Prisma
             const saleResult = await createSalePrisma(salePayload);
 
+            if (!saleResult.success) {
+                throw new Error(saleResult?.error || "Error al procesar la venta en la base de datos");
+            }
+
             // 6. PASO C: Asegurar Cliente en BD
             if (customer.name && customer.phone) {
                 await createClientPrisma(business?.id, customer.name, customer.phone, "", "", selectedEmployee?.id);
             }
-            // 7. PASO D: Impresión del Ticket (Usando datos de la venta recién creada)
+
+            //7. PASO D: Imprimir Ticket (función separada)
+            await printSaleTicket(saleResult, paymentData, itemsList);
+
+            // 8. Limpieza y Refresco
+            // const newEvents = await getAppointmentsPrisma(business?.id);
+            const newEvents = await getAppointmentsByDatePrisma(business?.id, currentDate);
+            setEvents(newEvents);
+
+            setShowPayModal(false);
+            closeModal();
+            resetModalFields();
+            toast.success("Venta procesada");
+
+        } catch (error) {
+            console.error("Error finalizando pago:", error);
+            toast.error("Ocurrió un error al procesar la venta.");
+        }
+    };
+
+    // Función separada para imprimir ticket de venta
+    const printSaleTicket = async (saleResult: any, paymentData: any, itemsList: any[]) => {
+        try {
             const ticketData = {
                 businessName: business?.name || "Brillarte Bloom",
                 folio: saleResult.sale.folio, // Usamos el folio real generado por la BD
@@ -595,35 +653,9 @@ export const useCalendarLogic = () => {
             };
 
             await printTicket(ticketData).catch(e => console.log(e));
-
-            // 8. Limpieza y Refresco
-            // const newEvents = await getAppointmentsPrisma(business?.id);
-            const newEvents = await getAppointmentsByDatePrisma(business?.id, currentDate);
-            setEvents(newEvents);
-
-            setShowPayModal(false);
-            closeModal();
-            resetModalFields();
-            toast.success("Venta procesada");
-
         } catch (error) {
-            console.error("Error finalizando pago:", error);
-            toast.error("Ocurrió un error al procesar la venta.");
-        }
-    };
-
-    const onDelete = async () => {
-        if (!selectedEvent) return;
-        try {
-            await deleteAppointmentPrisma(selectedEvent.id);
-            closeModal();
-            resetModalFields();
-            // const newEvents = await getAppointmentsPrisma(business?.id);
-            const newEvents = await getAppointmentsByDatePrisma(business?.id, currentDate);
-            setEvents(newEvents);
-        } catch (error) {
-            console.error("Error eliminando cita:", error);
-            toast.error("Ocurrió un error al eliminar la cita.");
+            console.error("Error imprimiendo ticket:", error);
+            toast.error("Error al imprimir ticket.");
         }
     };
 

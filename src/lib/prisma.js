@@ -19,11 +19,12 @@ export async function createAppointment(payload) {
         throw new Error("Se requiere al menos un servicio para crear una cita");
     }
     
-    // Validación adicional: asegurar que los servicios tengan serviceId válido
-    const invalidServices = payload.services.filter(s => !s.serviceId);
-    if (invalidServices.length > 0) {
-        throw new Error("Todos los servicios deben tener un ID válido");
-    }
+    // Validación adicional: asegurar que los servicios tengan serviceId válido si no son extras manuales
+    // Se comenta porque rompe los "Servicios Extras" manuales que tienen serviceId en null o undefined
+    // const invalidServices = payload.services.filter(s => !s.serviceId && !s.isCustom);
+    // if (invalidServices.length > 0) {
+    //     throw new Error("Todos los servicios deben tener un ID válido");
+    // }
 
     const appointment = await prisma.appointment.create({
         data: {
@@ -168,11 +169,12 @@ export async function updateAppointment(payload, appointmentId) {
         throw new Error("Se requiere al menos un servicio para actualizar una cita");
     }
     
-    // Validación adicional: asegurar que los servicios tengan serviceId válido
-    const invalidServices = payload.services.filter(s => !s.serviceId);
-    if (invalidServices.length > 0) {
-        throw new Error("Todos los servicios deben tener un ID válido");
-    }
+    // Validación adicional: asegurar que los servicios tengan serviceId válido si no son extras manuales
+    // Se comenta porque rompe los "Servicios Extras" manuales que tienen serviceId en null o undefined
+    // const invalidServices = payload.services.filter(s => !s.serviceId && !s.isCustom);
+    // if (invalidServices.length > 0) {
+    //     throw new Error("Todos los servicios deben tener un ID válido");
+    // }
 
     await prisma.appointment.update({
         where: {
