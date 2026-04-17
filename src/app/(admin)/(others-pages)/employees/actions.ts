@@ -27,7 +27,7 @@ export async function createEmployee(data: any) {
   const business = await getBusiness();
   if (!business) throw new Error("No business found");
 
-  const { name, lastName, username, email, password, role, commission, baseSalary, phone, hasPayroll } = data;
+  const { name, lastName, username, email, password, role, commission, baseSalary, phone, hasPayroll, workScheduleStartWeekday, workScheduleEndWeekday, workScheduleStartSaturday, workScheduleEndSaturday } = data;
 
   const hashedPassword = await hashPassword(password);
 
@@ -65,6 +65,10 @@ export async function createEmployee(data: any) {
         phone,
         commission: Number(commission) || 0,
         baseSalary: Number(baseSalary) || 0,
+        workScheduleStartWeekday,
+        workScheduleEndWeekday,
+        workScheduleStartSaturday,
+        workScheduleEndSaturday,
       },
     });
   }
@@ -77,7 +81,7 @@ export async function updateEmployee(userId: string, data: any) {
   const business = await getBusiness();
   if (!business) throw new Error("No business found");
 
-  const { name, lastName, email, phone, role, commission, baseSalary, password, hasPayroll } = data;
+  const { name, lastName, email, phone, role, commission, baseSalary, password, hasPayroll, workScheduleStartWeekday, workScheduleEndWeekday, workScheduleStartSaturday, workScheduleEndSaturday } = data;
 
   const updateData: any = {
     name,
@@ -112,6 +116,10 @@ export async function updateEmployee(userId: string, data: any) {
           phone,
           commission: Number(commission) || 0,
           baseSalary: Number(baseSalary) || 0,
+          workScheduleStartWeekday,
+          workScheduleEndWeekday,
+          workScheduleStartSaturday,
+          workScheduleEndSaturday,
         },
       });
     } else {
@@ -122,6 +130,10 @@ export async function updateEmployee(userId: string, data: any) {
           phone,
           commission: Number(commission) || 0,
           baseSalary: Number(baseSalary) || 0,
+          workScheduleStartWeekday,
+          workScheduleEndWeekday,
+          workScheduleStartSaturday,
+          workScheduleEndSaturday,
         },
       });
     }

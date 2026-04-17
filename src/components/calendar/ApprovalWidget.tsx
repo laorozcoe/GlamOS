@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 export default function ApprovalWidget() {
     const { data: session } = useSession();
     const [requests, setRequests] = useState<any[]>([]);
-    
+
     const role = session?.user?.role || "EMPLOYEE";
     const canApprove = role === "ADMIN" || role === "RECEPTION";
 
@@ -18,7 +18,7 @@ export default function ApprovalWidget() {
         try {
             const data = await getPendingRequests();
             setRequests(data);
-        } catch(e) { }
+        } catch (e) { }
     };
 
     useEffect(() => {
@@ -31,13 +31,13 @@ export default function ApprovalWidget() {
 
     const handleResolve = async (requestId: string, approve: boolean) => {
         try {
-             await resolveModificationRequest(requestId, approve);
-             toast.success(approve ? "Cambio de cita aprobado." : "Solicitud denegada.");
-             await loadRequests();
-             // Disparamos un evento para que CalendarClient también se entere y recargue
-             window.dispatchEvent(new Event('app:pullToRefresh'));
-        } catch(e) {
-             toast.error("Error resolviendo la solicitud.");
+            await resolveModificationRequest(requestId, approve);
+            toast.success(approve ? "Cambio de cita aprobado." : "Solicitud denegada.");
+            await loadRequests();
+            // Disparamos un evento para que CalendarClient también se entere y recargue
+            window.dispatchEvent(new Event('app:pullToRefresh'));
+        } catch (e) {
+            toast.error("Error resolviendo la solicitud.");
         }
     };
 
@@ -60,20 +60,20 @@ export default function ApprovalWidget() {
                                 {req.service ? req.service.name : "un servicio"}
                             </span>
                             <div className="text-xs text-gray-500 mt-1 sm:mt-0 font-medium">
-                                Cita: {req.appointment?.guestName} - {new Date(req.appointment?.start).toLocaleDateString()} a las {new Date(req.appointment?.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                Cita: {req.appointment?.guestName} - {new Date(req.appointment?.start).toLocaleDateString()} a las {new Date(req.appointment?.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                         </div>
                         <div className="flex gap-2 mt-2 sm:mt-0">
-                            <Button 
-                              variant="outline" 
-                              className="text-error-600 hover:bg-error-50 px-3 py-1.5 h-auto text-xs"
-                              onClick={() => handleResolve(req.id, false)}
+                            <Button
+                                variant="outline"
+                                className="text-error-600 hover:bg-error-50 px-3 py-1.5 h-auto text-xs"
+                                onClick={() => handleResolve(req.id, false)}
                             >
                                 <XIcon className="w-4 h-4 mr-1" /> Rechazar
                             </Button>
-                            <Button 
-                              className="bg-success-600 hover:bg-success-700 px-3 py-1.5 h-auto text-xs"
-                              onClick={() => handleResolve(req.id, true)}
+                            <Button
+                                className="bg-success-600 hover:bg-success-700 px-3 py-1.5 h-auto text-xs"
+                                onClick={() => handleResolve(req.id, true)}
                             >
                                 <CheckIcon className="w-4 h-4 mr-1" /> Aceptar
                             </Button>

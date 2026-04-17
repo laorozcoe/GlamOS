@@ -40,6 +40,7 @@ model Business {
   loyaltyPoints     LoyaltyPoint[]
   serviceCategories ServiceCategory[]
   serviceExtras     ServiceExtra[]
+  attendances       Attendance[]
 }
 
 //////////////////////
@@ -102,6 +103,12 @@ model Employee {
   sales        Sale[]
   clients      Client[]
   serviceRequests AppointmentServiceRequest[]
+  attendances  Attendance[]
+  
+  workScheduleStartWeekday String? @db.VarChar(5) // "09:00"
+  workScheduleEndWeekday   String? @db.VarChar(5)
+  workScheduleStartSaturday String? @db.VarChar(5)
+  workScheduleEndSaturday   String? @db.VarChar(5)
 }
 
 //////////////////////
@@ -262,6 +269,36 @@ enum AppointmentStatus {
   CONFIRMED
   CANCELLED
   COMPLETED
+}
+
+//////////////////////
+// ⏱️ ASISTENCIA
+//////////////////////
+
+model Attendance {
+  id          String   @id @default(uuid())
+  businessId  String
+  employeeId  String
+  date        DateTime @db.Date 
+  status      AttendanceStatus @default(PRESENT)
+  checkInTime String?  @db.VarChar(5) // "09:15"
+  checkOutTime String?  @db.VarChar(5) // "18:00"
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  active      Boolean  @default(true)
+
+  business    Business @relation(fields: [businessId], references: [id])
+  employee    Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([businessId, employeeId, date])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
 }
 
 //////////////////////

@@ -31,6 +31,10 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
     commission: 0,
     baseSalary: 0,
     hasPayroll: false, // NEW STATE
+    workScheduleStartWeekday: "",
+    workScheduleEndWeekday: "",
+    workScheduleStartSaturday: "",
+    workScheduleEndSaturday: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,6 +58,10 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
       commission: 0,
       baseSalary: 0,
       hasPayroll: false,
+      workScheduleStartWeekday: "",
+      workScheduleEndWeekday: "",
+      workScheduleStartSaturday: "",
+      workScheduleEndSaturday: "",
     });
     setIsOpen(true);
   };
@@ -70,6 +78,10 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
       commission: user.employee?.commission || 0,
       baseSalary: user.employee?.baseSalary || 0,
       hasPayroll: !!(user.employee && user.employee.active),
+      workScheduleStartWeekday: user.employee?.workScheduleStartWeekday || "",
+      workScheduleEndWeekday: user.employee?.workScheduleEndWeekday || "",
+      workScheduleStartSaturday: user.employee?.workScheduleStartSaturday || "",
+      workScheduleEndSaturday: user.employee?.workScheduleEndSaturday || "",
     });
     setIsOpen(true);
   };
@@ -374,6 +386,66 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Horario Section */}
+          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5">
+            <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-4">Horario de Trabajo (Cálculo de Sueldo)</h4>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 dark:bg-white/2 p-4 rounded-xl">
+                  <Label className="font-bold text-sm mb-3 block">Lunes a Viernes</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Entrada</Label>
+                      <Input
+                        type="time"
+                        name="workScheduleStartWeekday"
+                        value={formData.workScheduleStartWeekday}
+                        onChange={handleChange}
+                        className="w-full text-sm p-2"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Salida</Label>
+                      <Input
+                        type="time"
+                        name="workScheduleEndWeekday"
+                        value={formData.workScheduleEndWeekday}
+                        onChange={handleChange}
+                        className="w-full text-sm p-2"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-white/2 p-4 rounded-xl">
+                  <Label className="font-bold text-sm mb-3 block">Sábados</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Entrada</Label>
+                      <Input
+                        type="time"
+                        name="workScheduleStartSaturday"
+                        value={formData.workScheduleStartSaturday}
+                        onChange={handleChange}
+                        className="w-full text-sm p-2"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Salida</Label>
+                      <Input
+                        type="time"
+                        name="workScheduleEndSaturday"
+                        value={formData.workScheduleEndSaturday}
+                        onChange={handleChange}
+                        className="w-full text-sm p-2"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="mt-6 flex justify-center sm:justify-end gap-3 pt-4 border-t border-gray-100 dark:border-white/5">

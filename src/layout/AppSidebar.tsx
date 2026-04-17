@@ -18,7 +18,7 @@ import {
   UserCircleIcon,
 } from "../icons/index";
 import { useBusiness } from "@/context/BusinessContext";
-import { Sparkles, BadgeDollarSign, ShieldCheck } from 'lucide-react';
+import { Sparkles, BadgeDollarSign, ShieldCheck, Clock } from 'lucide-react';
 import { useSession } from "@/lib/auth-client";
 
 type NavItem = {
@@ -46,6 +46,12 @@ const navItems: NavItem[] = [
     icon: <BadgeDollarSign />,
     name: "Nómina",
     path: "/payroll",
+    adminOnly: true,
+  },
+  {
+    icon: <Clock />,
+    name: "Asistencia",
+    path: "/attendance",
     adminOnly: true,
   },
   {
