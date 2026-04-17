@@ -14,9 +14,9 @@ export async function getAttendanceByDate(dateStr: string) {
 
   // 1. Obtener empleados activos
   const employees = await prisma.employee.findMany({
-    where: { 
-      businessId: business.id, 
-      active: true 
+    where: {
+      businessId: business.id,
+      active: true
     },
     include: { user: true }
   });
@@ -32,7 +32,7 @@ export async function getAttendanceByDate(dateStr: string) {
   // 3. Crear el listado combinado
   const attendanceList = employees.map((emp: any) => {
     // Buscar la asistencia de este empleado el día de hoy
-    const entry = attendances.find(a => a.employeeId === emp.id);
+    const entry = attendances.find((a: any) => a.employeeId === emp.id);
 
     // Determinar la hora sugerida según L-V o Sábado
     let expectedIn = "";
@@ -63,7 +63,7 @@ export async function getAttendanceByDate(dateStr: string) {
       employeeName: `${emp.user.name} ${emp.user.lastName}`,
       date: selectedDate,
       status: "PRESENT",
-      checkInTime: expectedIn, 
+      checkInTime: expectedIn,
       checkOutTime: expectedOut,
       notes: "",
       hasRecord: false,
@@ -105,11 +105,11 @@ export async function upsertManyAttendances(records: any[], dateStr: string) {
     if (existing) {
       await prisma.attendance.update({
         where: { id: existing.id },
-        data: { 
-          status: finalStatus as any, 
-          checkInTime: isAbsent ? null : checkInTime, 
+        data: {
+          status: finalStatus as any,
+          checkInTime: isAbsent ? null : checkInTime,
           checkOutTime: isAbsent ? null : checkOutTime,
-          notes 
+          notes
         }
       });
     } else {
