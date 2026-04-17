@@ -13,12 +13,12 @@ import { randomUUID } from 'crypto'; // Para generar los IDs de Account
 export async function createAppointment(payload) {
     // const session = await auth();
     // if (!session?.user) throw new Error("No autenticado");
-    
+
     // Validación: requerir al menos un servicio real
     if (!payload.services || payload.services.length === 0) {
         throw new Error("Se requiere al menos un servicio para crear una cita");
     }
-    
+
     // Validación adicional: asegurar que los servicios tengan serviceId válido si no son extras manuales
     // Se comenta porque rompe los "Servicios Extras" manuales que tienen serviceId en null o undefined
     // const invalidServices = payload.services.filter(s => !s.serviceId && !s.isCustom);
@@ -163,12 +163,12 @@ export async function getAppointmentsByDatePrisma(businessId, start) {
 export async function updateAppointment(payload, appointmentId) {
     // Validación básica
     if (!appointmentId) throw new Error("Se requiere el ID de la cita para actualizar");
-    
+
     // Validación: requerir al menos un servicio real
     if (!payload.services || payload.services.length === 0) {
         throw new Error("Se requiere al menos un servicio para actualizar una cita");
     }
-    
+
     // Validación adicional: asegurar que los servicios tengan serviceId válido si no son extras manuales
     // Se comenta porque rompe los "Servicios Extras" manuales que tienen serviceId en null o undefined
     // const invalidServices = payload.services.filter(s => !s.serviceId && !s.isCustom);
@@ -216,11 +216,14 @@ export async function deleteAppointmentPrisma(appointmentId) {
     // Validación básica
     if (!appointmentId) throw new Error("Se requiere el ID de la cita para eliminar");
 
-    await prisma.appointment.delete({
+    await prisma.appointment.update({
         where: {
             id: appointmentId,
             active: true
         },
+        data: {
+            active: false
+        }
     });
 
     revalidatePath("/calendar");

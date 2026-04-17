@@ -731,6 +731,21 @@ export const useCalendarLogic = () => {
         }
     };
 
+    const onDelete = async () => {
+        if (!selectedEvent) return;
+        try {
+            await deleteAppointmentPrisma(selectedEvent.id);
+            closeModal();
+            resetModalFields();
+            const newEvents = await getAppointmentsByDatePrisma(business?.id, currentDate);
+            setEvents(newEvents);
+            toast.success("Cita eliminada");
+        } catch (error) {
+            console.error("Error eliminando cita:", error);
+            toast.error("Ocurrió un error al eliminar la cita.");
+        }
+    };
+
     return {
         getUserInfo,
         calendarRef,
