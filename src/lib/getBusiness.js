@@ -23,14 +23,14 @@ export async function getBusiness() {
         if (!slug || slug === "www" || slug === "localhost" || slug === "") {
             // Nota: Si quieres probar Evora en tu computadora (localhost:3000), 
             // cambia temporalmente "brillartebloom" por "evorasalon" aquí abajo
-            return await getBusinessPrisma("brillartebloom");
+            return await getBusinessPrisma("evorasalon");
         }
 
         // 4. Buscamos el negocio en la base de datos con el slug extraído
         const business = await getBusinessPrisma(slug);
 
         // Si por alguna razón el slug no existe en la BD, regresamos el default
-        return business || await getBusinessPrisma("brillartebloom");
+        return business || await getBusinessPrisma("evorasalon");
 
     } catch (error) {
         console.error("Error obteniendo business:", error);

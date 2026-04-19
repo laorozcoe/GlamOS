@@ -3,21 +3,12 @@
 import prisma from "@/lib/prisma2";
 import { getBusiness } from "@/lib/getBusiness";
 
-export async function getPayrollData(weekDateISO: string) {
+export async function getPayrollData(startDateISO: string, endDateISO: string) {
   const business = await getBusiness();
   if (!business) throw new Error("No business found");
 
-  const d = new Date(weekDateISO);
-
-  // Establecer a la media noche del Domingo previo (o el mismo día si es domingo)
-  const startDate = new Date(d);
-  startDate.setDate(d.getDate() - d.getDay());
-  startDate.setHours(0, 0, 0, 0);
-
-  // Establecer hasta el último minuto del Sábado siguiente
-  const endDate = new Date(startDate);
-  endDate.setDate(startDate.getDate() + 6);
-  endDate.setHours(23, 59, 59, 999);
+  const startDate = new Date(startDateISO);
+  const endDate = new Date(endDateISO);
 
   // Empleados activos
   const employees = await prisma.employee.findMany({

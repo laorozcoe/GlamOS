@@ -31,7 +31,17 @@ export default function PayrollClient() {
   const fetchPayroll = useCallback(async (dateToFetch: Date) => {
     setLoading(true);
     try {
-      const res = await getPayrollData(dateToFetch.toISOString());
+      const d = new Date(dateToFetch);
+      
+      const startDate = new Date(d);
+      startDate.setDate(d.getDate() - d.getDay());
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 6);
+      endDate.setHours(23, 59, 59, 999);
+
+      const res = await getPayrollData(startDate.toISOString(), endDate.toISOString());
       setData(res);
     } catch (err) {
       console.error(err);
