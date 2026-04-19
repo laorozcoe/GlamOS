@@ -839,16 +839,25 @@ export const createSalePrisma = async (data) => {
                             quantity: item.quantity || 1,
                         })),
                     },
-                    // 3. Creamos el registro del pago
+                    // 3. Creamos el registro del pago (Soporta múltiples pagos "Split Payments")
                     payments: {
-                        create: {
-                            businessId,
-                            amount: payment.amount,
-                            method: payment.method,
-                            amountReceived: payment.received,
-                            changeReturned: payment.change,
-                            status: 'COMPLETED',
-                        },
+                        create: Array.isArray(payment)
+                            ? payment.map((p) => ({
+                                businessId,
+                                amount: p.amount,
+                                method: p.method,
+                                amountReceived: p.received,
+                                changeReturned: p.change,
+                                status: 'COMPLETED',
+                            }))
+                            : {
+                                businessId,
+                                amount: payment.amount,
+                                method: payment.method,
+                                amountReceived: payment.received,
+                                changeReturned: payment.change,
+                                status: 'COMPLETED',
+                            },
                     },
                 },
                 // Incluimos los datos relacionados para devolverlos al frontend (para el ticket)

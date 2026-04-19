@@ -5,6 +5,7 @@ import { useState, useMemo } from "react";
 import { BookingModal } from "@/components/calendar/BookingModal";
 import { PaymentModal } from "@/components/calendar/PaymentModal";
 import { SaleDetailsModal } from "@/components/calendar/SaleDetailsModal";
+import { MultiCheckoutModal } from "@/components/calendar/MultiCheckoutModal";
 import DatePicker from "@/components/form/date-picker"
 import { ExtraServiceModal } from "@/components/calendar/ExtraServiceModal";
 import { useCalendarLogic } from "@/components/calendar/useCalendar";
@@ -230,6 +231,13 @@ export default function CalendarGrid() {
             {/* <InputField type="date" value={logic.currentDate} onChange={(e) => logic.setCurrentDate(e.target.value)} /> */}
             <DatePicker value={logic.currentDate} onChange={(date) => logic.setCurrentDate(date)} />
             <Button onClick={() => { logic.handleUpdateDate(1) }}>&gt;</Button>
+            
+            {/* Botón de Cobro Múltiple */}
+            {userInfo?.role !== "EMPLOYEE" && (
+                <Button onClick={() => logic.setShowMultiCheckout(true)} variant="outline" className="ml-2 font-bold text-gray-700 bg-white shadow-sm border-gray-300">
+                    💳 Cobro Múltiple
+                </Button>
+            )}
           </div>
 
           {/* NUEVO: Select de Empleados (útil para móvil y escritorio) */}
@@ -364,7 +372,7 @@ export default function CalendarGrid() {
       <PaymentModal
         isOpen={logic.showPayModal}
         onClose={() => logic.setShowPayModal(false)}
-        total={logic.total}
+        total={logic.activeTotal}
         onFinalize={logic.handleFinalizePayment}
       />
 
@@ -374,6 +382,13 @@ export default function CalendarGrid() {
         onClose={() => logic.setShowSaleDetails(false)}
         event={logic.selectedEvent}
         onReprint={logic.handleReprintTicket}
+      />
+
+      <MultiCheckoutModal
+        isOpen={logic.showMultiCheckout}
+        onClose={() => logic.setShowMultiCheckout(false)}
+        events={logic.events}
+        onProceedToPayment={logic.handleProceedToMultiPayment}
       />
 
       {logic.extraServicesModal && (

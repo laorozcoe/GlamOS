@@ -52,7 +52,22 @@ export const useCalendarLogic = () => {
     const [flashCategory, setFlashCategory] = useState<string | null>(null);
     const [showPayModal, setShowPayModal] = useState(false);
 
+    // Multi-Checkout Integración
+    const [showMultiCheckout, setShowMultiCheckout] = useState(false);
+    const [isMultiCheckoutMode, setIsMultiCheckoutMode] = useState(false);
+    const [multiAppointments, setMultiAppointments] = useState<any[]>([]);
+    const [multiTotalSum, setMultiTotalSum] = useState<number>(0);
+
+    const handleProceedToMultiPayment = (selectedAppointments: any[], totalSum: number) => {
+        setMultiAppointments(selectedAppointments);
+        setMultiTotalSum(totalSum);
+        setIsMultiCheckoutMode(true);
+        setShowMultiCheckout(false);
+        setShowPayModal(true);
+    };
+
     const handleShowPayModal = () => {
+        setIsMultiCheckoutMode(false);
         if (!time || !date) {
             toast.warning("Ingresa fecha y hora");
             return
@@ -118,6 +133,8 @@ export const useCalendarLogic = () => {
         return appointments.reduce((acc: any, curr: any) => acc + Number(curr.price), 0);
     }, [appointments]);
 
+    const activeTotal = isMultiCheckoutMode ? multiTotalSum : total;
+
     // --- HANDLERS LÓGICOS ---
 
     const getUserInfo = () => {
@@ -138,6 +155,8 @@ export const useCalendarLogic = () => {
         setCustomer({ name: "", phone: "" });
         setDate("");
         setTime("");
+        setIsMultiCheckoutMode(false);
+        setMultiAppointments([]);
     };
 
     const handleNewEventButton = () => {
@@ -452,6 +471,105 @@ export const useCalendarLogic = () => {
 
     // Procesar Pago Final
     const handleFinalizePayment = async (paymentData: any) => {
+        if (!paymentData || typeof paymentData !== 'object') {
+            toast.error("Datos de pago inválidos");
+            return;
+        }
+
+        if (isMultiCheckoutMode) {
+            await processMultiCheckout(paymentData);
+        } else {
+            await processSingleCheckout(paymentData);
+        }
+    };
+
+    const processMultiCheckout = async (paymentData: any) => {
+        try {
+            let remainingPayments = paymentData.payments.map((p: any) => ({ ...p }));
+            let combinedItemsList: any[] = [];
+            let combinedFolios: string[] = [];
+
+            for (const appt of multiAppointments) {
+                let apptTotal = Number(appt.totalAmount);
+                if (!apptTotal && appt.services) {
+                    apptTotal = appt.services.reduce((sum: number, s: any) => sum + Number(s.price || 0), 0);
+                }
+
+                let allocatedPayments = [];
+                let coveredForThisAppt = 0;
+
+                for (let i = 0; i < remainingPayments.length; i++) {
+                    let p = remainingPayments[i];
+                    if (p.amount <= 0) continue;
+
+                    let needed = apptTotal - coveredForThisAppt;
+                    if (needed <= 0) break;
+
+                    let take = Math.min(p.amount, needed);
+                    
+                    allocatedPayments.push({
+                        method: p.method,
+                        amount: take,
+                        received: take, 
+                        change: 0 
+                    });
+
+                    p.amount -= take;
+                    coveredForThisAppt += take;
+                }
+
+                const itemsList = (appt.services || []).map((s: any) => ({
+                    serviceId: s.serviceId,
+                    description: s.service?.descriptionTicket || s.service?.name || appt.title || "Servicio",
+                    price: Number(s.price),
+                    quantity: 1
+                }));
+
+                const salePayload = {
+                    businessId: business?.id,
+                    clientId: null,
+                    employeeId: appt.employeeId,
+                    appointmentId: appt.id,
+                    totals: { subtotal: apptTotal, discount: 0, total: apptTotal },
+                    items: itemsList,
+                    payment: allocatedPayments
+                };
+
+                const saleResult = await createSalePrisma(salePayload);
+                if (!saleResult.success) throw new Error("Error procesando venta individual de cita.");
+
+                combinedFolios.push(saleResult.sale.folio);
+                combinedItemsList = [...combinedItemsList, ...itemsList];
+            }
+
+            // Print unified ticket
+            const printPayload = {
+                sale: {
+                    folio: combinedFolios.join(", "),
+                    createdAt: new Date(),
+                }
+            };
+            await printSaleTicket(printPayload, {
+                total: paymentData.totalRequested,
+                method: paymentData.payments.length > 1 ? "MÚLTIPLE" : paymentData.payments[0].method,
+                received: paymentData.payments.reduce((acc:any, p:any) => acc + p.received, 0),
+                change: paymentData.payments.reduce((acc:any, p:any) => acc + p.change, 0),
+            }, combinedItemsList);
+
+            const newEvents = await getAppointmentsByDatePrisma(business?.id, currentDate);
+            setEvents(newEvents);
+            setShowPayModal(false);
+            setIsMultiCheckoutMode(false);
+            setMultiAppointments([]);
+            toast.success("Múltiples Ventas Procesadas");
+
+        } catch (error) {
+            console.error("Error finalizando multilple pago:", error);
+            toast.error("Ocurrió un error al procesar las ventas.");
+        }
+    };
+
+    const processSingleCheckout = async (paymentData: any) => {
         // 1. Validaciones iniciales
         if (!time || !date) {
             toast.warn("Ingresa fecha y hora");
@@ -463,22 +581,6 @@ export const useCalendarLogic = () => {
         }
         if (selectedEmployee?.id == "" || selectedEmployee?.id == null) {
             toast.warn("Selecciona un empleado");
-            return
-        }
-
-        // Validaciones adicionales para paymentData
-        if (!paymentData || typeof paymentData !== 'object') {
-            toast.error("Datos de pago inválidos");
-            return
-        }
-
-        if (!paymentData.total || paymentData.total <= 0) {
-            toast.error("El total del pago debe ser mayor a 0");
-            return
-        }
-
-        if (!paymentData.method || paymentData.method.trim() === '') {
-            toast.error("El método de pago es requerido");
             return
         }
 
@@ -498,12 +600,9 @@ export const useCalendarLogic = () => {
                 return
             }
 
-            // 3. Preparar Agrupación de Ítems con validación
+            // 3. Preparar Agrupación de Ítems
             const groupedItems = appointments.reduce((acc: any, appt: any) => {
-                if (!appt || (!appt.id && !appt.name)) {
-                    console.warn("Servicio inválido encontrado, omitiendo:", appt);
-                    return acc;
-                }
+                if (!appt || (!appt.id && !appt.name)) return acc;
 
                 const key = appt.id || appt.name;
                 if (!acc[key]) {
@@ -524,34 +623,29 @@ export const useCalendarLogic = () => {
             }, {});
 
             const itemsList = Object.values(groupedItems);
-
             if (itemsList.length === 0) {
                 toast.error("No hay servicios válidos para procesar");
                 return
             }
 
-            // 4. PASO A: Crear/Actualizar la Cita (Reserva de tiempo)
+            // 4. PASO A: Crear/Actualizar la Cita
             const appointmentPayload = {
                 businessId: business?.id,
-                //TODO REVISAR ESTA PARTE PARA TRAER AL CLIENTE
                 clientId: null,
                 employeeId: selectedEmployee?.id || selectedEmployee,
                 title: customer.name,
                 start: startDateTime,
                 end: endDateTime,
                 status: "COMPLETED",
-                paymentStatus: "PAID", // "PAID" (según tu Enum PaymentState)
-                totalAmount: paymentData.total,
-                // -------------------------------------
-
-                notes: `Pago: ${paymentData.method}.`,
+                paymentStatus: "PAID",
+                totalAmount: paymentData.totalRequested,
+                notes: `Pago procesado.`,
                 guestName: customer.name,
                 guestPhone: customer.phone,
                 services: appointments
             };
 
             let currentAppointmentId = selectedEvent?.id;
-
             if (selectedEvent) {
                 await updateAppointment(appointmentPayload, currentAppointmentId);
             } else {
@@ -559,63 +653,45 @@ export const useCalendarLogic = () => {
                 currentAppointmentId = newAppt.id;
             }
 
-            // 5. PASO B: Generar la VENTA (Sale) y sus Ítems (Snapshot)
-            // Este es el nuevo query "en cascada" que definimos en el esquema
-
+            // 5. PASO B: Generar la VENTA (Sale)
             const subtotal = appointments.reduce((sum, item) => sum + Number(item.price), 0);
-
-            // 2. Definimos el descuento (por ahora en 0, o puedes traerlo de un input si lo agregas luego)
-            const discount = 0;
-
-            // 3. El total es lo que realmente se cobra
-            const totalFinal = subtotal - discount;
-
-            const totals = {
-                subtotal,
-                discount,
-                total: totalFinal
-            };
+            const totals = { subtotal, discount: 0, total: subtotal };
 
             const salePayload = {
                 businessId: business?.id,
                 clientId: null,
                 employeeId: selectedEmployee?.id || selectedEmployee,
-                appointmentId: currentAppointmentId, // Ligamos la venta a la cita
+                appointmentId: currentAppointmentId,
                 totals: totals,
                 items: itemsList.map((item: any) => ({
                     serviceId: item.serviceId,
                     description: item.ticket_desc,
-                    price: item.unitPrice, // Guardamos precio unitario
+                    price: item.unitPrice,
                     quantity: item.quantity
                 })),
-                payment: {
-                    amount: paymentData.total,
-                    method: paymentData.method,
-                    received: paymentData.received,
-                    change: paymentData.change
-                }
+                payment: paymentData.payments // Múltiples pagos
             };
 
-            // Aquí llamas a tu nueva función de backend que hace la transacción de Prisma
             const saleResult = await createSalePrisma(salePayload);
-
             if (!saleResult.success) {
-                throw new Error(saleResult?.error || "Error al procesar la venta en la base de datos");
+                throw new Error(saleResult?.error || "Error al procesar la venta en BD");
             }
 
-            // 6. PASO C: Asegurar Cliente en BD
             if (customer.name && customer.phone) {
                 await createClientPrisma(business?.id, customer.name, customer.phone, "", "", selectedEmployee?.id);
             }
 
-            //7. PASO D: Imprimir Ticket (función separada)
-            await printSaleTicket(saleResult, paymentData, itemsList);
+            const unifiedPaymentData = {
+                total: paymentData.totalRequested,
+                method: paymentData.payments.length > 1 ? "MÚLTIPLE" : paymentData.payments[0].method,
+                received: paymentData.payments.reduce((acc:any, p:any) => acc + p.received, 0),
+                change: paymentData.payments.reduce((acc:any, p:any) => acc + p.change, 0),
+            };
 
-            // 8. Limpieza y Refresco
-            // const newEvents = await getAppointmentsPrisma(business?.id);
+            await printSaleTicket(saleResult, unifiedPaymentData, itemsList);
+
             const newEvents = await getAppointmentsByDatePrisma(business?.id, currentDate);
             setEvents(newEvents);
-
             setShowPayModal(false);
             closeModal();
             resetModalFields();
@@ -756,7 +832,7 @@ export const useCalendarLogic = () => {
         selectedEmployee, setSelectedEmployee,
         appointments, addServiceToCart, removeServiceFromCart,
         customer, handleChangeCustomer,
-        total, currentDate, setCurrentDate, handleUpdateDate,
+        total, activeTotal, currentDate, setCurrentDate, handleUpdateDate,
         flashCategory,
         showPayModal, setShowPayModal,
         handleNewEventButton, handleDateClick, handleEventClick,
@@ -767,6 +843,7 @@ export const useCalendarLogic = () => {
         extraServicesModal, setExtraServicesModal,
         customers, setCustomer,
         handleResolveGhost,
-        handleReprintTicket
+        handleReprintTicket,
+        showMultiCheckout, setShowMultiCheckout, handleProceedToMultiPayment
     };
 };

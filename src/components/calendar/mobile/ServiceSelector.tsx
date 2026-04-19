@@ -49,7 +49,7 @@ export const ServiceSelector = ({
 
             {/* --- GRID DE SERVICIOS --- */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 pb-28">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 ">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 ">
                     {services
                         .filter((s: any) => !selectedCategory || s.categoryId === selectedCategory)
                         .map((ss: any) => {

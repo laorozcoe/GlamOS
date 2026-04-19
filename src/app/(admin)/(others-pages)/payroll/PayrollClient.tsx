@@ -24,7 +24,7 @@ export default function PayrollClient() {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  
+
   // Modal state
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
 
@@ -32,7 +32,7 @@ export default function PayrollClient() {
     setLoading(true);
     try {
       const d = new Date(dateToFetch);
-      
+
       const startDate = new Date(d);
       startDate.setDate(d.getDate() - d.getDay());
       startDate.setHours(0, 0, 0, 0);
@@ -70,7 +70,7 @@ export default function PayrollClient() {
   return (
     <div>
       {/* Navegador de Semanas */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 bg-white dark:bg-white/[0.03] p-4 rounded-xl border border-gray-200 dark:border-white/[0.05]">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 bg-white dark:bg-white/3 p-4 rounded-xl border border-gray-200 dark:border-white/5">
         <Button variant="outline" onClick={() => changeWeek(-1)}>
           &larr; Semana Anterior
         </Button>
@@ -95,13 +95,13 @@ export default function PayrollClient() {
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {data?.payrollData.length === 0 && (
-             <div className="col-span-full py-10 text-center text-gray-500">
-               No hay empleados activos registrados para el negocio.
-             </div>
+            <div className="col-span-full py-10 text-center text-gray-500">
+              No hay empleados activos registrados para el negocio.
+            </div>
           )}
 
           {data?.payrollData.map((emp: any) => (
-            <div 
+            <div
               key={emp.employeeId}
               onClick={() => setSelectedEmployee(emp)}
               className="cursor-pointer transition-transform ease-in-out hover:-translate-y-1"
@@ -128,11 +128,11 @@ export default function PayrollClient() {
                   </div>
 
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500 dark:text-gray-400 text-brand-600 dark:text-brand-400">Ganancia Comisiones:</span>
+                    <span className="text-brand-600 dark:text-brand-400">Ganancia Comisiones:</span>
                     <span className="font-semibold text-brand-600 dark:text-brand-400">+{formatCurrency(emp.commissionPay)}</span>
                   </div>
 
-                  <div className="pt-3 mt-3 border-t border-gray-100 dark:border-white/[0.05] flex justify-between items-center">
+                  <div className="pt-3 mt-3 border-t border-gray-100 dark:border-white/5 flex justify-between items-center">
                     <span className="font-medium text-gray-800 dark:text-white/90">Total a Pagar:</span>
                     <span className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(emp.totalPay)}</span>
                   </div>
@@ -169,25 +169,25 @@ export default function PayrollClient() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-               <div className="bg-gray-50 p-3 rounded-lg dark:bg-white/[0.02]">
-                  <p className="text-xs text-gray-500">Sueldo Base</p>
-                  <p className="font-semibold text-gray-800 dark:text-white/90">{formatCurrency(selectedEmployee.baseSalary)}</p>
-               </div>
-               <div className="bg-gray-50 p-3 rounded-lg dark:bg-white/[0.02]">
-                  <p className="text-xs text-gray-500">Vendido General</p>
-                  <p className="font-semibold text-gray-800 dark:text-white/90">{formatCurrency(selectedEmployee.totalSalesGenerated)}</p>
-               </div>
-               <div className="bg-brand-50 p-3 rounded-lg dark:bg-brand-900/10">
-                  <p className="text-xs text-brand-600 dark:text-brand-400">Comisiones ({selectedEmployee.commissionPercentage}%)</p>
-                  <p className="font-semibold text-brand-700 dark:text-brand-300">{formatCurrency(selectedEmployee.commissionPay)}</p>
-               </div>
-               <div className="bg-gray-50 p-3 rounded-lg dark:bg-white/[0.02]">
-                  <p className="text-xs text-gray-500">Trabajos (#)</p>
-                  <p className="font-semibold text-gray-800 dark:text-white/90">{selectedEmployee.sales.length}</p>
-               </div>
+              <div className="bg-gray-50 p-3 rounded-lg dark:bg-white/2">
+                <p className="text-xs text-gray-500">Sueldo Base</p>
+                <p className="font-semibold text-gray-800 dark:text-white/90">{formatCurrency(selectedEmployee.baseSalary)}</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg dark:bg-white/2">
+                <p className="text-xs text-gray-500">Vendido General</p>
+                <p className="font-semibold text-gray-800 dark:text-white/90">{formatCurrency(selectedEmployee.totalSalesGenerated)}</p>
+              </div>
+              <div className="bg-brand-50 p-3 rounded-lg dark:bg-brand-900/10">
+                <p className="text-xs text-brand-600 dark:text-brand-400">Comisiones ({selectedEmployee.commissionPercentage}%)</p>
+                <p className="font-semibold text-brand-700 dark:text-brand-300">{formatCurrency(selectedEmployee.commissionPay)}</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg dark:bg-white/2">
+                <p className="text-xs text-gray-500">Trabajos (#)</p>
+                <p className="font-semibold text-gray-800 dark:text-white/90">{selectedEmployee.sales.length}</p>
+              </div>
             </div>
 
-            <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3 border-b border-gray-200 pb-2 dark:border-white/[0.05]">
+            <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3 border-b border-gray-200 pb-2 dark:border-white/5">
               Ticket / Servicios Realizados
             </h4>
 
@@ -195,7 +195,7 @@ export default function PayrollClient() {
               {selectedEmployee.sales.length > 0 ? (
                 <div className="space-y-3">
                   {selectedEmployee.sales.map((sale: any) => (
-                    <div key={sale.id} className="p-4 border border-gray-100 rounded-lg dark:border-white/[0.05] bg-gray-50/50 dark:bg-transparent">
+                    <div key={sale.id} className="p-4 border border-gray-100 rounded-lg dark:border-white/5 bg-gray-50/50 dark:bg-transparent">
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <span className="font-medium text-gray-800 dark:text-white/90 block">
