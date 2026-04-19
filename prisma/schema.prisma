@@ -43,6 +43,10 @@ model Business {
   attendances       Attendance[]
   terminals         PaymentTerminal[]
 
+  openHour          Int      @default(9)
+  closeHour         Int      @default(18)
+  weekStartDay      Int      @default(1) // 0 = Domingo, 1 = Lunes, etc.
+
   // 💳 Configuración Mercado Pago
   mpAccessToken String?
   mpPublicKey   String?

@@ -25,7 +25,7 @@ export async function updateBusinessSettings(data: any) {
   const businessCtx = await getBusiness();
   if (!businessCtx) throw new Error("No business found");
 
-  const { name, phone, email, address, mpAccessToken, mpStoreId } = data;
+  const { name, phone, email, address, mpAccessToken, mpStoreId, openHour, closeHour, weekStartDay } = data;
 
   const updated = await prisma.business.update({
     where: { id: businessCtx.id },
@@ -36,6 +36,9 @@ export async function updateBusinessSettings(data: any) {
       address,
       mpAccessToken,
       mpStoreId,
+      openHour: Number(openHour),
+      closeHour: Number(closeHour),
+      weekStartDay: Number(weekStartDay)
     }
   });
 

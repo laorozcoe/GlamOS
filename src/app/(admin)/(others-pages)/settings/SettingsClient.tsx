@@ -5,7 +5,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import { getBusinessSettings, updateBusinessSettings, savePaymentTerminals } from "./actions";
-import { Save, Plus, Trash2, CheckCircle2, ShieldCheck, Store } from "lucide-react";
+import { Save, Plus, Trash2, CheckCircle2, ShieldCheck, Store, Clock } from "lucide-react";
 import { toast } from "react-toastify";
 
 export default function SettingsClient() {
@@ -20,7 +20,10 @@ export default function SettingsClient() {
     email: "",
     address: "",
     mpAccessToken: "",
-    mpStoreId: ""
+    mpStoreId: "",
+    openHour: 9,
+    closeHour: 18,
+    weekStartDay: 1
   });
 
   // Terminals 
@@ -41,7 +44,10 @@ export default function SettingsClient() {
           email: data.email || "",
           address: data.address || "",
           mpAccessToken: data.mpAccessToken || "",
-          mpStoreId: data.mpStoreId || ""
+          mpStoreId: data.mpStoreId || "",
+          openHour: data.openHour ?? 9,
+          closeHour: data.closeHour ?? 18,
+          weekStartDay: data.weekStartDay ?? 1
         });
         setTerminals(data.terminals || []);
       }
@@ -52,7 +58,7 @@ export default function SettingsClient() {
     }
   };
 
-  const handleBaseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBaseChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -104,7 +110,7 @@ export default function SettingsClient() {
   if (loading) return <div className="py-10 text-center">Cargando la configuración...</div>;
 
   return (
-    <div className="space-y-10 max-w-4xl">
+    <div className="space-y-10 ">
 
       {/* SECCION 1: DATOS BASICOS */}
       <section>
@@ -130,9 +136,79 @@ export default function SettingsClient() {
             <Input name="address" value={formData.address} onChange={handleBaseChange} className="w-full text-sm" />
           </div>
 
-          <div className="md:col-span-2 flex justify-end mt-2">
+          <div className="md:col-span-2 mt-4 pt-4 border-t border-gray-200 dark:border-white/10">
+            <div className="flex items-center gap-2 mb-4 text-gray-700 dark:text-gray-300">
+              <Clock className="w-5 h-5 text-brand-500" />
+              <h3 className="text-lg font-bold">Horarios de Operación y Nómina</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Col 1: Visual Schedule */}
+              <div className="bg-white dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                <h4 className="text-sm font-bold text-gray-800 dark:text-white/90 mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">Horario Visual del Calendario</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="mb-1 block text-xs font-medium text-gray-500">Hora de Apertura</Label>
+                    <select
+                      name="openHour"
+                      value={formData.openHour}
+                      onChange={handleBaseChange}
+                      className="w-full text-sm h-10 rounded-lg border appearance-none px-3 py-2 bg-gray-50 text-gray-800 border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white/90"
+                    >
+                      {Array.from({ length: 24 }).map((_, i) => (
+                        <option key={`open-${i}`} value={i}>
+                          {i.toString().padStart(2, "0")}:00
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="mb-1 block text-xs font-medium text-gray-500">Hora de Cierre</Label>
+                    <select
+                      name="closeHour"
+                      value={formData.closeHour}
+                      onChange={handleBaseChange}
+                      className="w-full text-sm h-10 rounded-lg border appearance-none px-3 py-2 bg-gray-50 text-gray-800 border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white/90"
+                    >
+                      {Array.from({ length: 24 }).map((_, i) => (
+                        <option key={`close-${i}`} value={i}>
+                          {i.toString().padStart(2, "0")}:00
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-3 leading-tight">Define el rango de horas visibles en la cuadrícula principal para el agendamiento.</p>
+              </div>
+
+              {/* Col 2: Payroll Config */}
+              <div className="bg-white dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                <h4 className="text-sm font-bold text-gray-800 dark:text-white/90 mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">Cortes de Nómina y Reportes</h4>
+                <div>
+                  <Label className="mb-1 block text-xs font-medium text-gray-500">Día de Inicio de la Semana</Label>
+                  <select
+                    name="weekStartDay"
+                    value={formData.weekStartDay}
+                    onChange={handleBaseChange}
+                    className="w-full text-sm h-10 rounded-lg border appearance-none px-3 py-2 bg-gray-50 text-gray-800 border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white/90"
+                  >
+                    <option value={0}>Domingo</option>
+                    <option value={1}>Lunes</option>
+                    <option value={2}>Martes</option>
+                    <option value={3}>Miércoles</option>
+                    <option value={4}>Jueves</option>
+                    <option value={5}>Viernes</option>
+                    <option value={6}>Sábado</option>
+                  </select>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-3 leading-tight">Este día se usará para calcular automáticamente periodos de pago y metas de la sucursal.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="md:col-span-2 flex justify-end mt-4">
             <Button onClick={handleSaveBase} disabled={savingBase}>
-              {savingBase ? "Guardando..." : <><Save className="w-4 h-4 mr-2" /> Guardar Datos</>}
+              {savingBase ? "Guardando..." : <><Save className="w-4 h-4 mr-2" /> Guardar Datos y Horario</>}
             </Button>
           </div>
         </div>

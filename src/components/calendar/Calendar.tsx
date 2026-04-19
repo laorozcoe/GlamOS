@@ -1,6 +1,6 @@
 "use client"
 // NUEVO: Importamos useState de React
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 import { BookingModal } from "@/components/calendar/BookingModal";
 import { PaymentModal } from "@/components/calendar/PaymentModal";
@@ -16,10 +16,9 @@ import { toast } from "react-toastify";
 import Select from "../form/Select";
 import Label from "../form/Label";
 import { Banknote } from 'lucide-react';
+import { useBusiness } from "@/context/BusinessContext";
 
 // --- CONFIGURACIÓN ---
-const START_HOUR = 9;
-const END_HOUR = 18;
 const HOUR_HEIGHT = 80; // Altura de cada hora en pixeles
 
 // --- DATOS MOCK (Simulados) ---
@@ -91,11 +90,11 @@ const formatTime = (dateInput: any) => {
 }
 
 // --- HELPER PARA POSICIONAR ---
-const getPositionStyles = (startTimeString: any, durationMinutes: any) => {
+const getPositionStyles = (startTimeString: any, durationMinutes: any, startHour: number) => {
   const [hours, minutes] = startTimeString.split(':').map(Number);
 
-  // 1. Calcular cuántos minutos han pasado desde el inicio del calendario (9:00 AM)
-  const startInMinutes = (hours - START_HOUR) * 60 + minutes;
+  // 1. Calcular cuántos minutos han pasado desde el inicio del calendario
+  const startInMinutes = (hours - startHour) * 60 + minutes;
 
   // 2. Convertir minutos a pixeles
   // (Pixeles por hora / 60 minutos) * minutos transcurridos
@@ -123,11 +122,38 @@ const getDurationInMinutes = (start: any, end: any) => {
 }
 
 export default function CalendarGrid() {
+  const business = useBusiness();
   const logic = useCalendarLogic();
-  const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+
+  const startHour = (business as any)?.openHour ?? 9;
+  const endHour = (business as any)?.closeHour ?? 18;
+  const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
 
   // NUEVO: Estado para controlar el empleado seleccionado en el dropdown
   const [selectedEmpFilter, setSelectedEmpFilter] = useState<string>("ALL");
+
+  // NUEVO: Tiempo Actual para la Línea de Tiempo
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000); // 1 minuto
+    return () => clearInterval(timer);
+  }, []);
+
+  // Comparar si la fecha del calendario es la de hoy
+  const isToday = () => {
+    const today = new Date();
+    // parse date from "YYYY-MM-DD"
+    const [y, m, d] = logic.currentDate.split('-').map(Number);
+    return today.getFullYear() === y && today.getMonth() + 1 === m && today.getDate() === d;
+  };
+
+  const getLineTop = () => {
+    const h = currentTime.getHours();
+    const m = currentTime.getMinutes();
+    const startInMinutes = (h - startHour) * 60 + m;
+    if (startInMinutes < 0) return -1000;
+    return (startInMinutes / 60) * HOUR_HEIGHT;
+  };
 
   const userInfo = logic.getUserInfo ? logic.getUserInfo() : null;
 
@@ -297,6 +323,18 @@ export default function CalendarGrid() {
 
             {/* 2. CAPA DE EVENTOS */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none pl-15 flex">
+
+              {/* LÍNEA DE TIEMPO ACTUAL */}
+              {isToday() && getLineTop() >= 0 && (
+                <div
+                  className="absolute left-15 w-[calc(100%-60px)] z-50 flex items-center"
+                  style={{ top: `${getLineTop()}px` }}
+                >
+                  <div className="w-2 h-2 rounded-full bg-brand-500 absolute -left-1"></div>
+                  <div className="w-full border-t border-brand-500 shadow-sm relative"></div>
+                </div>
+              )}
+
               {/* NUEVO: Iteramos sobre displayedEmployees */}
               {displayedEmployees.map((employee: any, index: number) => (
                 <div key={employee.id} className="flex-1 relative border-r border-transparent last:border-r-0">
@@ -304,7 +342,7 @@ export default function CalendarGrid() {
                   {calculateEventPositions(logic.events)
                     .filter((event: any) => event.employeeId === employee.id)
                     .map((event: any) => {
-                      const pos = getPositionStyles(formatTime(event.start), getDurationInMinutes(event.start, event.end));
+                      const pos = getPositionStyles(formatTime(event.start), getDurationInMinutes(event.start, event.end), startHour);
 
                       return (
                         <div

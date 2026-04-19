@@ -97,79 +97,80 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
 
                 {/* --- BODY SCROLL --- */}
                 <div className="flex-1 overflow-y-auto lg:overflow-hidden p-4 md:p-6 bg-white dark:bg-gray-900 lg:grid lg:grid-cols-12 lg:gap-8">
-                    
+
                     <div className="lg:col-span-7 lg:overflow-y-auto custom-scrollbar lg:pr-2 pb-4 lg:pb-0">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 lg:mb-0">
 
-                        {/* Bloque 1: Especialista */}
-                        <div className="bg-gray-50 dark:bg-gray-800/30 p-4 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
-                            <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-4 flex items-center gap-2">
-                                <User size={18} className="text-brand-500" /> Especialista
-                            </Label>
-                            <div>
-                                <Select
-                                    className="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:border-brand-500 dark:text-white"
-                                    options={employeeOptions}
-                                    placeholder="Seleccionar especialista..."
-                                    value={selectedEmployee?.id || selectedEmployee || ""}
-                                    onChange={(val) => {
-                                        const emp = employees.find((e: any) => String(e.id) === val);
-                                        setSelectedEmployee(emp || val);
-                                    }}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Bloque 2: Fecha y Hora */}
-                        <div className="bg-gray-50 dark:bg-gray-800/30 p-4 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
-                            <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-4 flex items-center gap-2">
-                                <Calendar size={18} className="text-brand-500" /> Fecha y Horario
-                            </Label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="col-span-2">
-                                    <Label className="text-xs font-medium mb-1.5 block text-gray-500 dark:text-gray-400">Día</Label>
-                                    <InputField type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm dark:text-white" />
-                                </div>
+                            {/* Bloque 1: Especialista */}
+                            <div className="bg-gray-50 dark:bg-gray-800/30 p-4 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-4 flex items-center gap-2">
+                                    <User size={18} className="text-brand-500" /> Especialista
+                                </Label>
                                 <div>
-                                    <Label className="text-xs font-medium mb-1.5 block text-gray-500 dark:text-gray-400">Inicio</Label>
-                                    <InputField type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm dark:text-white" />
-                                </div>
-                                <div>
-                                    <Label className="text-xs font-medium mb-1.5 block text-gray-500 dark:text-gray-400">Fin</Label>
-                                    <InputField type="time" value={timeEnd} onChange={e => setTimeEnd(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm dark:text-white" />
+                                    <Select
+                                        className="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:border-brand-500 dark:text-white"
+                                        options={employeeOptions}
+                                        placeholder="Seleccionar especialista..."
+                                        value={selectedEmployee?.id || selectedEmployee || ""}
+                                        onChange={(val) => {
+                                            const emp = employees.find((e: any) => String(e.id) === val);
+                                            setSelectedEmployee(emp || val);
+                                        }}
+                                    />
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Bloque 3: Cliente (Ocupa 2 columnas en desktop) */}
-                        <div className="md:col-span-2 bg-gray-50 dark:bg-gray-800/30 p-4 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
-                            <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-4 flex items-center gap-2">
-                                <User size={18} className="text-brand-500" /> Datos del Cliente
-                            </Label>
-                            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-4 items-end">
-                                <div>
-                                    <Label className="text-xs font-medium mb-1.5 block text-gray-500 dark:text-gray-400">Nombre</Label>
-                                    <InputField className="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm dark:text-white" name="name" value={customer.name} onChange={handleChangeCustomer} placeholder="Nombre completo" />
+                            {/* Bloque 2: Fecha y Hora */}
+                            <div className="bg-gray-50 dark:bg-gray-800/30 p-4 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-4 flex items-center gap-2">
+                                    <Calendar size={18} className="text-brand-500" /> Fecha y Horario
+                                </Label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="col-span-2">
+                                        <Label className="text-xs font-medium mb-1.5 block text-gray-500 dark:text-gray-400">Día</Label>
+                                        <InputField type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm dark:text-white" />
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs font-medium mb-1.5 block text-gray-500 dark:text-gray-400">Inicio</Label>
+                                        <InputField type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm dark:text-white" />
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs font-medium mb-1.5 block text-gray-500 dark:text-gray-400">Fin</Label>
+                                        <InputField type="time" value={timeEnd} onChange={e => setTimeEnd(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm dark:text-white" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label className="text-xs font-medium mb-1.5 block text-gray-500 dark:text-gray-400">Teléfono</Label>
-                                    <InputField className="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm dark:text-white" name="phone" value={customer.phone} type="number" onChange={handleChangeCustomer} placeholder="10 dígitos" />
-                                </div>
+                            </div>
 
-                                <Button
-                                    onClick={() => setIsSearchModalOpen(true)}
-                                    type="button"
-                                    variant="outline"
-                                    className="h-[46px] px-6 rounded-xl border-gray-300 dark:border-gray-600 flex items-center gap-2 text-sm font-bold"
-                                >
-                                    <Search size={16} /> <span className="hidden sm:inline">Buscar</span>
-                                </Button>
+                            {/* Bloque 3: Cliente (Ocupa 2 columnas en desktop) */}
+                            <div className="md:col-span-2 bg-gray-50 dark:bg-gray-800/30 p-4 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-4 flex items-center gap-2">
+                                    <User size={18} className="text-brand-500" /> Datos del Cliente
+                                </Label>
+                                <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+                                    <div>
+                                        <Label className="text-xs font-medium mb-1.5 block text-gray-500 dark:text-gray-400">Teléfono</Label>
+                                        <InputField className="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm dark:text-white" name="phone" value={customer.phone} type="number" onChange={handleChangeCustomer} placeholder="10 dígitos" />
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs font-medium mb-1.5 block text-gray-500 dark:text-gray-400">Nombre</Label>
+                                        <InputField className="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm dark:text-white" name="name" value={customer.name} onChange={handleChangeCustomer} placeholder="Nombre completo" />
+                                    </div>
+
+
+                                    <Button
+                                        onClick={() => setIsSearchModalOpen(true)}
+                                        type="button"
+                                        variant="outline"
+                                        className="h-[46px] px-6 rounded-xl border-gray-300 dark:border-gray-600 flex items-center gap-2 text-sm font-bold"
+                                    >
+                                        <Search size={16} /> <span className="hidden sm:inline">Buscar</span>
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Bloque 4: Servicios */}
+                    {/* Bloque 4: Servicios */}
                     <div className="lg:col-span-5 border-t border-gray-100 dark:border-gray-800 pt-6 lg:border-t-0 lg:border-l lg:pl-8 lg:pt-0 lg:flex lg:flex-col lg:h-full lg:overflow-hidden">
                         <div className="flex-none flex flex-col xl:flex-row justify-between items-start xl:items-center mb-5 gap-3">
                             <Label className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
@@ -181,7 +182,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     onClick={() => setExtraServicesModal(true)}
                                     className="px-4 py-2 border-brand-200 text-brand-600 hover:bg-brand-50 flex-1 sm:flex-none dark:border-brand-800 dark:text-brand-400 dark:hover:bg-brand-900/30"
                                 >
-                                    + Manual
+                                    + Servicio Extra
                                 </Button>
                                 <Button
                                     onClick={() => setIsServiceBrowserOpen(true)}
