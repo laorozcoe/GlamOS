@@ -15,7 +15,7 @@ import Button from "@/components/ui/button/Button";
 import { toast } from "react-toastify";
 import Select from "../form/Select";
 import Label from "../form/Label";
-import { CircleDollarSign } from 'lucide-react';
+import { Banknote } from 'lucide-react';
 
 // --- CONFIGURACIÓN ---
 const START_HOUR = 9;
@@ -236,7 +236,7 @@ export default function CalendarGrid() {
             {/* Botón de Cobro Múltiple */}
             {userInfo?.role !== "EMPLOYEE" && (
               <Button onClick={() => logic.setShowMultiCheckout(true)} variant="outline" className="ml-2 font-bold text-gray-700 bg-white shadow-sm border-gray-300">
-                <CircleDollarSign />
+                <Banknote color="green" />
               </Button>
             )}
           </div>
