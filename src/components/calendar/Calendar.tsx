@@ -15,6 +15,7 @@ import Button from "@/components/ui/button/Button";
 import { toast } from "react-toastify";
 import Select from "../form/Select";
 import Label from "../form/Label";
+import { CircleDollarSign } from 'lucide-react';
 
 // --- CONFIGURACIÓN ---
 const START_HOUR = 9;
@@ -133,7 +134,7 @@ export default function CalendarGrid() {
   // NUEVO: Filtramos los empleados a mostrar basados en el select y el Rol
   const displayedEmployees = useMemo(() => {
     let filtered = logic.employees;
-    
+
     // Si es Empleado regular, bloqueamos a que solo vea su información
     if (userInfo?.role === "EMPLOYEE" && userInfo.currentEmployee) {
       filtered = [userInfo.currentEmployee];
@@ -231,12 +232,12 @@ export default function CalendarGrid() {
             {/* <InputField type="date" value={logic.currentDate} onChange={(e) => logic.setCurrentDate(e.target.value)} /> */}
             <DatePicker value={logic.currentDate} onChange={(date) => logic.setCurrentDate(date)} />
             <Button onClick={() => { logic.handleUpdateDate(1) }}>&gt;</Button>
-            
+
             {/* Botón de Cobro Múltiple */}
             {userInfo?.role !== "EMPLOYEE" && (
-                <Button onClick={() => logic.setShowMultiCheckout(true)} variant="outline" className="ml-2 font-bold text-gray-700 bg-white shadow-sm border-gray-300">
-                    💳 Cobro Múltiple
-                </Button>
+              <Button onClick={() => logic.setShowMultiCheckout(true)} variant="outline" className="ml-2 font-bold text-gray-700 bg-white shadow-sm border-gray-300">
+                <CircleDollarSign />
+              </Button>
             )}
           </div>
 
@@ -246,7 +247,7 @@ export default function CalendarGrid() {
               <Select
                 options={employeeOptions}
                 value={selectedEmpFilter}
-                onChange={setSelectedEmpFilter} 
+                onChange={setSelectedEmpFilter}
               />
             </div>
           )}

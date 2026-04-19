@@ -96,9 +96,10 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                 </div>
 
                 {/* --- BODY SCROLL --- */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-white dark:bg-gray-900">
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
+                <div className="flex-1 overflow-y-auto lg:overflow-hidden p-4 md:p-6 bg-white dark:bg-gray-900 lg:grid lg:grid-cols-12 lg:gap-8">
+                    
+                    <div className="lg:col-span-7 lg:overflow-y-auto custom-scrollbar lg:pr-2 pb-4 lg:pb-0">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 lg:mb-0">
 
                         {/* Bloque 1: Especialista */}
                         <div className="bg-gray-50 dark:bg-gray-800/30 p-4 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
@@ -166,10 +167,11 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    {/* Bloque 4: Servicios */}
-                    <div className="border-t border-gray-100 dark:border-gray-800 pt-6">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-3">
+                {/* Bloque 4: Servicios */}
+                    <div className="lg:col-span-5 border-t border-gray-100 dark:border-gray-800 pt-6 lg:border-t-0 lg:border-l lg:pl-8 lg:pt-0 lg:flex lg:flex-col lg:h-full lg:overflow-hidden">
+                        <div className="flex-none flex flex-col xl:flex-row justify-between items-start xl:items-center mb-5 gap-3">
                             <Label className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
                                 <Tag size={20} className="text-brand-500" /> Servicios ({appointments.length})
                             </Label>
@@ -190,7 +192,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                             </div>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="flex-1 lg:overflow-y-auto custom-scrollbar space-y-3 lg:pr-2 lg:pb-6">
                             {appointments.length === 0 ? (
                                 <div className="h-32 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50/50 dark:bg-gray-800/30">
                                     <Sparkles className="mb-2 opacity-50" size={24} />

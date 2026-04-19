@@ -10,6 +10,8 @@ interface ModalProps {
   isFullscreen?: boolean; // Default to false for backwards compatibility
 }
 
+let globalModalCount = 0;
+
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
@@ -38,14 +40,18 @@ export const Modal: React.FC<ModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+      if (globalModalCount === 0) {
+        document.body.style.overflow = "hidden";
+      }
+      globalModalCount++;
 
-    return () => {
-      document.body.style.overflow = "unset";
-    };
+      return () => {
+        globalModalCount--;
+        if (globalModalCount === 0) {
+          document.body.style.overflow = "unset";
+        }
+      };
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;

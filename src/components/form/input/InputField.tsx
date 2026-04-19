@@ -15,6 +15,7 @@ interface InputProps {
   success?: boolean;
   error?: boolean;
   hint?: string; // Optional hint text
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 const Input: FC<InputProps> = ({
@@ -32,6 +33,7 @@ const Input: FC<InputProps> = ({
   success = false,
   error = false,
   hint,
+  onKeyDown,
 }) => {
   // Determine input styles based on state (disabled, success, error)
   let inputClasses = `text-base h-11 w-full rounded-lg border appearance-none px-4 py-2.5 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 ${className}`;
@@ -60,6 +62,7 @@ const Input: FC<InputProps> = ({
         max={max}
         step={step}
         disabled={disabled}
+        onKeyDown={onKeyDown}
         className={inputClasses}
       />
 
