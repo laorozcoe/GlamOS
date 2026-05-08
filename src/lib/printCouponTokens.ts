@@ -127,7 +127,7 @@ export async function printCouponTokens(
   <meta charset="UTF-8">
   <title>Cupones – ${coupon.name}</title>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     body{font-family:Arial,Helvetica,sans-serif;background:#f0f0f0;padding:12mm}
 
     /* ── Barra de impresión ── */
@@ -320,6 +320,7 @@ export async function printCouponTokens(
 
     /* Print overrides */
     @media print{
+      *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
       body{background:#fff;padding:5mm}
       .print-bar{display:none}
       .grid{gap:4mm}
