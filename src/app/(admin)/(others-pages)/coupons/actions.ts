@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma2";
 import { getBusiness } from "@/lib/getBusiness";
 import { revalidatePath } from "next/cache";
+import type { Coupon } from "@prisma/client";
 
 export async function getCoupons() {
   const business = await getBusiness();
@@ -92,7 +93,7 @@ export async function getActiveCoupons() {
   });
 
   // DATE: solo fechas (ya en WHERE). QUANTITY/BOTH: también requiere stock disponible.
-  return coupons.filter((c) => c.limitType === "DATE" || c.usedCount < c.totalStock);
+  return coupons.filter((c: Coupon) => c.limitType === "DATE" || c.usedCount < c.totalStock);
 }
 
 const UUID_RE       = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
