@@ -91,13 +91,8 @@ export async function getActiveCoupons() {
     orderBy: { createdAt: "desc" },
   });
 
-  // Filtramos los agotados en JS porque Prisma no puede comparar dos columnas
-  // DATE: solo depende de fechas (ya filtradas en WHERE)
-  // QUANTITY/BOTH: el stock también debe estar disponible
-  return coupons.filter((c) => {
-    if (c.limitType === "DATE") return true;
-    return c.usedCount < c.totalStock;
-  });
+  // DATE: solo fechas (ya en WHERE). QUANTITY/BOTH: también requiere stock disponible.
+  return coupons.filter((c) => c.limitType === "DATE" || c.usedCount < c.totalStock);
 }
 
 const UUID_RE       = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
