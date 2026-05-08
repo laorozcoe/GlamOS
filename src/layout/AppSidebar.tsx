@@ -364,7 +364,10 @@ const AppSidebar: React.FC = () => {
           )}
         </Link>
       </div>
-      <div className="flex flex-col flex-1 min-h-0 overflow-y-auto duration-300 ease-linear no-scrollbar">
+      <div
+        className="flex flex-col flex-1 min-h-0 overflow-y-auto overscroll-contain duration-300 ease-linear no-scrollbar"
+        style={{ touchAction: "pan-y" }}
+      >
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
             <div>
