@@ -51,6 +51,8 @@ model Business {
   mpAccessToken String?
   mpPublicKey   String?
   mpStoreId     String?
+
+  coupons           Coupon[]
 }
 
 //////////////////////
@@ -461,8 +463,9 @@ model Sale {
   clientId      String? // Opcional para "Público General"
   employeeId    String // Quién atendió/vendió
   appointmentId String?    @unique // Opcional: liga la venta a una cita del calendario
+  couponId      String?             // Cupón aplicado (opcional)
   subtotal      Float      @default(0)
-  discount      Float      @default(0)
+  discount      Float      @default(0) // Monto descontado por el cupón
   total         Float // Monto final cobrado
   status        SaleStatus @default(COMPLETED)
   notes         String? // Para auditoría: "Se aplicó descuento por retraso"
@@ -474,6 +477,7 @@ model Sale {
   client      Client?      @relation(fields: [clientId], references: [id])
   employee    Employee     @relation(fields: [employeeId], references: [id])
   appointment Appointment? @relation(fields: [appointmentId], references: [id])
+  coupon      Coupon?      @relation(fields: [couponId], references: [id])
 
   items    SaleItem[]
   payments Payment[]
@@ -490,6 +494,55 @@ model SaleItem {
 
   sale    Sale     @relation(fields: [saleId], references: [id])
   service Service? @relation(fields: [serviceId], references: [id])
+}
+
+//////////////////////
+// 🎫 CUPONES
+//////////////////////
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+enum CouponLimitType {
+  QUANTITY
+  DATE
+  BOTH
+}
+
+model Coupon {
+  id          String          @id @default(uuid())
+  businessId  String
+  code        String          // Código que ingresa el cliente (ej. "VERANO25")
+  name        String          // Nombre visible (ej. "Promo Verano")
+  type        CouponType      // PERCENTAGE o FIXED
+  value       Float           // 15 = 15% | 150.00 = $150
+  minPurchase Float           @default(0)
+  limitType   CouponLimitType // QUANTITY, DATE o BOTH
+  totalStock  Int             @default(1)
+  usedCount   Int             @default(0)
+  startDate   DateTime
+  endDate     DateTime
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+
+  business    Business        @relation(fields: [businessId], references: [id])
+  sales       Sale[]
+  tokens      CouponToken[]
+
+  @@unique([businessId, code])
+}
+
+model CouponToken {
+  id        String    @id @default(uuid())
+  couponId  String
+  usedAt    DateTime?           // null = disponible, fecha = canjeado
+  saleId    String?   @unique   // Venta que lo canjeó
+
+  createdAt DateTime  @default(now())
+
+  coupon    Coupon    @relation(fields: [couponId], references: [id])
 }
 
 model CashClose {

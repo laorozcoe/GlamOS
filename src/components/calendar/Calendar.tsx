@@ -20,6 +20,7 @@ import { useBusiness } from "@/context/BusinessContext";
 
 // --- CONFIGURACIÓN ---
 const HOUR_HEIGHT = 80; // Altura de cada hora en pixeles
+const TIMEZONE = 'America/Mexico_City';
 
 // --- DATOS MOCK (Simulados) ---
 const columns = [
@@ -81,13 +82,23 @@ const appointments = [
 
 const formatTime = (dateInput: any) => {
   const date = new Date(dateInput);
-
   return new Intl.DateTimeFormat('es-MX', {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false // Cambia a true si prefieres "02:30 PM" en lugar de "14:30"
+    hour12: false,
+    timeZone: TIMEZONE
   }).format(date);
 }
+
+const getMexTimeParts = (date: Date) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TIMEZONE,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  }).formatToParts(date);
+  const get = (t: string) => parseInt(parts.find(p => p.type === t)?.value ?? '0');
+  return { year: get('year'), month: get('month'), day: get('day'), hour: get('hour'), minute: get('minute') };
+};
 
 // --- HELPER PARA POSICIONAR ---
 const getPositionStyles = (startTimeString: any, durationMinutes: any, startHour: number) => {
@@ -139,17 +150,14 @@ export default function CalendarGrid() {
     return () => clearInterval(timer);
   }, []);
 
-  // Comparar si la fecha del calendario es la de hoy
   const isToday = () => {
-    const today = new Date();
-    // parse date from "YYYY-MM-DD"
+    const { year, month, day } = getMexTimeParts(new Date());
     const [y, m, d] = logic.currentDate.split('-').map(Number);
-    return today.getFullYear() === y && today.getMonth() + 1 === m && today.getDate() === d;
+    return year === y && month === m && day === d;
   };
 
   const getLineTop = () => {
-    const h = currentTime.getHours();
-    const m = currentTime.getMinutes();
+    const { hour: h, minute: m } = getMexTimeParts(currentTime);
     const startInMinutes = (h - startHour) * 60 + m;
     if (startInMinutes < 0) return -1000;
     return (startInMinutes / 60) * HOUR_HEIGHT;

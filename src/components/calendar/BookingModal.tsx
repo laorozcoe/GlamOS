@@ -161,7 +161,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                         onClick={() => setIsSearchModalOpen(true)}
                                         type="button"
                                         variant="outline"
-                                        className="h-[46px] px-6 rounded-xl border-gray-300 dark:border-gray-600 flex items-center gap-2 text-sm font-bold"
+                                        className="h-11.5 px-6 rounded-xl border-gray-300 dark:border-gray-600 flex items-center gap-2 text-sm font-bold"
                                     >
                                         <Search size={16} /> <span className="hidden sm:inline">Buscar</span>
                                     </Button>
@@ -319,7 +319,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
             {/* Search Customer */}
             <Modal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} className="max-w-sm p-6 rounded-2xl bg-white dark:bg-gray-900">
                 <Label className="text-lg font-bold mb-5 block dark:text-white">Buscar cliente</Label>
-                <ul className="mb-6 overflow-y-auto max-h-[50vh] md:h-[300px] divide-y divide-gray-100 dark:divide-gray-800 overscroll-contain custom-scrollbar">
+                <ul className="mb-6 overflow-y-auto max-h-[50vh] md:h-75 divide-y divide-gray-100 dark:divide-gray-800 overscroll-contain custom-scrollbar">
                     {customers.map((cc: any) => (
                         <li
                             onClick={() => handleSelectCustomer(cc)}

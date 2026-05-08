@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -18,7 +18,7 @@ import {
   UserCircleIcon,
 } from "../icons/index";
 import { useBusiness } from "@/context/BusinessContext";
-import { Sparkles, BadgeDollarSign, ShieldCheck, Clock, Settings } from 'lucide-react';
+import { Sparkles, BadgeDollarSign, ShieldCheck, Clock, Settings, Tag } from 'lucide-react';
 import { useSession } from "@/lib/auth-client";
 
 type NavItem = {
@@ -88,7 +88,13 @@ const navItems: NavItem[] = [
         name: "Empleados/Staff",
         path: "/employees",
         adminOnly: true,
-      }
+      },
+      {
+        icon: <Tag size={18} />,
+        name: "Cupones",
+        path: "/coupons",
+        adminOnly: true,
+      },
     ],
   },
 ];
@@ -256,43 +262,32 @@ const AppSidebar: React.FC = () => {
     </ul>
   );
 
-  const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "others";
-    index: number;
-  } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
     {}
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // const isActive = (path: string) => path === pathname;
   const isActive = useCallback((path: string) => path === pathname, [pathname]);
 
-  useEffect(() => {
-    // Check if the current path matches any submenu item
-    let submenuMatched = false;
-    ["main", "others"].forEach((menuType) => {
+  const matchedSubmenu = useMemo<{ type: "main" | "others"; index: number } | null>(() => {
+    for (const menuType of ["main", "others"] as const) {
       const items = menuType === "main" ? navItems : othersItems;
-      items.forEach((nav, index) => {
-        if (nav.subItems) {
-          nav.subItems.forEach((subItem) => {
-            if (isActive(subItem.path)) {
-              setOpenSubmenu({
-                type: menuType as "main" | "others",
-                index,
-              });
-              submenuMatched = true;
-            }
-          });
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].subItems?.some((sub) => sub.path === pathname)) {
+          return { type: menuType, index: i };
         }
-      });
-    });
-
-    // If no submenu item matches, close the open submenu
-    if (!submenuMatched) {
-      setOpenSubmenu(null);
+      }
     }
-  }, [pathname, isActive]);
+    return null;
+  }, [pathname]);
+
+  const [openSubmenu, setOpenSubmenu] = useState(matchedSubmenu);
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    setOpenSubmenu(matchedSubmenu);
+  }
 
   useEffect(() => {
     // Set the height of the submenu items when the submenu is opened

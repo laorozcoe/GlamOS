@@ -156,9 +156,19 @@ export const usePrinter = () => {
             });
 
             // --- TOTALES Y PAGO ---
+            printJob = printJob.text('--------------------------------\n').align('right');
+
+            // Mostrar subtotal y descuento solo si hay cupón aplicado
+            if (ticketData.discount > 0) {
+                const subStr = `SUBTOTAL: $${Number(ticketData.originalTotal).toFixed(2)}\n`;
+                const couponStr = ticketData.couponCode ? `CUPON: ${ticketData.couponCode}\n` : '';
+                const discStr = `DESCUENTO: -$${Number(ticketData.discount).toFixed(2)}\n`;
+                printJob = printJob.text(subStr);
+                if (couponStr) printJob = printJob.text(couponStr);
+                printJob = printJob.text(discStr);
+            }
+
             printJob = printJob
-                .text('--------------------------------\n')
-                .align('right')
                 .bold(true)
                 .text(`TOTAL: $${Number(ticketData.total).toFixed(2)}\n`)
                 .bold(false);

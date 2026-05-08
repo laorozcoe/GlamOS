@@ -36,8 +36,9 @@ export const useCalendarLogic = () => {
     const [date, setDate] = useState("");
     const [time, setTime] = useState("");
     const [timeEnd, setTimeEnd] = useState("");
-    // ✅ Correcto: Usa tu hora local
-    const [currentDate, setCurrentDate] = useState(new Date().toLocaleDateString('en-CA'));
+    const [currentDate, setCurrentDate] = useState(
+        new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+    );
 
     // Selecciones
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -167,15 +168,14 @@ export const useCalendarLogic = () => {
         }
 
         resetModalFields();
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-
-        // Siguiente hora en punto
-        const nextHour = (now.getHours() + 1) % 24;
-
-        setDate(`${year}-${month}-${day}`);
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/Mexico_City',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', hour12: false
+        }).formatToParts(new Date());
+        const get = (t: string) => parts.find(p => p.type === t)?.value ?? '00';
+        const nextHour = (parseInt(get('hour')) + 1) % 24;
+        setDate(`${get('year')}-${get('month')}-${get('day')}`);
         setTime(`${String(nextHour).padStart(2, '0')}:00`);
         openModal();
     };
@@ -209,13 +209,14 @@ export const useCalendarLogic = () => {
             });
 
             if (event.start) {
-                const yyyy = event.start.getFullYear();
-                const mm = String(event.start.getMonth() + 1).padStart(2, '0');
-                const dd = String(event.start.getDate()).padStart(2, '0');
-                const hh = String(event.start.getHours()).padStart(2, '0');
-                const min = String(event.start.getMinutes()).padStart(2, '0');
-                setDate(`${yyyy}-${mm}-${dd}`);
-                setTime(`${hh}:${min}`);
+                const parts = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'America/Mexico_City',
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', hour12: false
+                }).formatToParts(new Date(event.start));
+                const get = (t: string) => parts.find(p => p.type === t)?.value ?? '00';
+                setDate(`${get('year')}-${get('month')}-${get('day')}`);
+                setTime(`${get('hour').padStart(2, '0')}:${get('minute').padStart(2, '0')}`);
             }
 
             const appointmentServices = event.services || [];
@@ -406,8 +407,8 @@ export const useCalendarLogic = () => {
             return
         }
 
-        const startDateTime = new Date(`${date}T${time}:00`);
-        const endDateTime = new Date(`${date}T${timeEnd}:00`);
+        const startDateTime = new Date(`${date}T${time}:00-06:00`);
+        const endDateTime = new Date(`${date}T${timeEnd}:00-06:00`);
 
         const payload = {
             businessId: business?.id,
@@ -586,7 +587,7 @@ export const useCalendarLogic = () => {
 
         try {
             // 2. Cálculos de tiempo con validación
-            const startDateTime = new Date(`${date}T${time}:00`);
+            const startDateTime = new Date(`${date}T${time}:00-06:00`);
             if (isNaN(startDateTime.getTime())) {
                 toast.error("Fecha u hora inválida");
                 return
@@ -638,7 +639,7 @@ export const useCalendarLogic = () => {
                 end: endDateTime,
                 status: "COMPLETED",
                 paymentStatus: "PAID",
-                totalAmount: paymentData.totalRequested,
+                totalAmount: paymentData.totalRequested, // Total ya con descuento aplicado
                 notes: `Pago procesado.`,
                 guestName: customer.name,
                 guestPhone: customer.phone,
@@ -655,13 +656,16 @@ export const useCalendarLogic = () => {
 
             // 5. PASO B: Generar la VENTA (Sale)
             const subtotal = appointments.reduce((sum, item) => sum + Number(item.price), 0);
-            const totals = { subtotal, discount: 0, total: subtotal };
+            const discountAmount = paymentData.discountAmount || 0;
+            const totals = { subtotal, discount: discountAmount, total: paymentData.totalRequested };
 
             const salePayload = {
                 businessId: business?.id,
                 clientId: null,
                 employeeId: selectedEmployee?.id || selectedEmployee,
                 appointmentId: currentAppointmentId,
+                couponId: paymentData.couponId || null,
+                tokenId: paymentData.tokenId || null,
                 totals: totals,
                 items: itemsList.map((item: any) => ({
                     serviceId: item.serviceId,
@@ -686,6 +690,9 @@ export const useCalendarLogic = () => {
                 method: paymentData.payments.length > 1 ? "MÚLTIPLE" : paymentData.payments[0].method,
                 received: paymentData.payments.reduce((acc:any, p:any) => acc + p.received, 0),
                 change: paymentData.payments.reduce((acc:any, p:any) => acc + p.change, 0),
+                discount: paymentData.discountAmount || 0,
+                couponCode: paymentData.couponCode || null,
+                originalTotal: paymentData.originalTotal || paymentData.totalRequested,
             };
 
             await printSaleTicket(saleResult, unifiedPaymentData, itemsList);
@@ -708,14 +715,15 @@ export const useCalendarLogic = () => {
         try {
             const ticketData = {
                 businessName: business?.name || "Brillarte Bloom",
-                folio: saleResult.sale.folio, // Usamos el folio real generado por la BD
+                folio: saleResult.sale.folio,
                 total: paymentData.total,
                 paymentMethod: paymentData.method,
                 received: paymentData.received,
                 change: paymentData.change,
-                // Formato: 07/02/2026
+                discount: paymentData.discount || 0,
+                couponCode: paymentData.couponCode || null,
+                originalTotal: paymentData.originalTotal || paymentData.total,
                 date: saleResult.sale.createdAt.toLocaleDateString('es-MX'),
-                // Formato: 04:27 AM (Formato 12h con am/pm para facilidad de lectura)
                 time: saleResult.sale.createdAt.toLocaleTimeString('es-MX', {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -736,12 +744,13 @@ export const useCalendarLogic = () => {
     };
 
     const handleUpdateDate = async (days: number) => {
-        const newDate = new Date(currentDate);
-        newDate.setDate(newDate.getDate() + days);
-        setCurrentDate(newDate.toISOString().split('T')[0]);
+        // Usamos mediodía en Mexico City para evitar problemas de cambio de día en zonas horarias extremas
+        const d = new Date(`${currentDate}T12:00:00-06:00`);
+        d.setDate(d.getDate() + days);
+        const newDateStr = d.toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+        setCurrentDate(newDateStr);
 
-
-        const rtnAppoin = await getAppointmentsByDatePrisma(business?.id, newDate.toISOString().split('T')[0]);
+        const rtnAppoin = await getAppointmentsByDatePrisma(business?.id, newDateStr);
         setEvents(rtnAppoin);
     };
 

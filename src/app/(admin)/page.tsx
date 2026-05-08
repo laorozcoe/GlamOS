@@ -8,7 +8,7 @@ import RecentOrders from "@/components/ecommerce/RecentOrders";
 import DemographicCard from "@/components/ecommerce/DemographicCard";
 import Label from "@/components/form/Label"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getDailySummary } from '@/lib/prisma'
 
 import { Users, Banknote, CreditCard, Clock } from 'lucide-react'
@@ -115,12 +115,12 @@ export default function DailySummaryScreen() {
     setEmployeeModalOpen(true);
   };
 
-  const fetchSummary = async (dateToFetch: string) => {
-    setLoading(true); // Mostramos el loading al cambiar de día
+  const fetchSummary = useCallback(async (dateToFetch: string) => {
+    setLoading(true);
     const data = await getDailySummary(business?.id, dateToFetch);
     setSummary(data);
     setLoading(false);
-  };
+  }, [business?.id]);
 
   const handleUpdateDate = async (days: number) => {
     const newDate = new Date(selectedDate);
@@ -129,21 +129,19 @@ export default function DailySummaryScreen() {
   };
 
   useEffect(() => {
-
     if (business?.id) {
       fetchSummary(selectedDate);
     }
-  }, [selectedDate, business?.id])
+  }, [selectedDate, fetchSummary]);
 
   useEffect(() => {
     const handleGlobalRefresh = () => {
-      console.log("¡Pull to refresh detectado en la vista!");
-      fetchSummary(selectedDate); // Consultamos usando la fecha actual del estado
+      fetchSummary(selectedDate);
     };
 
     window.addEventListener('app:pullToRefresh', handleGlobalRefresh);
     return () => window.removeEventListener('app:pullToRefresh', handleGlobalRefresh);
-  }, [selectedDate]); // Agregamos selectedDate a las dependencias
+  }, [selectedDate, fetchSummary]);
 
   // if (loading || !summary) {
   //   return (

@@ -812,6 +812,8 @@ export const createSalePrisma = async (data) => {
         clientId,
         employeeId,
         appointmentId,
+        couponId,   // ID del cupón aplicado (opcional)
+        tokenId,    // ID del token impreso de un solo uso (opcional)
         items, // Array de { serviceId, description, price, quantity }
         payment, // Objeto { amount, method, received, change }
         totals // Objeto { subtotal, discount, total }
@@ -826,6 +828,7 @@ export const createSalePrisma = async (data) => {
                     clientId,
                     employeeId,
                     appointmentId,
+                    couponId: couponId || null,
                     subtotal: totals.subtotal,
                     discount: totals.discount,
                     total: totals.total,
@@ -872,6 +875,22 @@ export const createSalePrisma = async (data) => {
                 await tx.appointment.update({
                     where: { id: appointmentId, active: true },
                     data: { status: 'COMPLETED', paymentStatus: "PAID" },
+                });
+            }
+
+            // 5. Quemar el cupón (incrementar usedCount)
+            if (couponId) {
+                await tx.coupon.update({
+                    where: { id: couponId },
+                    data: { usedCount: { increment: 1 } },
+                });
+            }
+
+            // 6. Marcar el token físico como usado (cupón impreso de un solo uso)
+            if (tokenId) {
+                await tx.couponToken.update({
+                    where: { id: tokenId },
+                    data: { usedAt: new Date(), saleId: newSale.id },
                 });
             }
 
