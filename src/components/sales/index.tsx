@@ -237,13 +237,36 @@ export default function SalesTable({ sales }: any) {
                         </div>
                     </div>
 
+                    {/* Cupón aplicado */}
+                    {selectedSale?.coupon && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 text-sm">
+                            <span className="text-purple-500">🎟</span>
+                            <span className="font-semibold text-purple-700 dark:text-purple-300">
+                                {selectedSale.coupon.category === "COURTESY" ? "Cortesía" : "Cupón"}: {selectedSale.coupon.code}
+                            </span>
+                            <span className="ml-auto text-purple-600 dark:text-purple-400 font-bold">
+                                -{selectedSale?.discount > 0 ? `$${Number(selectedSale.discount).toLocaleString()}` : "aplicado"}
+                            </span>
+                        </div>
+                    )}
+
                     <div className="border rounded-xl p-4 space-y-2">
                         <Label className="text-xs font-bold uppercase text-gray-500">Servicios</Label>
                         {(selectedSale?.items || []).length > 0 ? (
                             selectedSale.items.map((item: any) => (
-                                <div key={item.id} className="flex justify-between text-sm">
-                                    <Label>{item.description} x{item.quantity || 1}</Label>
-                                    <Label color="text-brand-500 dark:text-brand-400" className="font-semibold">${Number(item.price || 0) * Number(item.quantity || 1)}</Label>
+                                <div key={item.id} className="flex justify-between items-center text-sm gap-2">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <Label className="truncate">{item.description} x{item.quantity || 1}</Label>
+                                        {item.couponCovered && (
+                                            <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-700">
+                                                Cortesía
+                                            </span>
+                                        )}
+                                    </div>
+                                    <Label color={item.couponCovered ? "text-green-600 dark:text-green-400" : "text-brand-500 dark:text-brand-400"} className="font-semibold shrink-0">
+                                        {item.couponCovered ? <span className="line-through text-gray-400 mr-1 text-xs">${Number(item.price || 0) * Number(item.quantity || 1)}</span> : null}
+                                        {item.couponCovered ? "$0" : `$${Number(item.price || 0) * Number(item.quantity || 1)}`}
+                                    </Label>
                                 </div>
                             ))
                         ) : (
@@ -252,14 +275,38 @@ export default function SalesTable({ sales }: any) {
                     </div>
 
                     <div className="border rounded-xl p-4 space-y-2 text-sm">
+                        {selectedSale?.discount > 0 && (
+                            <>
+                                <div className="flex justify-between">
+                                    <Label className="text-gray-500">Subtotal</Label>
+                                    <Label className="font-semibold">${selectedSale?.subtotal ?? 0}</Label>
+                                </div>
+                                <div className="flex justify-between text-green-600 dark:text-green-400">
+                                    <Label>Descuento</Label>
+                                    <Label className="font-semibold">-${selectedSale?.discount ?? 0}</Label>
+                                </div>
+                            </>
+                        )}
                         <div className="flex justify-between">
                             <Label className="text-gray-500">Método</Label>
                             <Label color="text-brand-500 dark:text-brand-400" className="font-semibold">{selectedSale?.payments?.[0]?.method || "N/A"}</Label>
                         </div>
                         <div className="flex justify-between">
-                            <Label className="text-gray-500">Total</Label>
+                            <Label className="text-gray-500">Total cobrado</Label>
                             <Label color="text-brand-500 dark:text-brand-400" className="font-bold">${selectedSale?.total ?? 0}</Label>
                         </div>
+                        {selectedSale?.mpFee != null && selectedSale.mpFee > 0 && (
+                            <>
+                                <div className="flex justify-between text-orange-600 dark:text-orange-400">
+                                    <Label>Comisión MercadoPago</Label>
+                                    <Label className="font-semibold">-${Number(selectedSale.mpFee).toFixed(2)}</Label>
+                                </div>
+                                <div className="flex justify-between border-t border-gray-100 dark:border-gray-700 pt-2 text-green-700 dark:text-green-400">
+                                    <Label className="font-bold">Neto recibido</Label>
+                                    <Label className="font-bold">${(Number(selectedSale.total) - Number(selectedSale.mpFee)).toFixed(2)}</Label>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 

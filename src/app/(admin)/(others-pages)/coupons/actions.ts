@@ -15,16 +15,15 @@ export async function getCoupons() {
   });
 }
 
-export async function createCoupon(data: any) {
-  const business = await getBusiness();
-  if (!business) throw new Error("No business found");
-
-  const code = String(data.code).toUpperCase().trim();
-  const payload = {
+function buildCouponPayload(data: any) {
+  const isCourtesy = data.category === "COURTESY";
+  return {
     name: String(data.name).trim(),
-    type: data.type,
-    value: Number(data.value),
-    minPurchase: Number(data.minPurchase) || 0,
+    category: isCourtesy ? "COURTESY" as const : "DISCOUNT" as const,
+    type: isCourtesy ? "FIXED" as const : data.type,
+    value: isCourtesy ? 0 : Number(data.value),
+    minPurchase: isCourtesy ? 0 : (Number(data.minPurchase) || 0),
+    serviceNote: isCourtesy ? (String(data.serviceNote || "").trim() || null) : null,
     limitType: data.limitType,
     totalStock: Number(data.totalStock) || 1,
     usedCount: 0,
@@ -36,6 +35,14 @@ export async function createCoupon(data: any) {
       ? new Date(`${data.endDate}T23:59:59-06:00`)
       : new Date("2099-12-31T23:59:59-06:00"),
   };
+}
+
+export async function createCoupon(data: any) {
+  const business = await getBusiness();
+  if (!business) throw new Error("No business found");
+
+  const code = String(data.code).toUpperCase().trim();
+  const payload = buildCouponPayload(data);
 
   // Si existe un cupón inactivo con el mismo código, reactivarlo en lugar de crear uno nuevo
   const existing = await prisma.coupon.findFirst({
@@ -54,23 +61,10 @@ export async function updateCoupon(id: string, data: any) {
   const business = await getBusiness();
   if (!business) throw new Error("No business found");
 
+  const { usedCount: _u, ...rest } = buildCouponPayload(data);
   const coupon = await prisma.coupon.update({
     where: { id, businessId: business.id },
-    data: {
-      code: String(data.code).toUpperCase().trim(),
-      name: String(data.name).trim(),
-      type: data.type,
-      value: Number(data.value),
-      minPurchase: Number(data.minPurchase) || 0,
-      limitType: data.limitType,
-      totalStock: Number(data.totalStock) || 1,
-      startDate: data.startDate
-        ? new Date(`${data.startDate}T00:00:00-06:00`)
-        : new Date("2000-01-01T00:00:00-06:00"),
-      endDate: data.endDate
-        ? new Date(`${data.endDate}T23:59:59-06:00`)
-        : new Date("2099-12-31T23:59:59-06:00"),
-    },
+    data: { code: String(data.code).toUpperCase().trim(), ...rest },
   });
 
   revalidatePath("/coupons");
@@ -97,9 +91,43 @@ export async function getActiveCoupons() {
 }
 
 const UUID_RE       = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const SHORT_CODE_RE = /^[0-9a-f]{8}$/i; // primeros 8 chars del UUID (lo que aparece en el cupón impreso)
+const SHORT_CODE_RE = /^[0-9a-f]{8}$/i;
 
-async function validateCouponByCode(code: string, subtotal: number, businessId: string) {
+type CartItem = { serviceId?: string | null; price: number };
+
+function calcDiscount(
+  coupon: Coupon,
+  subtotal: number,
+  cartItems?: CartItem[]
+): { discount: number; coveredServiceIds: string[] } {
+  if (coupon.category === "COURTESY") {
+    try {
+      const couponServices: { id: string; price: number }[] = JSON.parse(coupon.serviceNote ?? "[]");
+      const couponServiceIds = new Set(couponServices.map(s => s.id));
+
+      if (cartItems && cartItems.length > 0) {
+        // Match only the cart items whose serviceId is in the coupon
+        const covered = cartItems.filter(item => item.serviceId && couponServiceIds.has(item.serviceId));
+        const discount = covered.reduce((sum, item) => sum + item.price, 0);
+        const coveredServiceIds = covered.map(item => item.serviceId as string);
+        return { discount: Math.min(discount, subtotal), coveredServiceIds };
+      }
+
+      // Fallback (e.g. search modal preview without cart context)
+      const courtesyValue = couponServices.reduce((sum, s) => sum + (s.price ?? 0), 0);
+      return { discount: Math.min(courtesyValue, subtotal), coveredServiceIds: [] };
+    } catch {
+      return { discount: subtotal, coveredServiceIds: [] };
+    }
+  }
+
+  const discount = coupon.type === "PERCENTAGE"
+    ? Math.round((subtotal * coupon.value) / 100 * 100) / 100
+    : Math.min(coupon.value, subtotal);
+  return { discount, coveredServiceIds: [] };
+}
+
+async function validateCouponByCode(code: string, subtotal: number, businessId: string, cartItems?: CartItem[]) {
   const coupon = await prisma.coupon.findFirst({
     where: { businessId, code: code.toUpperCase().trim(), active: true },
   });
@@ -116,20 +144,18 @@ async function validateCouponByCode(code: string, subtotal: number, businessId: 
   if (subtotal < coupon.minPurchase)
     return { valid: false as const, error: `Compra mínima de $${coupon.minPurchase.toFixed(2)} requerida` };
 
-  const discount =
-    coupon.type === "PERCENTAGE"
-      ? Math.round((subtotal * coupon.value) / 100 * 100) / 100
-      : Math.min(coupon.value, subtotal);
+  const { discount, coveredServiceIds } = calcDiscount(coupon, subtotal, cartItems);
 
   return {
     valid: true as const,
     tokenId: null,
-    coupon: { id: coupon.id, code: coupon.code, name: coupon.name, type: coupon.type as string, value: coupon.value },
+    coupon: { id: coupon.id, code: coupon.code, name: coupon.name, category: coupon.category as string, type: coupon.type as string, value: coupon.value, serviceNote: coupon.serviceNote },
     discount,
+    coveredServiceIds,
   };
 }
 
-async function validateCouponByShortCode(shortCode: string, subtotal: number, businessId: string) {
+async function validateCouponByShortCode(shortCode: string, subtotal: number, businessId: string, cartItems?: CartItem[]) {
   // El UUID en DB empieza con los 8 chars del ID corto, e.g. "abcdef12-xxxx-..."
   const token = await prisma.couponToken.findFirst({
     where: { id: { startsWith: shortCode.toLowerCase() } },
@@ -150,20 +176,18 @@ async function validateCouponByShortCode(shortCode: string, subtotal: number, bu
   if (subtotal < coupon.minPurchase)
     return { valid: false as const, error: `Compra mínima de $${coupon.minPurchase.toFixed(2)} requerida` };
 
-  const discount =
-    coupon.type === "PERCENTAGE"
-      ? Math.round((subtotal * coupon.value) / 100 * 100) / 100
-      : Math.min(coupon.value, subtotal);
+  const { discount, coveredServiceIds } = calcDiscount(coupon, subtotal, cartItems);
 
   return {
     valid: true as const,
     tokenId: token.id,
-    coupon: { id: coupon.id, code: coupon.code, name: coupon.name, type: coupon.type as string, value: coupon.value },
+    coupon: { id: coupon.id, code: coupon.code, name: coupon.name, category: coupon.category as string, type: coupon.type as string, value: coupon.value, serviceNote: coupon.serviceNote },
     discount,
+    coveredServiceIds,
   };
 }
 
-async function validateCouponByToken(tokenId: string, subtotal: number, businessId: string) {
+async function validateCouponByToken(tokenId: string, subtotal: number, businessId: string, cartItems?: CartItem[]) {
   const token = await prisma.couponToken.findUnique({
     where: { id: tokenId },
     include: { coupon: true },
@@ -183,20 +207,18 @@ async function validateCouponByToken(tokenId: string, subtotal: number, business
   if (subtotal < coupon.minPurchase)
     return { valid: false as const, error: `Compra mínima de $${coupon.minPurchase.toFixed(2)} requerida` };
 
-  const discount =
-    coupon.type === "PERCENTAGE"
-      ? Math.round((subtotal * coupon.value) / 100 * 100) / 100
-      : Math.min(coupon.value, subtotal);
+  const { discount, coveredServiceIds } = calcDiscount(coupon, subtotal, cartItems);
 
   return {
     valid: true as const,
     tokenId: token.id,
-    coupon: { id: coupon.id, code: coupon.code, name: coupon.name, type: coupon.type as string, value: coupon.value },
+    coupon: { id: coupon.id, code: coupon.code, name: coupon.name, category: coupon.category as string, type: coupon.type as string, value: coupon.value, serviceNote: coupon.serviceNote },
     discount,
+    coveredServiceIds,
   };
 }
 
-export async function validateCoupon(code: string, subtotal: number) {
+export async function validateCoupon(code: string, subtotal: number, cartItems?: CartItem[]) {
   const business = await getBusiness();
   if (!business) return { valid: false as const, error: "Error de sesión" };
 
@@ -204,16 +226,27 @@ export async function validateCoupon(code: string, subtotal: number) {
 
   // UUID completo (legacy / escaneo directo) → token individual
   if (UUID_RE.test(trimmed)) {
-    return validateCouponByToken(trimmed.toLowerCase(), subtotal, business.id);
+    return validateCouponByToken(trimmed.toLowerCase(), subtotal, business.id, cartItems);
   }
 
   // Código corto de 8 chars hex → ID visible en el cupón impreso
   if (SHORT_CODE_RE.test(trimmed)) {
-    return validateCouponByShortCode(trimmed, subtotal, business.id);
+    return validateCouponByShortCode(trimmed, subtotal, business.id, cartItems);
   }
 
   // Código alfanumérico normal → cupón por código compartido
-  return validateCouponByCode(trimmed, subtotal, business.id);
+  return validateCouponByCode(trimmed, subtotal, business.id, cartItems);
+}
+
+export async function getServicesForCoupons() {
+  const business = await getBusiness();
+  if (!business) throw new Error("No business found");
+
+  return prisma.service.findMany({
+    where: { businessId: business.id, active: true },
+    include: { category: { select: { name: true, order: true } } },
+    orderBy: [{ category: { order: "asc" } }, { name: "asc" }],
+  });
 }
 
 // ---- Token management ----

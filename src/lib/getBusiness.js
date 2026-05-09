@@ -1,12 +1,14 @@
 import { headers } from "next/headers"
 import { getBusinessPrisma } from "@/lib/prisma"
 
+const DEFAULT_SLUG = process.env.DEV_BUSINESS_SLUG || "testsalon";
+
 export async function getBusiness() {
     try {
         const h = await headers();
 
         const host = h.get("host") || "";
-        
+
         let slug = host.split(".")[0];
 
         if (!host || host.includes("localhost")) {
@@ -14,13 +16,12 @@ export async function getBusiness() {
         }
 
         if (!slug || slug === "www" || slug === "localhost" || slug === "") {
-
-            return await getBusinessPrisma("evorasalon");
+            return await getBusinessPrisma(DEFAULT_SLUG);
         }
 
         const business = await getBusinessPrisma(slug);
 
-        return business || await getBusinessPrisma("evorasalon");
+        return business || await getBusinessPrisma(DEFAULT_SLUG);
 
     } catch (error) {
         console.error("Error obteniendo business:", error);

@@ -4,14 +4,84 @@ import React, { useState, useEffect } from "react";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
-import { getBusinessSettings, updateBusinessSettings, savePaymentTerminals } from "./actions";
-import { Save, Plus, Trash2, CheckCircle2, ShieldCheck, Store, Clock } from "lucide-react";
+import { getBusinessSettings, updateBusinessSettings, savePaymentTerminals, updateThemeColors } from "./actions";
+import { Save, Plus, Trash2, CheckCircle2, ShieldCheck, Store, Clock, Palette } from "lucide-react";
 import { toast } from "react-toastify";
+
+// ── Color palette ─────────────────────────────────────────────────────────────
+const COLOR_KEYS = [
+  "--color-brand-25",  "--color-brand-50",  "--color-brand-100",
+  "--color-brand-200", "--color-brand-300", "--color-brand-400",
+  "--color-brand-500", "--color-brand-600", "--color-brand-700",
+  "--color-brand-800", "--color-brand-900", "--color-brand-950",
+] as const;
+
+const COLOR_LABELS: Record<string, string> = {
+  "--color-brand-25":  "25 — Fondo sutil",
+  "--color-brand-50":  "50 — Fondo claro",
+  "--color-brand-100": "100 — Borde suave",
+  "--color-brand-200": "200 — Borde",
+  "--color-brand-300": "300 — Acento claro",
+  "--color-brand-400": "400 — Acento",
+  "--color-brand-500": "500 — Principal ★",
+  "--color-brand-600": "600 — Hover",
+  "--color-brand-700": "700 — Activo",
+  "--color-brand-800": "800 — Oscuro",
+  "--color-brand-900": "900 — Más oscuro",
+  "--color-brand-950": "950 — Texto oscuro",
+};
+
+type ThemeColors = Record<string, string>;
+
+const PRESETS: Record<string, ThemeColors> = {
+  Rosa: {
+    "--color-brand-25":  "#fff5f7", "--color-brand-50":  "#fff0f3",
+    "--color-brand-100": "#ffe4ec", "--color-brand-200": "#fecdd9",
+    "--color-brand-300": "#fda4c0", "--color-brand-400": "#fb7aa4",
+    "--color-brand-500": "#f72c5b", "--color-brand-600": "#e31b4b",
+    "--color-brand-700": "#be123c", "--color-brand-800": "#9f1239",
+    "--color-brand-900": "#881337", "--color-brand-950": "#4c0519",
+  },
+  Verde: {
+    "--color-brand-25":  "#f7faf9", "--color-brand-50":  "#f0f7f2",
+    "--color-brand-100": "#e3f4e9", "--color-brand-200": "#c8e6c5",
+    "--color-brand-300": "#a5d6a7", "--color-brand-400": "#81c784",
+    "--color-brand-500": "#66bb6a", "--color-brand-600": "#4caf50",
+    "--color-brand-700": "#43a047", "--color-brand-800": "#388e3c",
+    "--color-brand-900": "#2e7d32", "--color-brand-950": "#1b5e20",
+  },
+  Morado: {
+    "--color-brand-25":  "#faf5ff", "--color-brand-50":  "#f5f3ff",
+    "--color-brand-100": "#ede9fe", "--color-brand-200": "#ddd6fe",
+    "--color-brand-300": "#c4b5fd", "--color-brand-400": "#a78bfa",
+    "--color-brand-500": "#8b5cf6", "--color-brand-600": "#7c3aed",
+    "--color-brand-700": "#6d28d9", "--color-brand-800": "#5b21b6",
+    "--color-brand-900": "#4c1d95", "--color-brand-950": "#2e1065",
+  },
+  Azul: {
+    "--color-brand-25":  "#f0f9ff", "--color-brand-50":  "#e0f2fe",
+    "--color-brand-100": "#bae6fd", "--color-brand-200": "#7dd3fc",
+    "--color-brand-300": "#38bdf8", "--color-brand-400": "#0ea5e9",
+    "--color-brand-500": "#0284c7", "--color-brand-600": "#0369a1",
+    "--color-brand-700": "#075985", "--color-brand-800": "#0c4a6e",
+    "--color-brand-900": "#0a3451", "--color-brand-950": "#082032",
+  },
+  Naranja: {
+    "--color-brand-25":  "#fff8f0", "--color-brand-50":  "#fff4e6",
+    "--color-brand-100": "#ffe8cc", "--color-brand-200": "#ffd199",
+    "--color-brand-300": "#ffba66", "--color-brand-400": "#ffa333",
+    "--color-brand-500": "#f97316", "--color-brand-600": "#ea6c0a",
+    "--color-brand-700": "#c2560a", "--color-brand-800": "#9a4209",
+    "--color-brand-900": "#7c3409", "--color-brand-950": "#431a04",
+  },
+};
+// ── End color palette ──────────────────────────────────────────────────────────
 
 export default function SettingsClient() {
   const [loading, setLoading] = useState(true);
   const [savingBase, setSavingBase] = useState(false);
   const [savingTerms, setSavingTerms] = useState(false);
+  const [savingColors, setSavingColors] = useState(false);
 
   // Base Data Form
   const [formData, setFormData] = useState({
@@ -26,12 +96,21 @@ export default function SettingsClient() {
     weekStartDay: 1
   });
 
-  // Terminals 
+  // Terminals
   const [terminals, setTerminals] = useState<any[]>([]);
 
+  // Theme colors
+  const [themeColors, setThemeColors] = useState<ThemeColors>(PRESETS.Rosa);
+
+  useEffect(() => { loadData(); }, []);
+
+  // Apply colors to DOM in real-time for live preview
   useEffect(() => {
-    loadData();
-  }, []);
+    COLOR_KEYS.forEach((key) => {
+      const val = themeColors[key];
+      if (val) document.documentElement.style.setProperty(key, val);
+    });
+  }, [themeColors]);
 
   const loadData = async () => {
     try {
@@ -50,11 +129,30 @@ export default function SettingsClient() {
           weekStartDay: data.weekStartDay ?? 1
         });
         setTerminals(data.terminals || []);
+        if (data.themeColors && typeof data.themeColors === "object" && !Array.isArray(data.themeColors)) {
+          setThemeColors(data.themeColors as ThemeColors);
+        }
       }
     } catch (e) {
       toast.error("Error al cargar configuraciones");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleColorChange = (key: string, value: string) => {
+    setThemeColors((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveColors = async () => {
+    setSavingColors(true);
+    try {
+      await updateThemeColors(themeColors);
+      toast.success("Colores guardados correctamente");
+    } catch (e) {
+      toast.error("Error al guardar colores");
+    } finally {
+      setSavingColors(false);
     }
   };
 
@@ -257,7 +355,113 @@ export default function SettingsClient() {
         </div>
       </section>
 
-      {/* SECCION 3: TERMINALES */}
+      {/* SECCION 3: COLORES DEL LOCAL */}
+      <section>
+        <div className="flex items-center gap-2 mb-4 text-brand-600 dark:text-brand-400">
+          <Palette className="w-6 h-6" />
+          <h2 className="text-xl font-bold">Identidad del Local</h2>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">
+          Define la paleta de color de la interfaz. Los cambios se previsualizan en tiempo real en esta misma pantalla.
+        </p>
+
+        <div className="bg-gray-50 border border-gray-100 dark:bg-white/5 dark:border-white/10 p-6 rounded-2xl space-y-5">
+
+          {/* Barra de previsualización */}
+          <div>
+            <p className="text-xs font-bold text-gray-500 uppercase mb-2">Previsualización de paleta</p>
+            <div className="flex rounded-xl overflow-hidden h-10 shadow-inner border border-black/5">
+              {COLOR_KEYS.map((key) => (
+                <div
+                  key={key}
+                  className="flex-1 transition-colors duration-200"
+                  style={{ backgroundColor: themeColors[key] || "#ccc" }}
+                  title={COLOR_LABELS[key]}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Presets */}
+          <div>
+            <p className="text-xs font-bold text-gray-500 uppercase mb-2">Paletas predefinidas</p>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(PRESETS).map(([name, colors]) => (
+                <button
+                  key={name}
+                  onClick={() => setThemeColors(colors)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 text-sm font-medium hover:border-brand-400 hover:text-brand-600 dark:hover:border-brand-500 transition-colors"
+                >
+                  <span
+                    className="w-4 h-4 rounded-full border border-black/10 shrink-0"
+                    style={{ backgroundColor: colors["--color-brand-500"] }}
+                  />
+                  {name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Grid de inputs */}
+          <div>
+            <p className="text-xs font-bold text-gray-500 uppercase mb-3">Tonos personalizados</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {COLOR_KEYS.map((key) => {
+                const isPrimary = key === "--color-brand-500";
+                return (
+                  <div
+                    key={key}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border bg-white dark:bg-gray-800 transition-shadow ${
+                      isPrimary
+                        ? "border-brand-300 dark:border-brand-600 ring-1 ring-brand-400/30"
+                        : "border-gray-100 dark:border-gray-700"
+                    }`}
+                  >
+                    {/* Native color picker */}
+                    <label className="relative cursor-pointer shrink-0">
+                      <span
+                        className="block w-9 h-9 rounded-lg border border-black/10 shadow-sm"
+                        style={{ backgroundColor: themeColors[key] || "#ccc" }}
+                      />
+                      <input
+                        type="color"
+                        value={themeColors[key] || "#000000"}
+                        onChange={(e) => handleColorChange(key, e.target.value)}
+                        className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                      />
+                    </label>
+
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[11px] font-bold leading-tight truncate ${isPrimary ? "text-brand-600 dark:text-brand-400" : "text-gray-600 dark:text-gray-300"}`}>
+                        {COLOR_LABELS[key]}
+                      </p>
+                      <input
+                        type="text"
+                        value={themeColors[key] || ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (/^#[0-9a-fA-F]{0,6}$/.test(v)) handleColorChange(key, v);
+                        }}
+                        maxLength={7}
+                        spellCheck={false}
+                        className="text-[11px] font-mono w-full bg-transparent text-gray-400 dark:text-gray-500 outline-none focus:text-gray-700 dark:focus:text-gray-200"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button onClick={handleSaveColors} disabled={savingColors}>
+              {savingColors ? "Guardando..." : <><Save className="w-4 h-4 mr-2" /> Guardar Colores</>}
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* SECCION 4: TERMINALES */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Terminales Físicas (Cajas)</h2>

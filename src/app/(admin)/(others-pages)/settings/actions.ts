@@ -18,7 +18,25 @@ export async function getBusinessSettings() {
     }
   });
 
-  return business;
+  // themeColors requires a raw query until prisma generate runs (DLL locked by dev server)
+  const raw = await prisma.$queryRaw<{ themeColors: unknown }[]>`
+    SELECT "themeColors" FROM "Business" WHERE id = ${businessCtx.id}
+  `;
+
+  return { ...business, themeColors: raw[0]?.themeColors ?? null };
+}
+
+export async function updateThemeColors(themeColors: Record<string, string>) {
+  const businessCtx = await getBusiness();
+  if (!businessCtx) throw new Error("No business found");
+
+  await prisma.$executeRawUnsafe(
+    `UPDATE "Business" SET "themeColors" = $1::jsonb WHERE id = $2`,
+    JSON.stringify(themeColors),
+    businessCtx.id
+  );
+
+  revalidatePath("/settings");
 }
 
 export async function updateBusinessSettings(data: any) {
@@ -44,6 +62,16 @@ export async function updateBusinessSettings(data: any) {
 
   revalidatePath("/settings");
   return updated;
+}
+
+export async function getActiveTerminals() {
+  const businessCtx = await getBusiness();
+  if (!businessCtx) throw new Error("No business found");
+
+  return prisma.paymentTerminal.findMany({
+    where: { businessId: businessCtx.id, active: true },
+    orderBy: { createdAt: 'asc' },
+  });
 }
 
 export async function savePaymentTerminals(terminals: any[]) {

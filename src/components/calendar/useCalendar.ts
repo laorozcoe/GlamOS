@@ -52,6 +52,7 @@ export const useCalendarLogic = () => {
     // UI Helpers
     const [flashCategory, setFlashCategory] = useState<string | null>(null);
     const [showPayModal, setShowPayModal] = useState(false);
+    const [saleForModal, setSaleForModal] = useState<any>(null);
 
     // Multi-Checkout Integración
     const [showMultiCheckout, setShowMultiCheckout] = useState(false);
@@ -198,9 +199,15 @@ export const useCalendarLogic = () => {
     const handleEventClick = (event: any) => {
         setSelectedEvent(event); // Guardamos el evento original de FullCalendar
 
-        const status = event.paymentStatus; 
+        const status = event.paymentStatus;
         if (status === "PAID") {
             setShowSaleDetails(true);
+            setSaleForModal(null);
+            if (event.id && business?.id) {
+                getSaleByAppointmentPrisma(business.id, event.id)
+                    .then(setSaleForModal)
+                    .catch(() => setSaleForModal(null));
+            }
         } else {
             setSelectedEmployee(event.employee);
             setCustomer({
@@ -659,6 +666,15 @@ export const useCalendarLogic = () => {
             const discountAmount = paymentData.discountAmount || 0;
             const totals = { subtotal, discount: discountAmount, total: paymentData.totalRequested };
 
+            const coveredServiceIds: string[] = paymentData.coveredServiceIds ?? [];
+
+            // Extract MP terminal data from CARD payment if present
+            const cardTerminalPayment = (paymentData.payments as any[]).find(
+                (p: any) => p.method === 'CARD' && p.mpPaymentId
+            );
+            const mpPaymentId: string | null = cardTerminalPayment?.mpPaymentId ?? null;
+            const mpFee: number | null = cardTerminalPayment?.mpFee ?? null;
+
             const salePayload = {
                 businessId: business?.id,
                 clientId: null,
@@ -671,9 +687,12 @@ export const useCalendarLogic = () => {
                     serviceId: item.serviceId,
                     description: item.ticket_desc,
                     price: item.unitPrice,
-                    quantity: item.quantity
+                    quantity: item.quantity,
+                    couponCovered: item.serviceId != null && coveredServiceIds.includes(item.serviceId),
                 })),
-                payment: paymentData.payments // Múltiples pagos
+                payment: paymentData.payments, // Múltiples pagos
+                mpPaymentId,
+                mpFee,
             };
 
             const saleResult = await createSalePrisma(salePayload);
@@ -853,6 +872,7 @@ export const useCalendarLogic = () => {
         customers, setCustomer,
         handleResolveGhost,
         handleReprintTicket,
-        showMultiCheckout, setShowMultiCheckout, handleProceedToMultiPayment
+        showMultiCheckout, setShowMultiCheckout, handleProceedToMultiPayment,
+        saleForModal,
     };
 };

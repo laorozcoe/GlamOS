@@ -184,6 +184,12 @@ export default function DailySummaryScreen() {
             <div onClick={() => handleGlobalClick("CARD")} className="cursor-pointer transition-transform hover:scale-105">
               <ComponentCard className="bg-blue-50 rounded-xl shadow-sm border border-blue-100 p-6 flex flex-col justify-center items-center h-full" title="Total Tarjeta">
                 <Label className="text-3xl font-bold" color="text-blue-600">${summary.totalCardDay.toFixed(2)}</Label>
+                {summary.totalMpFeeDay > 0 && (
+                  <div className="mt-1 text-center">
+                    <p className="text-xs text-orange-500">Comisión MP: -${summary.totalMpFeeDay.toFixed(2)}</p>
+                    <p className="text-sm font-bold text-green-600">Neto: ${summary.netCardDay.toFixed(2)}</p>
+                  </div>
+                )}
               </ComponentCard>
             </div>
             <div onClick={() => handleGlobalClick("TRANSFER")} className="cursor-pointer transition-transform hover:scale-105">

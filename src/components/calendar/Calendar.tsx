@@ -421,6 +421,7 @@ export default function CalendarGrid() {
         onClose={() => logic.setShowPayModal(false)}
         total={logic.activeTotal}
         onFinalize={logic.handleFinalizePayment}
+        cartItems={logic.appointments.map((a: any) => ({ serviceId: a.serviceId ?? null, price: Number(a.price ?? 0) }))}
       />
 
       {/* NUEVO: MODAL DE DETALLE DE VENTA (Solo se abre si ESTÁ pagado) */}
@@ -429,6 +430,7 @@ export default function CalendarGrid() {
         onClose={() => logic.setShowSaleDetails(false)}
         event={logic.selectedEvent}
         onReprint={logic.handleReprintTicket}
+        sale={logic.saleForModal}
       />
 
       <MultiCheckoutModal

@@ -46,6 +46,7 @@ model Business {
   openHour          Int      @default(9)
   closeHour         Int      @default(18)
   weekStartDay      Int      @default(1) // 0 = Domingo, 1 = Lunes, etc.
+  themeColors       Json?    // CSS custom property overrides: { "--color-brand-500": "#66bb6a", ... }
 
   // 💳 Configuración Mercado Pago
   mpAccessToken String?
@@ -469,6 +470,8 @@ model Sale {
   total         Float // Monto final cobrado
   status        SaleStatus @default(COMPLETED)
   notes         String? // Para auditoría: "Se aplicó descuento por retraso"
+  mpPaymentId   String?    // ID del pago en MercadoPago (cobros con terminal)
+  mpFee         Float?     // Comisión cobrada por MP sobre este pago
   createdAt     DateTime   @default(now()) // LA HORA REAL DEL COBRO
   updatedAt     DateTime   @updatedAt
   active        Boolean    @default(true) // <-- NUEVO
@@ -484,13 +487,14 @@ model Sale {
 }
 
 model SaleItem {
-  id          String  @id @default(uuid())
-  saleId      String
-  serviceId   String?
-  description String // Nombre del servicio al momento de vender (Snapshot)
-  price       Float // Precio al que se vendió (histórico)
-  quantity    Int     @default(1)
-  active      Boolean @default(true) // <-- NUEVO
+  id            String  @id @default(uuid())
+  saleId        String
+  serviceId     String?
+  description   String // Nombre del servicio al momento de vender (Snapshot)
+  price         Float // Precio al que se vendió (histórico)
+  quantity      Int     @default(1)
+  couponCovered Boolean @default(false) // true = este ítem fue cubierto por una cortesía
+  active        Boolean @default(true)
 
   sale    Sale     @relation(fields: [saleId], references: [id])
   service Service? @relation(fields: [serviceId], references: [id])
@@ -511,15 +515,22 @@ enum CouponLimitType {
   BOTH
 }
 
+enum CouponCategory {
+  DISCOUNT
+  COURTESY
+}
+
 model Coupon {
   id          String          @id @default(uuid())
   businessId  String
-  code        String          // Código que ingresa el cliente (ej. "VERANO25")
-  name        String          // Nombre visible (ej. "Promo Verano")
-  type        CouponType      // PERCENTAGE o FIXED
-  value       Float           // 15 = 15% | 150.00 = $150
+  code        String
+  name        String
+  category    CouponCategory  @default(DISCOUNT)
+  type        CouponType      @default(PERCENTAGE)
+  value       Float           @default(0)
   minPurchase Float           @default(0)
-  limitType   CouponLimitType // QUANTITY, DATE o BOTH
+  serviceNote String?         // Para COURTESY: servicios incluidos
+  limitType   CouponLimitType
   totalStock  Int             @default(1)
   usedCount   Int             @default(0)
   startDate   DateTime

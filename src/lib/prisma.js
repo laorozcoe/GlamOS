@@ -816,7 +816,9 @@ export const createSalePrisma = async (data) => {
         tokenId,    // ID del token impreso de un solo uso (opcional)
         items, // Array de { serviceId, description, price, quantity }
         payment, // Objeto { amount, method, received, change }
-        totals // Objeto { subtotal, discount, total }
+        totals, // Objeto { subtotal, discount, total }
+        mpPaymentId = null,
+        mpFee = null,
     } = data;
 
     try {
@@ -840,6 +842,7 @@ export const createSalePrisma = async (data) => {
                             description: item.description,
                             price: item.price,
                             quantity: item.quantity || 1,
+                            couponCovered: item.couponCovered ?? false,
                         })),
                     },
                     // 3. Creamos el registro del pago (Soporta múltiples pagos "Split Payments")
@@ -870,7 +873,17 @@ export const createSalePrisma = async (data) => {
                 },
             });
 
-            // 4. Si la venta viene de una cita, la marcamos como completada
+            // 4. Guardar datos de MP si vienen de terminal (raw SQL — Prisma client no conoce estos campos)
+            if (mpPaymentId || mpFee != null) {
+                await tx.$executeRawUnsafe(
+                    `UPDATE "Sale" SET "mpPaymentId" = $1, "mpFee" = $2 WHERE id = $3`,
+                    mpPaymentId ?? null,
+                    mpFee ?? null,
+                    newSale.id
+                );
+            }
+
+            // 5. Si la venta viene de una cita, la marcamos como completada
             if (appointmentId) {
                 await tx.appointment.update({
                     where: { id: appointmentId, active: true },
@@ -939,15 +952,29 @@ export async function getSalesPrisma(businessId) {
                 }
             },
             items: true,
+            coupon: { select: { id: true, code: true, name: true, category: true } },
             payments: {
                 where: {
                     active: true
                 }
             }
         }
-    })
+    });
 
-    return sales
+    if (sales.length === 0) return sales;
+
+    const placeholders = sales.map((_, i) => `$${i + 1}`).join(', ');
+    const mpRows = await prisma.$queryRawUnsafe(
+        `SELECT id::text, "mpFee", "mpPaymentId" FROM "Sale" WHERE id::text IN (${placeholders})`,
+        ...sales.map(s => s.id)
+    );
+    const mpMap = Object.fromEntries(mpRows.map(r => [r.id, r]));
+
+    return sales.map(s => ({
+        ...s,
+        mpFee: mpMap[s.id]?.mpFee ?? null,
+        mpPaymentId: mpMap[s.id]?.mpPaymentId ?? null,
+    }));
 }
 
 export async function getSaleByAppointmentPrisma(businessId, appointmentId) {
@@ -959,6 +986,7 @@ export async function getSaleByAppointmentPrisma(businessId, appointmentId) {
         },
         include: {
             items: true,
+            coupon: { select: { id: true, code: true, name: true, category: true } },
             payments: {
                 where: { active: true }
             }
@@ -966,7 +994,16 @@ export async function getSaleByAppointmentPrisma(businessId, appointmentId) {
         orderBy: { createdAt: "desc" }
     });
 
-    return sale;
+    if (!sale) return sale;
+
+    const mpRows = await prisma.$queryRaw`
+        SELECT "mpFee", "mpPaymentId" FROM "Sale" WHERE id::text = ${sale.id}
+    `;
+    return {
+        ...sale,
+        mpFee: mpRows[0]?.mpFee ?? null,
+        mpPaymentId: mpRows[0]?.mpPaymentId ?? null,
+    };
 }
 
 export async function updateSalePrisma(id, businessId, clientId, employeeId, appointmentId, subtotal, discount, total, status, notes) {
@@ -1271,12 +1308,27 @@ export async function getDailySummary(businessId, start) {
         }
     })
 
+    // Sum MP fees for card sales today (raw SQL — field not in Prisma client)
+    const mpFeeRows = await prisma.$queryRaw`
+        SELECT COALESCE(SUM("mpFee"), 0) AS total_fee
+        FROM "Sale"
+        WHERE "businessId" = ${businessId}
+          AND status = 'COMPLETED'
+          AND active = true
+          AND "createdAt" >= ${startOfDay}
+          AND "createdAt" <= ${endOfDay}
+          AND "mpFee" IS NOT NULL
+    `;
+    const totalMpFeeDay = Number(mpFeeRows[0]?.total_fee ?? 0);
+
     return {
         date: startOfDay,
         totalDay,
         totalCashDay,
         totalCardDay,
         totaTransferDay,
+        totalMpFeeDay,
+        netCardDay: totalCardDay - totalMpFeeDay,
         employeeStats,
     }
 }

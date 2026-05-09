@@ -9,21 +9,31 @@ import Label from "@/components/form/Label";
 import InputField from "@/components/form/input/InputField";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
-import { createCoupon, updateCoupon, deleteCoupon, getCouponSales, getCouponTokens, generateCouponTokens } from "./actions";
+import { createCoupon, updateCoupon, deleteCoupon, getCouponSales, getCouponTokens, generateCouponTokens, getServicesForCoupons } from "./actions";
 import { printCouponTokens } from "@/lib/printCouponTokens";
 import { useBusiness } from "@/context/BusinessContext";
 
 // ---- Types ----
 type DiscountType = "PERCENTAGE" | "FIXED";
 type LimitType = "QUANTITY" | "DATE" | "BOTH";
+type CouponCategory = "DISCOUNT" | "COURTESY";
+
+type ServiceItem = {
+  id: string;
+  name: string;
+  price: number;
+  category: { name: string };
+};
 
 interface Coupon {
   id: string;
   code: string;
   name: string;
+  category: CouponCategory;
   type: DiscountType;
   value: number;
   minPurchase: number;
+  serviceNote?: string | null;
   limitType: LimitType;
   totalStock: number;
   usedCount: number;
@@ -177,6 +187,106 @@ function CouponUsageModal({
   );
 }
 
+// ---- Service Picker Modal ----
+
+function ServicePickerModal({
+  selected,
+  onConfirm,
+  onClose,
+}: {
+  selected: ServiceItem[];
+  onConfirm: (services: ServiceItem[]) => void;
+  onClose: () => void;
+}) {
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [current, setCurrent] = useState<ServiceItem[]>(selected);
+
+  useEffect(() => {
+    getServicesForCoupons()
+      .then((data) => setServices(data as ServiceItem[]))
+      .catch(() => toast.error("Error al cargar servicios"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const toggle = (svc: ServiceItem) => {
+    setCurrent((prev) =>
+      prev.some((s) => s.id === svc.id)
+        ? prev.filter((s) => s.id !== svc.id)
+        : [...prev, svc]
+    );
+  };
+
+  const grouped = services.reduce<Record<string, ServiceItem[]>>((acc, svc) => {
+    const cat = svc.category.name;
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(svc);
+    return acc;
+  }, {});
+
+  return (
+    <Modal isOpen onClose={onClose} className="max-w-md w-full m-4">
+      <div className="p-5 flex flex-col gap-4 max-h-[80vh]">
+        <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+          Seleccionar servicios
+        </h3>
+
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
+          </div>
+        ) : (
+          <div className="overflow-y-auto flex flex-col gap-4 flex-1">
+            {Object.entries(grouped).map(([cat, svcs]) => (
+              <div key={cat}>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                  {cat}
+                </p>
+                <div className="flex flex-col gap-1">
+                  {svcs.map((svc) => {
+                    const checked = current.some((s) => s.id === svc.id);
+                    return (
+                      <button
+                        key={svc.id}
+                        type="button"
+                        onClick={() => toggle(svc)}
+                        className={`flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors ${
+                          checked
+                            ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300"
+                            : "border-gray-200 dark:border-gray-700 hover:border-purple-300 text-gray-700 dark:text-gray-300"
+                        }`}
+                      >
+                        <span className="font-medium">{svc.name}</span>
+                        <span className="text-xs tabular-nums font-semibold">
+                          ${svc.price.toFixed(2)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {current.length > 0 && (
+          <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+            {current.length} servicio{current.length !== 1 ? "s" : ""} seleccionado{current.length !== 1 ? "s" : ""}
+            {" · "}Total: ${current.reduce((s, x) => s + x.price, 0).toFixed(2)}
+          </p>
+        )}
+
+        <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button onClick={() => onConfirm(current)} disabled={current.length === 0}>
+            Confirmar ({current.length})
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 // ---- Sub-components ----
 
 function ProgressBar({ pct, color }: { pct: number; color: string }) {
@@ -290,20 +400,43 @@ function CouponCard({
 
       {/* Info row */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-bold text-gray-800 dark:text-gray-100">
-          {coupon.type === "PERCENTAGE"
-            ? `${coupon.value}% off`
-            : `$${coupon.value.toFixed(2)} off`}
-        </span>
-        {coupon.minPurchase > 0 && (
+        {coupon.category === "COURTESY" ? (
+          <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
+            Cortesía 100%
+          </span>
+        ) : (
+          <span className="text-sm font-bold text-gray-800 dark:text-gray-100">
+            {coupon.type === "PERCENTAGE"
+              ? `${coupon.value}% off`
+              : `$${coupon.value.toFixed(2)} off`}
+          </span>
+        )}
+        {coupon.category !== "COURTESY" && coupon.minPurchase > 0 && (
           <span className="text-xs text-gray-500 dark:text-gray-400">
             · Mín. ${coupon.minPurchase}
           </span>
         )}
+        <Badge variant="light" color={coupon.category === "COURTESY" ? "info" : status.color} size="sm">
+          {coupon.category === "COURTESY" ? "Cortesía" : status.label}
+        </Badge>
         <Badge variant="light" color={status.color} size="sm">
           {status.label}
         </Badge>
       </div>
+      {coupon.category === "COURTESY" && coupon.serviceNote && (() => {
+        let names: string[] = [];
+        try { names = (JSON.parse(coupon.serviceNote!) as ServiceItem[]).map((s) => s.name); }
+        catch { names = [coupon.serviceNote!]; }
+        return (
+          <div className="flex flex-wrap gap-1">
+            {names.map((n) => (
+              <span key={n} className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
+                {n}
+              </span>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Progress bars */}
       <div className="flex flex-col gap-2.5">
@@ -365,9 +498,11 @@ function CouponCard({
 const emptyForm = {
   code: "",
   name: "",
+  category: "DISCOUNT",
   type: "PERCENTAGE",
   value: "",
   minPurchase: "0",
+  serviceNote: "",
   limitType: "QUANTITY",
   totalStock: "100",
   startDate: "",
@@ -388,21 +523,32 @@ export default function CouponsClient({ coupons: initial }: { coupons: Coupon[] 
   const [printTarget, setPrintTarget] = useState<Coupon | null>(null);
   const [genCount, setGenCount] = useState("10");
   const [generating, setGenerating] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<ServiceItem[]>([]);
+  const [showServicePicker, setShowServicePicker] = useState(false);
 
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm);
+    setSelectedServices([]);
     setIsModalOpen(true);
   };
 
   const openEdit = (coupon: Coupon) => {
     setEditing(coupon);
+    // Intentar recuperar servicios del JSON guardado en serviceNote
+    let parsedServices: ServiceItem[] = [];
+    try {
+      if (coupon.serviceNote) parsedServices = JSON.parse(coupon.serviceNote);
+    } catch { /* serviceNote es texto plano, no JSON */ }
+    setSelectedServices(parsedServices);
     setForm({
       code: coupon.code,
       name: coupon.name,
+      category: coupon.category ?? "DISCOUNT",
       type: coupon.type,
       value: String(coupon.value),
       minPurchase: String(coupon.minPurchase),
+      serviceNote: coupon.serviceNote ?? "",
       limitType: coupon.limitType,
       totalStock: String(coupon.totalStock),
       startDate: toInputDate(coupon.startDate),
@@ -415,16 +561,21 @@ export default function CouponsClient({ coupons: initial }: { coupons: Coupon[] 
     setForm((prev) => ({ ...prev, [field]: val }));
 
   const handleSave = async () => {
+    const isCourtesy = form.category === "COURTESY";
     const needsDates = form.limitType === "DATE" || form.limitType === "BOTH";
-    if (!form.code || !form.name || !form.value) {
+    if (!form.code || !form.name || (!isCourtesy && !form.value)) {
       toast.warning("Completa todos los campos requeridos");
+      return;
+    }
+    if (isCourtesy && selectedServices.length === 0) {
+      toast.warning("Selecciona al menos un servicio para la cortesía");
       return;
     }
     if (needsDates && (!form.startDate || !form.endDate)) {
       toast.warning("Completa las fechas de vigencia");
       return;
     }
-    if (form.type === "PERCENTAGE" && Number(form.value) > 100) {
+    if (!isCourtesy && form.type === "PERCENTAGE" && Number(form.value) > 100) {
       toast.warning("El porcentaje no puede ser mayor a 100");
       return;
     }
@@ -441,16 +592,23 @@ export default function CouponsClient({ coupons: initial }: { coupons: Coupon[] 
       return;
     }
 
+    const formToSave = {
+      ...form,
+      serviceNote: isCourtesy && selectedServices.length > 0
+        ? JSON.stringify(selectedServices)
+        : form.serviceNote,
+    };
+
     setSaving(true);
     try {
       if (editing) {
-        const updated = await updateCoupon(editing.id, form);
+        const updated = await updateCoupon(editing.id, formToSave);
         setCoupons((prev) =>
           prev.map((c) => (c.id === editing.id ? ({ ...c, ...updated } as Coupon) : c))
         );
         toast.success("Cupón actualizado");
       } else {
-        const created = await createCoupon(form);
+        const created = await createCoupon(formToSave);
         setCoupons((prev) => [created as Coupon, ...prev]);
         toast.success("Cupón creado");
       }
@@ -522,6 +680,7 @@ export default function CouponsClient({ coupons: initial }: { coupons: Coupon[] 
     }
   };
 
+  const isCourtesy = form.category === "COURTESY";
   const showStock = form.limitType === "QUANTITY" || form.limitType === "BOTH";
   const showDates = form.limitType === "DATE" || form.limitType === "BOTH";
 
@@ -623,6 +782,29 @@ export default function CouponsClient({ coupons: initial }: { coupons: Coupon[] 
           </h3>
 
           <div className="grid grid-cols-2 gap-4">
+            {/* Category toggle */}
+            <div className="col-span-2">
+              <Label>Tipo de cupón</Label>
+              <div className="flex gap-2 mt-1">
+                {(["DISCOUNT", "COURTESY"] as const).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => set("category")(cat)}
+                    className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                      form.category === cat
+                        ? cat === "COURTESY"
+                          ? "bg-purple-600 text-white border-purple-600"
+                          : "bg-brand-600 text-white border-brand-600"
+                        : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-brand-400"
+                    }`}
+                  >
+                    {cat === "DISCOUNT" ? "Descuento" : "Cortesía"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Code */}
             <div>
               <Label htmlFor="coupon-code">Código *</Label>
@@ -639,55 +821,104 @@ export default function CouponsClient({ coupons: initial }: { coupons: Coupon[] 
               <Label htmlFor="coupon-name">Nombre *</Label>
               <InputField
                 id="coupon-name"
-                placeholder="Promo Verano"
+                placeholder={isCourtesy ? "Corte + Tinte gratis" : "Promo Verano"}
                 value={form.name}
                 onChange={(e) => set("name")(e.target.value)}
               />
             </div>
 
-            {/* Discount type */}
-            <div>
-              <Label>Tipo de descuento</Label>
-              <Select
-                options={[
-                  { value: "PERCENTAGE", label: "Porcentaje (%)" },
-                  { value: "FIXED", label: "Monto fijo ($)" },
-                ]}
-                value={form.type}
-                onChange={set("type")}
-              />
-            </div>
+            {/* DISCOUNT: tipo y valor */}
+            {!isCourtesy && (
+              <>
+                <div>
+                  <Label>Tipo de descuento</Label>
+                  <Select
+                    options={[
+                      { value: "PERCENTAGE", label: "Porcentaje (%)" },
+                      { value: "FIXED", label: "Monto fijo ($)" },
+                    ]}
+                    value={form.type}
+                    onChange={set("type")}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="coupon-value">
+                    Valor {form.type === "PERCENTAGE" ? "(%)" : "($)"} *
+                  </Label>
+                  <InputField
+                    id="coupon-value"
+                    type="number"
+                    min="0"
+                    max={form.type === "PERCENTAGE" ? "100" : undefined}
+                    step={0.01}
+                    placeholder={form.type === "PERCENTAGE" ? "15" : "150.00"}
+                    value={form.value}
+                    onChange={(e) => set("value")(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="coupon-min">Compra mínima ($)</Label>
+                  <InputField
+                    id="coupon-min"
+                    type="number"
+                    min="0"
+                    step={0.01}
+                    placeholder="0"
+                    value={form.minPurchase}
+                    onChange={(e) => set("minPurchase")(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
 
-            {/* Value */}
-            <div>
-              <Label htmlFor="coupon-value">
-                Valor {form.type === "PERCENTAGE" ? "(%)" : "($)"} *
-              </Label>
-              <InputField
-                id="coupon-value"
-                type="number"
-                min="0"
-                max={form.type === "PERCENTAGE" ? "100" : undefined}
-                step={0.01}
-                placeholder={form.type === "PERCENTAGE" ? "15" : "150.00"}
-                value={form.value}
-                onChange={(e) => set("value")(e.target.value)}
-              />
-            </div>
-
-            {/* Min purchase */}
-            <div>
-              <Label htmlFor="coupon-min">Compra mínima ($)</Label>
-              <InputField
-                id="coupon-min"
-                type="number"
-                min="0"
-                step={0.01}
-                placeholder="0"
-                value={form.minPurchase}
-                onChange={(e) => set("minPurchase")(e.target.value)}
-              />
-            </div>
+            {/* COURTESY: selector de servicios */}
+            {isCourtesy && (
+              <>
+                <div className="col-span-2">
+                  <Label>Servicios incluidos *</Label>
+                  <button
+                    type="button"
+                    onClick={() => setShowServicePicker(true)}
+                    className="mt-1 w-full border border-dashed border-purple-400 rounded-lg px-3 py-2.5 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors text-left"
+                  >
+                    {selectedServices.length === 0
+                      ? "Toca para seleccionar servicios..."
+                      : `${selectedServices.length} servicio${selectedServices.length !== 1 ? "s" : ""} seleccionado${selectedServices.length !== 1 ? "s" : ""}`}
+                  </button>
+                  {selectedServices.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {selectedServices.map((svc) => (
+                        <span
+                          key={svc.id}
+                          className="flex items-center gap-1 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full"
+                        >
+                          {svc.name}
+                          <span className="font-semibold">${svc.price.toFixed(2)}</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedServices((p) => p.filter((s) => s.id !== svc.id))}
+                            className="ml-0.5 hover:text-purple-900"
+                          >×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Compra mínima opcional para cortesía */}
+                <div className="col-span-2">
+                  <Label htmlFor="coupon-min-courtesy">Compra mínima ($) <span className="text-gray-400 font-normal">(opcional)</span></Label>
+                  <InputField
+                    id="coupon-min-courtesy"
+                    type="number"
+                    min="0"
+                    step={0.01}
+                    placeholder="0"
+                    value={form.minPurchase}
+                    onChange={(e) => set("minPurchase")(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
 
             {/* Limit type */}
             <div>
@@ -757,6 +988,15 @@ export default function CouponsClient({ coupons: initial }: { coupons: Coupon[] 
           </div>
         </div>
       </Modal>
+
+      {/* Service picker — renderizado DESPUÉS del form modal para ganar en z-index */}
+      {showServicePicker && (
+        <ServicePickerModal
+          selected={selectedServices}
+          onConfirm={(svcs) => { setSelectedServices(svcs); setShowServicePicker(false); }}
+          onClose={() => setShowServicePicker(false)}
+        />
+      )}
     </>
   );
 }

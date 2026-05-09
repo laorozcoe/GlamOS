@@ -1,38 +1,48 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import Label from "../form/Label";
 import Button from "../ui/button/Button";
 import InputField from "../form/input/InputField";
-import { Trash, Search, QrCode, X, Tag, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Trash, Search, QrCode, X, Tag, CheckCircle, AlertCircle, Loader2, Terminal, XCircle } from "lucide-react";
 import { validateCoupon } from "@/app/(admin)/(others-pages)/coupons/actions";
+import { getActiveTerminals } from "@/app/(admin)/(others-pages)/settings/actions";
 import { QRScannerModal } from "./QRScannerModal";
 import { CouponSearchModal } from "./CouponSearchModal";
+import { useBusiness } from "@/context/BusinessContext";
 
 interface PaymentItem {
     method: 'CASH' | 'CARD' | 'TRANSFER';
     amount: number;
     received: number;
     change: number;
+    mpPaymentId?: string | null;
+    mpFee?: number | null;
 }
 
 interface AppliedCoupon {
     id: string;
     code: string;
     name: string;
+    category: string;
     type: string;
     value: number;
 }
+
+type TerminalStatus = 'idle' | 'creating' | 'waiting' | 'processing' | 'approved' | 'rejected' | 'cancelled';
 
 interface PaymentModalProps {
     isOpen: boolean;
     onClose: () => void;
     total: number;
     onFinalize: (paymentData: any) => void;
+    cartItems?: { serviceId?: string | null; price: number }[];
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
-    isOpen, onClose, total, onFinalize
+    isOpen, onClose, total, onFinalize, cartItems = []
 }) => {
+    const business = useBusiness();
+
     // ---- Pagos ----
     const [payments, setPayments] = useState<PaymentItem[]>([]);
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER'>('CASH');
@@ -43,10 +53,27 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
     const [discountAmount, setDiscountAmount] = useState(0);
     const [tokenId, setTokenId] = useState<string | null>(null);
+    const [coveredServiceIds, setCoveredServiceIds] = useState<string[]>([]);
     const [couponLoading, setCouponLoading] = useState(false);
     const [couponError, setCouponError] = useState<string | null>(null);
     const [showQR, setShowQR] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
+
+    // ---- Terminal MP ----
+    const [terminals, setTerminals] = useState<any[]>([]);
+    const [selectedTerminalId, setSelectedTerminalId] = useState<string>('');
+    const [terminalStatus, setTerminalStatus] = useState<TerminalStatus>('idle');
+    const [terminalError, setTerminalError] = useState<string | null>(null);
+    const [terminalMpFee, setTerminalMpFee] = useState<number | null>(null);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const currentIntentIdRef = useRef<string | null>(null);
+
+    const stopPolling = () => {
+        if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+        }
+    };
 
     // Reset completo al abrir
     useEffect(() => {
@@ -58,8 +85,21 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             setAppliedCoupon(null);
             setDiscountAmount(0);
             setTokenId(null);
+            setCoveredServiceIds([]);
             setCouponError(null);
+            setTerminalStatus('idle');
+            setTerminalError(null);
+            setTerminalMpFee(null);
+            currentIntentIdRef.current = null;
+            stopPolling();
+
+            getActiveTerminals().then((t) => {
+                setTerminals(t);
+                if (t.length === 1) setSelectedTerminalId(t[0].id);
+                else setSelectedTerminalId('');
+            }).catch(() => setTerminals([]));
         }
+        return () => stopPolling();
     }, [isOpen]);
 
     // ---- Cálculos ----
@@ -89,7 +129,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         setCouponLoading(true);
         setCouponError(null);
         try {
-            const result = await validateCoupon(trimmed, total);
+            const result = await validateCoupon(trimmed, total, cartItems);
             if (!result.valid) {
                 setCouponError(result.error);
                 return;
@@ -97,8 +137,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             setAppliedCoupon(result.coupon);
             setDiscountAmount(result.discount);
             setTokenId(result.tokenId ?? null);
+            setCoveredServiceIds(result.coveredServiceIds ?? []);
             setCouponInput(result.coupon.code);
-            setPayments([]); // Reiniciar pagos al cambiar el monto
+            setPayments([]);
         } catch {
             setCouponError('Error al validar el cupón');
         } finally {
@@ -110,9 +151,95 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         setAppliedCoupon(null);
         setDiscountAmount(0);
         setTokenId(null);
+        setCoveredServiceIds([]);
         setCouponInput('');
         setCouponError(null);
         setPayments([]);
+    };
+
+    // ---- Terminal MP handlers ----
+    const handleChargeOnTerminal = async () => {
+        if (!selectedTerminalId || !business?.id) return;
+        const terminal = terminals.find(t => t.id === selectedTerminalId);
+        if (!terminal) return;
+
+        setTerminalStatus('creating');
+        setTerminalError(null);
+        stopPolling();
+
+        try {
+            const res = await fetch('/api/mp/payment-intent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: Math.round(balanceRemaining * 100) / 100,
+                    description: `Cobro ${business.name || 'Salon'}`,
+                    posId: terminal.posId,
+                    businessId: business.id,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al crear cobro');
+
+            currentIntentIdRef.current = data.intentId;
+            setTerminalStatus('waiting');
+
+            pollRef.current = setInterval(async () => {
+                try {
+                    const pollRes = await fetch(
+                        `/api/mp/payment-intent/${data.intentId}?businessId=${business.id}`
+                    );
+                    const pollData = await pollRes.json();
+                    const state: string = pollData.state;
+
+                    if (state === 'ON_TERMINAL') {
+                        setTerminalStatus('waiting');
+                    } else if (state === 'PROCESSING') {
+                        setTerminalStatus('processing');
+                    } else if (state === 'FINISHED') {
+                        stopPolling();
+                        setTerminalStatus('approved');
+                        setTerminalMpFee(pollData.mpFee ?? null);
+                        setPayments(prev => [...prev, {
+                            method: 'CARD',
+                            amount: balanceRemaining,
+                            received: balanceRemaining,
+                            change: 0,
+                            mpPaymentId: pollData.paymentId ?? null,
+                            mpFee: pollData.mpFee ?? null,
+                        }]);
+                    } else if (state === 'CANCELED') {
+                        stopPolling();
+                        setTerminalStatus('cancelled');
+                    } else if (state === 'ERROR') {
+                        stopPolling();
+                        setTerminalError('Error en la terminal');
+                        setTerminalStatus('rejected');
+                    }
+                } catch {
+                    // polling errors are non-fatal
+                }
+            }, 3000);
+        } catch (e: any) {
+            setTerminalError(e.message || 'Error al conectar con la terminal');
+            setTerminalStatus('rejected');
+        }
+    };
+
+    const handleCancelTerminal = async () => {
+        stopPolling();
+        if (business?.id && selectedTerminalId) {
+            const terminal = terminals.find(t => t.id === selectedTerminalId);
+            if (terminal) {
+                fetch('/api/mp/payment-intent', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ posId: terminal.posId, businessId: business.id }),
+                }).catch(() => null);
+            }
+        }
+        setTerminalStatus('cancelled');
+        currentIntentIdRef.current = null;
     };
 
     // ---- Payment handlers ----
@@ -136,10 +263,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     };
 
     const handleRemovePayment = (index: number) => {
+        const p = payments[index];
+        if (p.mpPaymentId) {
+            // Terminal payment was already processed, can't remove
+            return;
+        }
         setPayments(payments.filter((_, i) => i !== index));
     };
 
-    const isConfirmDisabled = totalPaid < effectiveTotal;
+    const isConfirmDisabled = totalPaid < effectiveTotal || terminalStatus === 'waiting' || terminalStatus === 'processing' || terminalStatus === 'creating';
 
     const handleConfirm = () => {
         if (isConfirmDisabled) return;
@@ -153,8 +285,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             tokenId: tokenId,
             discountAmount,
             originalTotal: total,
+            coveredServiceIds,
         });
     };
+
+    const showTerminalSelector = paymentMethod === 'CARD' && terminals.length > 0 && balanceRemaining > 0;
+    const isTerminalActive = ['creating', 'waiting', 'processing'].includes(terminalStatus);
 
     return (
         <>
@@ -174,9 +310,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                     ${total.toLocaleString()}
                                 </span>
                                 <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                                    {appliedCoupon.type === 'PERCENTAGE'
-                                        ? `${appliedCoupon.value}% off`
-                                        : 'Descuento fijo'} — ahorras ${discountAmount.toLocaleString()}
+                                    {appliedCoupon.category === 'COURTESY'
+                                        ? 'Cortesía'
+                                        : appliedCoupon.type === 'PERCENTAGE'
+                                            ? `${appliedCoupon.value}% off`
+                                            : 'Descuento fijo'} — ahorras ${discountAmount.toLocaleString()}
                                 </span>
                                 <span className="text-5xl font-black text-gray-900 dark:text-white tracking-tight mt-1">
                                     ${effectiveTotal.toLocaleString()}
@@ -203,7 +341,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             </Label>
 
                             {appliedCoupon ? (
-                                /* Cupón aplicado */
                                 <div className="flex items-center justify-between p-3 rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
                                     <div className="flex items-center gap-2">
                                         <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
@@ -225,10 +362,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                     </button>
                                 </div>
                             ) : (
-                                /* Input + botones */
                                 <div className="space-y-2">
                                     <div className="flex gap-2">
-                                        {/* Input código */}
                                         <div className="relative flex-1">
                                             <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                             <input
@@ -243,19 +378,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                 className="w-full pl-9 pr-3 py-2.5 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent"
                                             />
                                         </div>
-
-                                        {/* Aplicar */}
                                         <button
                                             onClick={() => applyCoupon(couponInput)}
                                             disabled={couponLoading || !couponInput.trim()}
                                             className="px-3 py-2.5 text-sm font-semibold rounded-xl border-2 border-brand-500 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 shrink-0"
                                         >
-                                            {couponLoading
-                                                ? <Loader2 className="w-4 h-4 animate-spin" />
-                                                : 'Aplicar'}
+                                            {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Aplicar'}
                                         </button>
-
-                                        {/* Buscar */}
                                         <button
                                             onClick={() => setShowSearch(true)}
                                             className="p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0"
@@ -263,8 +392,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                         >
                                             <Search className="w-4 h-4" />
                                         </button>
-
-                                        {/* QR */}
                                         <button
                                             onClick={() => setShowQR(true)}
                                             className="p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0"
@@ -273,8 +400,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                             <QrCode className="w-4 h-4" />
                                         </button>
                                     </div>
-
-                                    {/* Error de validación */}
                                     {couponError && (
                                         <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
                                             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
@@ -301,10 +426,16 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                 <div>
                                                     <p className="text-sm font-bold dark:text-white">
                                                         {p.method === 'CASH' ? 'Efectivo' : p.method === 'CARD' ? 'Tarjeta' : 'Transferencia'}
+                                                        {p.mpPaymentId && <span className="ml-1 text-xs text-blue-500 font-normal">· Terminal MP</span>}
                                                     </p>
                                                     {p.change > 0 && (
                                                         <p className="text-xs text-brand-500">
                                                             Recibido: ${p.received} (Cambio: ${p.change})
+                                                        </p>
+                                                    )}
+                                                    {p.mpFee != null && p.mpFee > 0 && (
+                                                        <p className="text-xs text-orange-500">
+                                                            Comisión MP: -${p.mpFee.toFixed(2)}
                                                         </p>
                                                     )}
                                                 </div>
@@ -313,12 +444,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                 <span className="font-black text-gray-900 dark:text-white">
                                                     ${p.amount.toLocaleString()}
                                                 </span>
-                                                <button
-                                                    onClick={() => handleRemovePayment(idx)}
-                                                    className="text-gray-400 hover:text-red-500 transition-colors"
-                                                >
-                                                    <Trash size={16} />
-                                                </button>
+                                                {!p.mpPaymentId && (
+                                                    <button
+                                                        onClick={() => handleRemovePayment(idx)}
+                                                        className="text-gray-400 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <Trash size={16} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -354,13 +487,21 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                         {(['CASH', 'CARD', 'TRANSFER'] as const).map((m) => (
                                             <button
                                                 key={m}
-                                                onClick={() => setPaymentMethod(m)}
+                                                onClick={() => {
+                                                    setPaymentMethod(m);
+                                                    if (m !== 'CARD') {
+                                                        setTerminalStatus('idle');
+                                                        stopPolling();
+                                                    }
+                                                }}
+                                                disabled={isTerminalActive}
                                                 className={`py-3 px-2 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all text-sm
                                                 ${paymentMethod === m
-                                                    ? m === 'CASH'
-                                                        ? 'border-black bg-black text-white dark:border-white dark:bg-brand-500'
-                                                        : 'border-blue-600 bg-blue-600 text-white'
-                                                    : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-400'}`}
+                                                        ? m === 'CASH'
+                                                            ? 'border-black bg-black text-white dark:border-white dark:bg-brand-500'
+                                                            : 'border-blue-600 bg-blue-600 text-white'
+                                                        : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-400'}
+                                                ${isTerminalActive ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
                                                 <span>{m === 'CASH' ? '💵' : m === 'CARD' ? '💳' : '🏦'}</span>
                                                 {m === 'CASH' ? 'Efectivo' : m === 'CARD' ? 'Tarjeta' : 'Transfe.'}
@@ -370,48 +511,141 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 </div>
 
                                 <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                                            {paymentMethod === 'CASH' ? 'Cantidad Recibida' : 'Cantidad a Cobrar'}
-                                        </label>
-                                        <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
-                                            <InputField
-                                                type="number"
-                                                value={amountReceived}
-                                                onChange={(e) => setAmountReceived(e.target.value)}
-                                                className="w-full pl-8 pr-4 py-3 text-xl font-bold border-2 border-gray-300 dark:border-gray-700 rounded-xl focus:border-black dark:focus:border-white outline-none dark:bg-gray-800 dark:text-white"
-                                                placeholder="0.00"
-                                                onKeyDown={(e) => { if (e.key === 'Enter') handleAddPayment(); }}
-                                            />
-                                        </div>
-                                    </div>
 
-                                    {paymentMethod === 'CASH' && amountReceived && changeAmountDynamic > 0 && (
-                                        <div className="p-4 rounded-xl flex justify-between items-center bg-green-50 dark:bg-green-900/30">
-                                            <Label color="text-green-700 dark:text-green-400" className="font-bold text-sm uppercase">
-                                                Cambio a entregar
-                                            </Label>
-                                            <Label color="text-green-700 dark:text-green-400" className="text-2xl font-black">
-                                                ${changeAmountDynamic.toLocaleString()}
-                                            </Label>
+                                    {/* ── Terminal MP (CARD + terminals disponibles) ── */}
+                                    {showTerminalSelector && (
+                                        <div className="space-y-3">
+                                            {/* Selector de terminal */}
+                                            {terminals.length > 1 && (
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                                        Terminal
+                                                    </label>
+                                                    <select
+                                                        value={selectedTerminalId}
+                                                        onChange={(e) => setSelectedTerminalId(e.target.value)}
+                                                        disabled={isTerminalActive}
+                                                        className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
+                                                    >
+                                                        <option value="">Seleccionar terminal...</option>
+                                                        {terminals.map((t) => (
+                                                            <option key={t.id} value={t.id}>{t.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+
+                                            {/* Status de terminal */}
+                                            {terminalStatus === 'idle' || terminalStatus === 'cancelled' || terminalStatus === 'rejected' ? (
+                                                <div className="space-y-2">
+                                                    {(terminalStatus === 'rejected' || terminalStatus === 'cancelled') && (
+                                                        <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">
+                                                            <XCircle className="w-4 h-4 shrink-0" />
+                                                            {terminalStatus === 'cancelled' ? 'Cobro cancelado' : terminalError || 'Pago rechazado en terminal'}
+                                                        </div>
+                                                    )}
+                                                    <button
+                                                        onClick={handleChargeOnTerminal}
+                                                        disabled={!selectedTerminalId}
+                                                        className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white font-bold flex items-center justify-center gap-2 transition-colors"
+                                                    >
+                                                        <Terminal className="w-4 h-4" />
+                                                        Cobrar ${balanceRemaining.toLocaleString()} en Terminal
+                                                    </button>
+                                                </div>
+                                            ) : terminalStatus === 'creating' ? (
+                                                <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3 text-sm text-blue-800 dark:text-blue-200">
+                                                    <Loader2 className="w-5 h-5 animate-spin shrink-0 text-blue-600" />
+                                                    <span className="font-medium">Enviando cobro a la terminal...</span>
+                                                </div>
+                                            ) : terminalStatus === 'waiting' ? (
+                                                <div className="space-y-2">
+                                                    <div className="p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 flex items-center gap-3 text-sm text-yellow-800 dark:text-yellow-200">
+                                                        <Loader2 className="w-5 h-5 animate-spin shrink-0 text-yellow-600" />
+                                                        <div>
+                                                            <p className="font-bold">Esperando en terminal</p>
+                                                            <p className="text-xs opacity-75">El cliente debe acercar/insertar su tarjeta</p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={handleCancelTerminal}
+                                                        className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                                                    >
+                                                        Cancelar cobro
+                                                    </button>
+                                                </div>
+                                            ) : terminalStatus === 'processing' ? (
+                                                <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3 text-sm text-blue-800 dark:text-blue-200">
+                                                    <Loader2 className="w-5 h-5 animate-spin shrink-0 text-blue-600" />
+                                                    <div>
+                                                        <p className="font-bold">Procesando pago...</p>
+                                                        <p className="text-xs opacity-75">No retires la tarjeta</p>
+                                                    </div>
+                                                </div>
+                                            ) : terminalStatus === 'approved' ? (
+                                                <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-sm">
+                                                    <div className="flex items-center gap-2 text-green-800 dark:text-green-300 font-bold mb-1">
+                                                        <CheckCircle className="w-4 h-4" />
+                                                        Pago aprobado en terminal
+                                                    </div>
+                                                    {terminalMpFee != null && terminalMpFee > 0 && (
+                                                        <p className="text-xs text-orange-600 dark:text-orange-400">
+                                                            Comisión MP: -${terminalMpFee.toFixed(2)} · Neto: ${(balanceRemaining - terminalMpFee).toFixed(2)}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            ) : null}
+
+                                            {/* Divider para entrada manual alternativa */}
+                                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                                                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                                                <span>o cobrar manualmente</span>
+                                                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                                            </div>
                                         </div>
                                     )}
 
-                                    {paymentMethod === 'CARD' && (
-                                        <div className="p-4 bg-blue-50 text-blue-800 dark:text-blue-200 dark:bg-blue-900/30 rounded-xl text-center text-sm font-medium">
-                                            Usa la terminal bancaria para procesar el cobro de ${amountReceived || balanceRemaining}.
-                                        </div>
-                                    )}
+                                    {/* ── Entrada manual de monto ── */}
+                                    {!isTerminalActive && (
+                                        <>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                                    {paymentMethod === 'CASH' ? 'Cantidad Recibida' : 'Cantidad a Cobrar'}
+                                                </label>
+                                                <div className="relative">
+                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                                                    <InputField
+                                                        type="number"
+                                                        value={amountReceived}
+                                                        onChange={(e) => setAmountReceived(e.target.value)}
+                                                        className="w-full pl-8 pr-4 py-3 text-xl font-bold border-2 border-gray-300 dark:border-gray-700 rounded-xl focus:border-black dark:focus:border-white outline-none dark:bg-gray-800 dark:text-white"
+                                                        placeholder="0.00"
+                                                        onKeyDown={(e) => { if (e.key === 'Enter') handleAddPayment(); }}
+                                                    />
+                                                </div>
+                                            </div>
 
-                                    <Button
-                                        onClick={handleAddPayment}
-                                        className="w-full py-3"
-                                        variant="outline"
-                                        disabled={!canAddPayment}
-                                    >
-                                        Agregar Pago
-                                    </Button>
+                                            {paymentMethod === 'CASH' && amountReceived && changeAmountDynamic > 0 && (
+                                                <div className="p-4 rounded-xl flex justify-between items-center bg-green-50 dark:bg-green-900/30">
+                                                    <Label color="text-green-700 dark:text-green-400" className="font-bold text-sm uppercase">
+                                                        Cambio a entregar
+                                                    </Label>
+                                                    <Label color="text-green-700 dark:text-green-400" className="text-2xl font-black">
+                                                        ${changeAmountDynamic.toLocaleString()}
+                                                    </Label>
+                                                </div>
+                                            )}
+
+                                            <Button
+                                                onClick={handleAddPayment}
+                                                className="w-full py-3"
+                                                variant="outline"
+                                                disabled={!canAddPayment}
+                                            >
+                                                Agregar Pago
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -431,8 +665,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             disabled={isConfirmDisabled}
                             className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition-all
                             ${isConfirmDisabled
-                                ? 'bg-gray-400 dark:bg-gray-700 cursor-not-allowed'
-                                : 'bg-black hover:bg-gray-800 hover:scale-[1.02]'}`}
+                                    ? 'bg-gray-400 dark:bg-gray-700 cursor-not-allowed'
+                                    : 'bg-black hover:bg-gray-800 hover:scale-[1.02]'}`}
                         >
                             Confirmar Pago
                         </Button>
@@ -440,7 +674,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
             </Modal>
 
-            {/* Sub-modales */}
             <QRScannerModal
                 isOpen={showQR}
                 onClose={() => setShowQR(false)}

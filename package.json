@@ -30,6 +30,7 @@
     "esc-pos-encoder": "^3.0.0",
     "flatpickr": "^4.6.13",
     "lucide-react": "^0.563.0",
+    "mercadopago": "^2.12.0",
     "moment": "^2.30.1",
     "next": "^16.1.6",
     "pg": "^8.17.2",
