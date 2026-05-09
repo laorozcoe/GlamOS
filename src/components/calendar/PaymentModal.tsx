@@ -3,9 +3,11 @@ import { Modal } from "@/components/ui/modal";
 import Label from "../form/Label";
 import Button from "../ui/button/Button";
 import InputField from "../form/input/InputField";
-import { Trash, Search, QrCode, X, Tag, CheckCircle, AlertCircle, Loader2, Terminal, XCircle } from "lucide-react";
+import { Trash, Search, QrCode, X, Tag, CheckCircle, AlertCircle, Loader2, Terminal, XCircle, Sparkles } from "lucide-react";
 import { validateCoupon } from "@/app/(admin)/(others-pages)/coupons/actions";
 import { getActiveTerminals } from "@/app/(admin)/(others-pages)/settings/actions";
+import { getActivePromotions } from "@/app/(admin)/(others-pages)/promotions/actions";
+import { applyPromotions, PromotionResult } from "@/lib/applyPromotions";
 import { QRScannerModal } from "./QRScannerModal";
 import { CouponSearchModal } from "./CouponSearchModal";
 import { useBusiness } from "@/context/BusinessContext";
@@ -48,6 +50,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER'>('CASH');
     const [amountReceived, setAmountReceived] = useState<string>('');
 
+    // ---- Promociones ----
+    const [promotionResult, setPromotionResult] = useState<PromotionResult | null>(null);
+
     // ---- Cupón ----
     const [couponInput, setCouponInput] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
@@ -87,6 +92,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             setTokenId(null);
             setCoveredServiceIds([]);
             setCouponError(null);
+            setPromotionResult(null);
             setTerminalStatus('idle');
             setTerminalError(null);
             setTerminalMpFee(null);
@@ -98,12 +104,23 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 if (t.length === 1) setSelectedTerminalId(t[0].id);
                 else setSelectedTerminalId('');
             }).catch(() => setTerminals([]));
+
+            if (business?.id && cartItems.length > 0) {
+                getActivePromotions(business.id)
+                    .then((promos) => {
+                        const result = applyPromotions(cartItems, promos);
+                        if (result.applied.length > 0) setPromotionResult(result);
+                    })
+                    .catch(() => null);
+            }
         }
         return () => stopPolling();
     }, [isOpen]);
 
     // ---- Cálculos ----
-    const effectiveTotal = Math.max(0, total - discountAmount);
+    const promoDiscount = promotionResult?.totalDiscount ?? 0;
+    const subtotalAfterPromo = Math.max(0, total - promoDiscount);
+    const effectiveTotal = Math.max(0, subtotalAfterPromo - discountAmount);
     const totalPaid = payments.reduce((acc, p) => acc + p.amount, 0);
     const balanceRemaining = Math.max(0, effectiveTotal - totalPaid);
 
@@ -129,7 +146,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         setCouponLoading(true);
         setCouponError(null);
         try {
-            const result = await validateCoupon(trimmed, total, cartItems);
+            const result = await validateCoupon(trimmed, subtotalAfterPromo, cartItems);
             if (!result.valid) {
                 setCouponError(result.error);
                 return;
@@ -284,6 +301,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             couponCode: appliedCoupon?.code || null,
             tokenId: tokenId,
             discountAmount,
+            promotionDiscount: promoDiscount,
             originalTotal: total,
             coveredServiceIds,
         });
@@ -304,18 +322,26 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
                     {/* ── Header Total ── */}
                     <div className="p-6 border-b border-gray-100 dark:border-gray-800 text-center bg-gray-50/50 dark:bg-gray-800/30">
-                        {appliedCoupon ? (
+                        {(promoDiscount > 0 || appliedCoupon) ? (
                             <div className="flex flex-col items-center gap-0.5">
                                 <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
                                     ${total.toLocaleString()}
                                 </span>
-                                <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                                    {appliedCoupon.category === 'COURTESY'
-                                        ? 'Cortesía'
-                                        : appliedCoupon.type === 'PERCENTAGE'
-                                            ? `${appliedCoupon.value}% off`
-                                            : 'Descuento fijo'} — ahorras ${discountAmount.toLocaleString()}
-                                </span>
+                                {promoDiscount > 0 && (
+                                    <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                                        <Sparkles className="w-3.5 h-3.5" />
+                                        Promociones — ahorras ${promoDiscount.toLocaleString()}
+                                    </span>
+                                )}
+                                {appliedCoupon && (
+                                    <span className="text-sm font-semibold text-green-600 dark:text-green-400">
+                                        {appliedCoupon.category === 'COURTESY'
+                                            ? 'Cortesía'
+                                            : appliedCoupon.type === 'PERCENTAGE'
+                                                ? `${appliedCoupon.value}% off`
+                                                : 'Descuento fijo'} — ahorras ${discountAmount.toLocaleString()}
+                                    </span>
+                                )}
                                 <span className="text-5xl font-black text-gray-900 dark:text-white tracking-tight mt-1">
                                     ${effectiveTotal.toLocaleString()}
                                 </span>
@@ -333,6 +359,27 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     </div>
 
                     <div className="p-6 space-y-5">
+
+                        {/* ── Promociones aplicadas ── */}
+                        {promotionResult && promotionResult.applied.length > 0 && (
+                            <div className="p-3 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 space-y-1.5">
+                                <div className="flex items-center gap-2 text-xs font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wider">
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    Promociones automáticas
+                                </div>
+                                {promotionResult.applied.map((a) => (
+                                    <div key={a.promotionId} className="flex items-center justify-between text-sm">
+                                        <div>
+                                            <p className="font-semibold text-purple-800 dark:text-purple-300">{a.promotionName}</p>
+                                            <p className="text-xs text-purple-600 dark:text-purple-400">{a.detail}</p>
+                                        </div>
+                                        <span className="font-bold text-purple-700 dark:text-purple-400 shrink-0 ml-2">
+                                            -${a.discountAmount.toLocaleString()}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         {/* ── Sección Cupón ── */}
                         <div className="space-y-2">
@@ -686,7 +733,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 isOpen={showSearch}
                 onClose={() => setShowSearch(false)}
                 onSelect={(code) => applyCoupon(code)}
-                subtotal={total}
+                subtotal={subtotalAfterPromo}
             />
         </>
     );

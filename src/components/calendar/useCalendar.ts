@@ -137,6 +137,18 @@ export const useCalendarLogic = () => {
 
     const activeTotal = isMultiCheckoutMode ? multiTotalSum : total;
 
+    const activeCartItems = isMultiCheckoutMode
+        ? multiAppointments.flatMap((appt: any) =>
+            (appt.services || []).map((s: any) => ({
+                serviceId: s.serviceId ?? null,
+                price: Number(s.price ?? 0),
+            }))
+          )
+        : appointments.map((a: any) => ({
+            serviceId: (a as any).serviceId ?? null,
+            price: Number((a as any).price ?? 0),
+          }));
+
     // --- HANDLERS LÓGICOS ---
 
     const getUserInfo = () => {
@@ -693,6 +705,7 @@ export const useCalendarLogic = () => {
                 payment: paymentData.payments, // Múltiples pagos
                 mpPaymentId,
                 mpFee,
+                promotionDiscount: paymentData.promotionDiscount ?? null,
             };
 
             const saleResult = await createSalePrisma(salePayload);
@@ -860,7 +873,7 @@ export const useCalendarLogic = () => {
         selectedEmployee, setSelectedEmployee,
         appointments, addServiceToCart, removeServiceFromCart,
         customer, handleChangeCustomer,
-        total, activeTotal, currentDate, setCurrentDate, handleUpdateDate,
+        total, activeTotal, activeCartItems, currentDate, setCurrentDate, handleUpdateDate,
         flashCategory,
         showPayModal, setShowPayModal,
         handleNewEventButton, handleDateClick, handleEventClick,

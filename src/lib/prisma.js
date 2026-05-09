@@ -819,6 +819,7 @@ export const createSalePrisma = async (data) => {
         totals, // Objeto { subtotal, discount, total }
         mpPaymentId = null,
         mpFee = null,
+        promotionDiscount = null,
     } = data;
 
     try {
@@ -873,12 +874,13 @@ export const createSalePrisma = async (data) => {
                 },
             });
 
-            // 4. Guardar datos de MP si vienen de terminal (raw SQL — Prisma client no conoce estos campos)
-            if (mpPaymentId || mpFee != null) {
+            // 4. Guardar campos raw SQL (mpPaymentId, mpFee, promotionDiscount — Prisma client no los conoce)
+            if (mpPaymentId || mpFee != null || promotionDiscount != null) {
                 await tx.$executeRawUnsafe(
-                    `UPDATE "Sale" SET "mpPaymentId" = $1, "mpFee" = $2 WHERE id = $3`,
+                    `UPDATE "Sale" SET "mpPaymentId" = $1, "mpFee" = $2, "promotionDiscount" = $3 WHERE id = $4`,
                     mpPaymentId ?? null,
                     mpFee ?? null,
+                    promotionDiscount ?? null,
                     newSale.id
                 );
             }

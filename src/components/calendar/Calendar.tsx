@@ -421,7 +421,7 @@ export default function CalendarGrid() {
         onClose={() => logic.setShowPayModal(false)}
         total={logic.activeTotal}
         onFinalize={logic.handleFinalizePayment}
-        cartItems={logic.appointments.map((a: any) => ({ serviceId: a.serviceId ?? null, price: Number(a.price ?? 0) }))}
+        cartItems={logic.activeCartItems}
       />
 
       {/* NUEVO: MODAL DE DETALLE DE VENTA (Solo se abre si ESTÁ pagado) */}

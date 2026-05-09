@@ -95,6 +95,12 @@ const navItems: NavItem[] = [
         path: "/coupons",
         adminOnly: true,
       },
+      {
+        icon: <Sparkles size={18} />,
+        name: "Promociones",
+        path: "/promotions",
+        adminOnly: true,
+      },
     ],
   },
 ];

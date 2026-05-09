@@ -54,6 +54,7 @@ model Business {
   mpStoreId     String?
 
   coupons           Coupon[]
+  promotions        Promotion[]
 }
 
 //////////////////////
@@ -207,6 +208,7 @@ model Service {
   variants            ServiceVariant[]
   saleItems           SaleItem[]
   serviceRequests     AppointmentServiceRequest[]
+  promotionServices   PromotionService[]
 }
 
 //////////////////////
@@ -470,8 +472,9 @@ model Sale {
   total         Float // Monto final cobrado
   status        SaleStatus @default(COMPLETED)
   notes         String? // Para auditoría: "Se aplicó descuento por retraso"
-  mpPaymentId   String?    // ID del pago en MercadoPago (cobros con terminal)
-  mpFee         Float?     // Comisión cobrada por MP sobre este pago
+  mpPaymentId       String?    // ID del pago en MercadoPago (cobros con terminal)
+  mpFee             Float?     // Comisión cobrada por MP sobre este pago
+  promotionDiscount Float?     // Descuento total aplicado por promociones automáticas
   createdAt     DateTime   @default(now()) // LA HORA REAL DEL COBRO
   updatedAt     DateTime   @updatedAt
   active        Boolean    @default(true) // <-- NUEVO
@@ -485,6 +488,7 @@ model Sale {
   items    SaleItem[]
   payments Payment[]
 }
+
 
 model SaleItem {
   id            String  @id @default(uuid())
@@ -555,6 +559,41 @@ model CouponToken {
   createdAt DateTime  @default(now())
 
   coupon    Coupon    @relation(fields: [couponId], references: [id])
+}
+
+//////////////////////
+// 🎯 PROMOCIONES
+//////////////////////
+
+model Promotion {
+  id            String    @id @default(uuid())
+  businessId    String
+  name          String
+  type          String    // "SERVICE_DISCOUNT" | "BUY_X_GET_Y" | "COMBO"
+  discountType  String?   // "PERCENTAGE" | "FIXED"
+  discountValue Float?
+  buyQuantity   Int       @default(2)   // BUY_X_GET_Y: tamaño del grupo
+  getQuantity   Int       @default(1)   // BUY_X_GET_Y: cuántos son gratis
+  startDate     DateTime
+  endDate       DateTime
+  usedCount     Int       @default(0)
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  business  Business          @relation(fields: [businessId], references: [id])
+  services  PromotionService[]
+}
+
+model PromotionService {
+  id          String    @id @default(uuid())
+  promotionId String
+  serviceId   String
+  role        String    @default("PRIMARY") // "PRIMARY" | "SECONDARY" (COMBO)
+
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  service     Service   @relation(fields: [serviceId], references: [id])
+
+  @@unique([promotionId, serviceId])
 }
 
 model CashClose {

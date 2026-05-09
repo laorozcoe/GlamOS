@@ -53,7 +53,7 @@ const getDateInfo = (coupon: Coupon) => {
   const end = new Date(coupon.endDate).getTime();
   const total = end - start;
   const elapsed = Math.max(0, now - start);
-  const pct = total > 0 ? Math.min(100, (elapsed / total) * 100) : 100;
+  const pct = total > 0 ? Math.round(Math.min(100, (elapsed / total) * 100)) : 100;
   const daysLeft = Math.max(0, Math.ceil((end - now) / 86400000));
   const color = pct < 50 ? "bg-green-500" : pct < 75 ? "bg-amber-500" : "bg-red-500";
   return { pct, daysLeft, color };
