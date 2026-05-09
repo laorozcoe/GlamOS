@@ -388,7 +388,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                         <button
                                             onClick={() => setShowSearch(true)}
                                             className="p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0"
-                                            title="Buscar cupón activo"
+                                            title="Buscar cupones genéricos (los foliados se ingresan manualmente o por QR)"
                                         >
                                             <Search className="w-4 h-4" />
                                         </button>

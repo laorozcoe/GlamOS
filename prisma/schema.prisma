@@ -537,6 +537,7 @@ model Coupon {
   endDate     DateTime
   active      Boolean         @default(true)
   createdAt   DateTime        @default(now())
+  couponKind  String          @default("GENERIC") // "GENERIC" | "FOLIADO"
 
   business    Business        @relation(fields: [businessId], references: [id])
   sales       Sale[]

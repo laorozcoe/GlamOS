@@ -62,10 +62,14 @@ export function CouponSearchModal({
     <Modal isOpen={isOpen} onClose={handleClose} className="max-w-md w-full m-4">
       <div className="p-5">
         <h3 className="text-base font-bold text-gray-800 dark:text-white mb-1">
-          Cupones disponibles
+          Cupones genéricos disponibles
         </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
           Total de la compra: <span className="font-semibold">${subtotal.toLocaleString()}</span>
+        </p>
+        <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-4 flex items-center gap-1">
+          <span>🎫</span>
+          Los cupones foliados solo se aceptan por QR o código de folio — no aparecen aquí.
         </p>
 
         {loading ? (
@@ -73,7 +77,7 @@ export function CouponSearchModal({
         ) : data?.coupons.length === 0 ? (
           <div className="py-10 flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
             <Tag className="w-8 h-8 opacity-40" />
-            <p className="text-sm">No hay cupones activos disponibles</p>
+            <p className="text-sm">No hay cupones genéricos activos disponibles</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2 max-h-96 overflow-y-auto custom-scrollbar pr-1">
