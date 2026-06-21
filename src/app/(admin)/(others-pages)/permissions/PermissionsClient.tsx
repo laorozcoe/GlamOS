@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from "react";
 import Switch from "@/components/form/switch/Switch";
 import { updateEmployeePermissions } from "./actions";
-import { User, Shield, Calendar, CheckCircle, XCircle } from "lucide-react";
+import { User, Shield, Calendar, CheckCircle, XCircle, EyeOff } from "lucide-react";
 
 interface PermissionsClientProps {
   employees: any[];
@@ -12,10 +12,14 @@ interface PermissionsClientProps {
 export default function PermissionsClient({ employees }: PermissionsClientProps) {
   const [isPending, startTransition] = useTransition();
 
-  const handleToggle = async (employeeId: string, currentVal: boolean) => {
+  const handleToggle = async (
+    employeeId: string,
+    field: "canCreateAppointments" | "canViewClientData",
+    currentVal: boolean
+  ) => {
     startTransition(async () => {
       try {
-        await updateEmployeePermissions(employeeId, !currentVal);
+        await updateEmployeePermissions(employeeId, { [field]: !currentVal });
       } catch (err) {
         console.error("Error updating permission", err);
         alert("Ocurrió un error al actualizar los permisos.");
@@ -73,11 +77,11 @@ export default function PermissionsClient({ employees }: PermissionsClientProps)
               </div>
 
               {/* Permiso de crear citas */}
-              <div className="border-t border-gray-100 dark:border-white/5 pt-3">
+              <div className="border-t border-gray-100 dark:border-white/5 pt-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Puede Crear Citas
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                      <Calendar size={14} className="text-gray-400" /> Puede Crear Citas
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       Autorización explícita para agendar
@@ -86,7 +90,22 @@ export default function PermissionsClient({ employees }: PermissionsClientProps)
                   <Switch
                     label={emp.canCreateAppointments ? "Autorizado" : "Restringido"}
                     defaultChecked={emp.canCreateAppointments}
-                    onChange={() => handleToggle(emp.id, emp.canCreateAppointments)}
+                    onChange={() => handleToggle(emp.id, "canCreateAppointments", emp.canCreateAppointments)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                      <EyeOff size={14} className="text-gray-400" /> Ver Datos del Cliente
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Nombre y teléfono del cliente
+                    </p>
+                  </div>
+                  <Switch
+                    label={emp.canViewClientData ? "Visible" : "Oculto"}
+                    defaultChecked={emp.canViewClientData}
+                    onChange={() => handleToggle(emp.id, "canViewClientData", emp.canViewClientData)}
                   />
                 </div>
               </div>
@@ -105,8 +124,12 @@ export default function PermissionsClient({ employees }: PermissionsClientProps)
                 <th className="px-5 py-3 text-left text-sm font-medium tracking-wider text-gray-500">Rol Sistema</th>
                 <th className="px-5 py-3 text-left text-sm font-medium tracking-wider text-gray-500">Nómina Activa</th>
                 <th className="px-5 py-3 text-left text-sm font-medium tracking-wider text-gray-500">
-                  Puede Crear Citas
-                  <p className="text-xs font-normal text-gray-400 mt-0.5">Autorización explícita para agendar</p>
+                  <span className="flex items-center gap-1.5"><Calendar size={14} /> Puede Crear Citas</span>
+                  <p className="text-xs font-normal text-gray-400 mt-0.5">Autorización para agendar</p>
+                </th>
+                <th className="px-5 py-3 text-left text-sm font-medium tracking-wider text-gray-500">
+                  <span className="flex items-center gap-1.5"><EyeOff size={14} /> Ver Datos del Cliente</span>
+                  <p className="text-xs font-normal text-gray-400 mt-0.5">Nombre y teléfono</p>
                 </th>
               </tr>
             </thead>
@@ -132,7 +155,14 @@ export default function PermissionsClient({ employees }: PermissionsClientProps)
                     <Switch
                       label={emp.canCreateAppointments ? "Autorizado" : "Restringido"}
                       defaultChecked={emp.canCreateAppointments}
-                      onChange={() => handleToggle(emp.id, emp.canCreateAppointments)}
+                      onChange={() => handleToggle(emp.id, "canCreateAppointments", emp.canCreateAppointments)}
+                    />
+                  </td>
+                  <td className="whitespace-nowrap px-5 py-4 text-sm">
+                    <Switch
+                      label={emp.canViewClientData ? "Visible" : "Oculto"}
+                      defaultChecked={emp.canViewClientData}
+                      onChange={() => handleToggle(emp.id, "canViewClientData", emp.canViewClientData)}
                     />
                   </td>
                 </tr>

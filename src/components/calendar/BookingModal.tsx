@@ -37,6 +37,7 @@ interface BookingModalProps {
     setExtraServicesModal: (val: boolean) => void;
     isAdmin?: boolean;
     canCreateAppointments?: boolean;
+    canViewClientData?: boolean;
     onResolveGhost?: (id: string, approve: boolean) => void;
 }
 
@@ -48,7 +49,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
         date, setDate, time, setTime, timeEnd, setTimeEnd,
         appointments, onDeleteService, total,
         onSave, onOpenPay, onDeleteAppointment, setExtraServicesModal,
-        customers, setCustomer, isAdmin, canCreateAppointments, onResolveGhost
+        customers, setCustomer, isAdmin, canCreateAppointments, canViewClientData = true, onResolveGhost
     } = props;
 
     // --- ESTADOS ---
@@ -142,6 +143,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                             </div>
 
                             {/* Bloque 3: Cliente (Ocupa 2 columnas en desktop) */}
+                            {canViewClientData && (
                             <div className="md:col-span-2 bg-gray-50 dark:bg-gray-800/30 p-4 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
                                 <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-4 flex items-center gap-2">
                                     <User size={18} className="text-brand-500" /> Datos del Cliente
@@ -155,8 +157,6 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                         <Label className="text-xs font-medium mb-1.5 block text-gray-500 dark:text-gray-400">Nombre</Label>
                                         <InputField className="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm dark:text-white" name="name" value={customer.name} onChange={handleChangeCustomer} placeholder="Nombre completo" />
                                     </div>
-
-
                                     <Button
                                         onClick={() => setIsSearchModalOpen(true)}
                                         type="button"
@@ -167,6 +167,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                     </Button>
                                 </div>
                             </div>
+                            )}
                         </div>
                     </div>
 

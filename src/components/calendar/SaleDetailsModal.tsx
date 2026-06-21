@@ -2,6 +2,7 @@ import React from "react";
 import { Modal } from "@/components/ui/modal";
 import Label from "../form/Label";
 import Button from "../ui/button/Button";
+import { PaymentMethodBadge } from "@/components/sales/PaymentMeta";
 
 interface SaleDetailsModalProps {
     isOpen: boolean;
@@ -9,10 +10,11 @@ interface SaleDetailsModalProps {
     event: any; // El evento seleccionado con toda la info
     onReprint: () => void;
     sale?: any; // Datos de la venta (SaleItem con couponCovered, etc.)
+    canViewClientData?: boolean;
 }
 
 export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
-    isOpen, onClose, event, onReprint, sale
+    isOpen, onClose, event, onReprint, sale, canViewClientData = true
 }) => {
     if (!event) return null;
 
@@ -45,6 +47,11 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                     ${totalAmount}
                 </Label>
                 <p className="text-gray-500 text-sm mt-1">Total Pagado</p>
+                {sale?.payments?.length > 0 && (
+                    <div className="mt-3 flex justify-center">
+                        <PaymentMethodBadge sale={sale} />
+                    </div>
+                )}
             </div>
 
             {/* BODY CON DETALLES */}
@@ -54,8 +61,14 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                 <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                         <p className="text-gray-400 font-bold text-xs uppercase">Cliente</p>
-                        <p className="font-semibold text-gray-800 dark:text-gray-200">{guestName || "Público General"}</p>
-                        <p className="text-xs text-gray-500">{guestPhone}</p>
+                        {canViewClientData ? (
+                            <>
+                                <p className="font-semibold text-gray-800 dark:text-gray-200">{guestName || "Público General"}</p>
+                                <p className="text-xs text-gray-500">{guestPhone}</p>
+                            </>
+                        ) : (
+                            <p className="font-semibold text-gray-400 italic text-sm">— Confidencial —</p>
+                        )}
                     </div>
                     <div className="text-right">
                         <p className="text-gray-400 font-bold text-xs uppercase">Atendió</p>
@@ -64,6 +77,38 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                 </div>
 
                 <hr className="border-dashed border-gray-200" />
+
+                {/* Liquidación MercadoPago (cobro con terminal) */}
+                {sale?.mpPaymentId && sale?.mpFee != null && (() => {
+                    const gross = Number(sale.total ?? totalAmount ?? 0);
+                    const net = sale.mpNetReceived != null
+                        ? Number(sale.mpNetReceived)
+                        : gross - Number(sale.mpFee);
+                    return (
+                        <div className="space-y-2">
+                            <p className="text-[11px] font-bold text-gray-400 uppercase">Liquidación MercadoPago</p>
+                            <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                                <span>Total cobrado (bruto)</span>
+                                <span className="font-semibold">${gross.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm text-orange-600 dark:text-orange-400">
+                                <span>Comisión MP (incl. IVA)</span>
+                                <span className="font-semibold">-${Number(sale.mpFee).toFixed(2)}</span>
+                            </div>
+                            {/* Neto destacado */}
+                            <div className="flex items-center justify-between rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3">
+                                <span className="font-bold text-green-700 dark:text-green-400">Depósito real (neto)</span>
+                                <span className="text-2xl font-extrabold text-green-700 dark:text-green-400">${net.toFixed(2)}</span>
+                            </div>
+                            {sale.mpReleaseDate && (
+                                <div className="flex justify-between text-[11px] text-gray-500">
+                                    <span>Se libera</span>
+                                    <span>{new Date(sale.mpReleaseDate).toLocaleDateString('es-MX')}</span>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
 
                 {/* Cupón aplicado */}
                 {sale?.coupon && (

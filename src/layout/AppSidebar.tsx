@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -41,6 +41,12 @@ const navItems: NavItem[] = [
     name: "Historial Ventas",
     path: "/sales",
     adminOnly: true, // Asumimos Admin Only por confidencialidad financiera a menos que queramos que recepcionista vea.
+  },
+  {
+    icon: <BadgeDollarSign />,
+    name: "Liquidaciones",
+    path: "/settlements",
+    adminOnly: true,
   },
   {
     icon: <BadgeDollarSign />,
@@ -273,9 +279,9 @@ const AppSidebar: React.FC = () => {
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const isActive = useCallback((path: string) => path === pathname, [pathname]);
+  const isActive = (path: string) => path === pathname;
 
-  const matchedSubmenu = useMemo<{ type: "main" | "others"; index: number } | null>(() => {
+  const getMatchedSubmenu = (): { type: "main" | "others"; index: number } | null => {
     for (const menuType of ["main", "others"] as const) {
       const items = menuType === "main" ? navItems : othersItems;
       for (let i = 0; i < items.length; i++) {
@@ -285,7 +291,9 @@ const AppSidebar: React.FC = () => {
       }
     }
     return null;
-  }, [pathname]);
+  };
+
+  const matchedSubmenu = getMatchedSubmenu();
 
   const [openSubmenu, setOpenSubmenu] = useState(matchedSubmenu);
   const [prevPathname, setPrevPathname] = useState(pathname);

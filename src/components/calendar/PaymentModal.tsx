@@ -30,7 +30,7 @@ interface AppliedCoupon {
     value: number;
 }
 
-type TerminalStatus = 'idle' | 'creating' | 'waiting' | 'processing' | 'approved' | 'rejected' | 'cancelled';
+type TerminalStatus = 'idle' | 'creating' | 'connecting' | 'waiting' | 'processing' | 'approved' | 'rejected' | 'cancelled';
 
 interface PaymentModalProps {
     isOpen: boolean;
@@ -72,12 +72,27 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [terminalMpFee, setTerminalMpFee] = useState<number | null>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const currentIntentIdRef = useRef<string | null>(null);
+    // Cuenta sondeos consecutivos en estado OPEN para detectar terminal no conectada
+    const openPollsRef = useRef(0);
+    // ~7 sondeos x 3s ≈ 21s sin que el cobro llegue al dispositivo => no responde
+    const MAX_OPEN_POLLS = 7;
 
     const stopPolling = () => {
         if (pollRef.current) {
             clearInterval(pollRef.current);
             pollRef.current = null;
         }
+    };
+
+    // Cancela en MP un intent que quedó en OPEN (cancelable) para permitir reintentar.
+    const cancelStuckIntent = (intentId: string) => {
+        const terminal = terminals.find(t => t.id === selectedTerminalId);
+        if (!intentId || !terminal || !business?.id) return;
+        fetch('/api/mp/payment-intent', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ posId: terminal.posId, businessId: business.id, intentId }),
+        }).catch(() => null);
     };
 
     // Reset completo al abrir
@@ -101,8 +116,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
             getActiveTerminals().then((t) => {
                 setTerminals(t);
-                if (t.length === 1) setSelectedTerminalId(t[0].id);
-                else setSelectedTerminalId('');
+                // Preseleccionar: única terminal, o la marcada como predeterminada, o la primera.
+                if (t.length === 1) {
+                    setSelectedTerminalId(t[0].id);
+                } else if (t.length > 1) {
+                    const def = t.find((x: any) => x.isDefault) ?? t[0];
+                    setSelectedTerminalId(def.id);
+                } else {
+                    setSelectedTerminalId('');
+                }
             }).catch(() => setTerminals([]));
 
             if (business?.id && cartItems.length > 0) {
@@ -199,7 +221,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             if (!res.ok) throw new Error(data.error || 'Error al crear cobro');
 
             currentIntentIdRef.current = data.intentId;
-            setTerminalStatus('waiting');
+            openPollsRef.current = 0;
+            // OPEN al inicio: MP aún no entrega el cobro al dispositivo físico
+            setTerminalStatus('connecting');
 
             pollRef.current = setInterval(async () => {
                 try {
@@ -209,7 +233,20 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     const pollData = await pollRes.json();
                     const state: string = pollData.state;
 
-                    if (state === 'ON_TERMINAL') {
+                    if (state === 'OPEN') {
+                        openPollsRef.current += 1;
+                        // Si nunca llega al dispositivo, asumimos que no está conectado
+                        if (openPollsRef.current >= MAX_OPEN_POLLS) {
+                            stopPolling();
+                            cancelStuckIntent(data.intentId);
+                            currentIntentIdRef.current = null;
+                            setTerminalError('La terminal no responde. Verifica que esté encendida y conectada a internet, y vuelve a intentar.');
+                            setTerminalStatus('rejected');
+                            return;
+                        }
+                        setTerminalStatus('connecting');
+                    } else if (state === 'ON_TERMINAL') {
+                        openPollsRef.current = 0;
                         setTerminalStatus('waiting');
                     } else if (state === 'PROCESSING') {
                         setTerminalStatus('processing');
@@ -224,6 +261,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             change: 0,
                             mpPaymentId: pollData.paymentId ?? null,
                             mpFee: pollData.mpFee ?? null,
+                            mpNetReceived: pollData.netReceived ?? null,
+                            mpTaxes: pollData.taxes ?? null,
+                            mpReleaseDate: pollData.releaseDate ?? null,
                         }]);
                     } else if (state === 'CANCELED') {
                         stopPolling();
@@ -244,17 +284,29 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     };
 
     const handleCancelTerminal = async () => {
-        stopPolling();
-        if (business?.id && selectedTerminalId) {
-            const terminal = terminals.find(t => t.id === selectedTerminalId);
-            if (terminal) {
-                fetch('/api/mp/payment-intent', {
+        const intentId = currentIntentIdRef.current;
+        const terminal = terminals.find(t => t.id === selectedTerminalId);
+
+        if (business?.id && terminal && intentId) {
+            try {
+                const res = await fetch('/api/mp/payment-intent', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ posId: terminal.posId, businessId: business.id }),
-                }).catch(() => null);
+                    body: JSON.stringify({ posId: terminal.posId, businessId: business.id, intentId }),
+                });
+
+                // 409: el cobro ya está en la terminal — solo se cancela en el dispositivo.
+                // Seguimos escuchando (no detenemos el polling) para detectar el resultado.
+                if (res.status === 409) {
+                    setTerminalError('El cobro ya está en la terminal. Cancélalo en el dispositivo físico.');
+                    return;
+                }
+            } catch {
+                // si falla la red, caemos a cancelación local
             }
         }
+
+        stopPolling();
         setTerminalStatus('cancelled');
         currentIntentIdRef.current = null;
     };
@@ -288,7 +340,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         setPayments(payments.filter((_, i) => i !== index));
     };
 
-    const isConfirmDisabled = totalPaid < effectiveTotal || terminalStatus === 'waiting' || terminalStatus === 'processing' || terminalStatus === 'creating';
+    const isConfirmDisabled = totalPaid < effectiveTotal || terminalStatus === 'connecting' || terminalStatus === 'waiting' || terminalStatus === 'processing' || terminalStatus === 'creating';
 
     const handleConfirm = () => {
         if (isConfirmDisabled) return;
@@ -308,7 +360,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     };
 
     const showTerminalSelector = paymentMethod === 'CARD' && terminals.length > 0 && balanceRemaining > 0;
-    const isTerminalActive = ['creating', 'waiting', 'processing'].includes(terminalStatus);
+    const isTerminalActive = ['creating', 'connecting', 'waiting', 'processing'].includes(terminalStatus);
 
     return (
         <>
@@ -605,6 +657,22 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                     <Loader2 className="w-5 h-5 animate-spin shrink-0 text-blue-600" />
                                                     <span className="font-medium">Enviando cobro a la terminal...</span>
                                                 </div>
+                                            ) : terminalStatus === 'connecting' ? (
+                                                <div className="space-y-2">
+                                                    <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3 text-sm text-blue-800 dark:text-blue-200">
+                                                        <Loader2 className="w-5 h-5 animate-spin shrink-0 text-blue-600" />
+                                                        <div>
+                                                            <p className="font-bold">Conectando con la terminal...</p>
+                                                            <p className="text-xs opacity-75">Verifica que el dispositivo esté encendido y con internet</p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={handleCancelTerminal}
+                                                        className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                                                    >
+                                                        Cancelar cobro
+                                                    </button>
+                                                </div>
                                             ) : terminalStatus === 'waiting' ? (
                                                 <div className="space-y-2">
                                                     <div className="p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 flex items-center gap-3 text-sm text-yellow-800 dark:text-yellow-200">
@@ -614,6 +682,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                             <p className="text-xs opacity-75">El cliente debe acercar/insertar su tarjeta</p>
                                                         </div>
                                                     </div>
+                                                    {terminalError && (
+                                                        <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">
+                                                            <XCircle className="w-4 h-4 shrink-0" />
+                                                            {terminalError}
+                                                        </div>
+                                                    )}
                                                     <button
                                                         onClick={handleCancelTerminal}
                                                         className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"

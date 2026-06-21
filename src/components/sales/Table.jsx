@@ -10,10 +10,10 @@ import moment from "moment"
 import Label from "@/components/form/Label"
 import Button from "@/components/ui/button/Button";
 import { Printer } from "lucide-react";
+import { PaymentMethodBadge, SaleAmount } from "./PaymentMeta";
 
 // Recibimos una nueva prop: onRowClick
 export default function SalesTable({ sales, onReprint, onRowClick }) {
-    console.log(sales);
     return (
         <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/5">
@@ -26,6 +26,9 @@ export default function SalesTable({ sales, onReprint, onRowClick }) {
                     </TableCell>
                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
                         Total
+                    </TableCell>
+                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                        Método
                     </TableCell>
                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
                         Fecha
@@ -55,8 +58,11 @@ export default function SalesTable({ sales, onReprint, onRowClick }) {
                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 truncate">
                             {sale.employee?.user?.name + " " + sale.employee?.user?.lastName || "Sin asignar"}
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 truncate">
-                            <Label color="text-brand-500 dark:text-brand-400 "> {sale.total} $</Label>
+                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                            <SaleAmount sale={sale} />
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-start">
+                            <PaymentMethodBadge sale={sale} />
                         </TableCell>
                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 truncate">
                             {moment(sale.createdAt).format("YYYY-MM-DD hh:mm:SS a")}

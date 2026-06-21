@@ -13,6 +13,7 @@ import Button from "../ui/button/Button";
 import { usePrinter } from "@/hooks/usePrinter";
 import { toast } from "react-toastify";
 import Label from "@/components/form/Label";
+import { PaymentMethodBadge } from "./PaymentMeta";
 
 // createClientPrisma(businessId, name, phone, email, notes, employeeId)
 // updateClientPrisma(id, businessId, name, phone, email, notes, employeeId) 
@@ -287,23 +288,29 @@ export default function SalesTable({ sales }: any) {
                                 </div>
                             </>
                         )}
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center">
                             <Label className="text-gray-500">Método</Label>
-                            <Label color="text-brand-500 dark:text-brand-400" className="font-semibold">{selectedSale?.payments?.[0]?.method || "N/A"}</Label>
+                            {selectedSale && <PaymentMethodBadge sale={selectedSale} />}
                         </div>
                         <div className="flex justify-between">
-                            <Label className="text-gray-500">Total cobrado</Label>
-                            <Label color="text-brand-500 dark:text-brand-400" className="font-bold">${selectedSale?.total ?? 0}</Label>
+                            <Label className="text-gray-500">Total cobrado {selectedSale?.mpFee > 0 ? "(bruto)" : ""}</Label>
+                            <Label color="text-gray-500 dark:text-gray-400" className="font-semibold">${selectedSale?.total ?? 0}</Label>
                         </div>
                         {selectedSale?.mpFee != null && selectedSale.mpFee > 0 && (
                             <>
                                 <div className="flex justify-between text-orange-600 dark:text-orange-400">
-                                    <Label>Comisión MercadoPago</Label>
+                                    <Label>Comisión MercadoPago (incl. IVA)</Label>
                                     <Label className="font-semibold">-${Number(selectedSale.mpFee).toFixed(2)}</Label>
                                 </div>
-                                <div className="flex justify-between border-t border-gray-100 dark:border-gray-700 pt-2 text-green-700 dark:text-green-400">
-                                    <Label className="font-bold">Neto recibido</Label>
-                                    <Label className="font-bold">${(Number(selectedSale.total) - Number(selectedSale.mpFee)).toFixed(2)}</Label>
+                                {/* Neto destacado */}
+                                <div className="mt-2 flex items-center justify-between rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3">
+                                    <Label className="font-bold text-green-700 dark:text-green-400">Depósito real (neto)</Label>
+                                    <Label className="text-2xl font-extrabold text-green-700 dark:text-green-400">
+                                        ${(selectedSale.mpNetReceived != null
+                                            ? Number(selectedSale.mpNetReceived)
+                                            : Number(selectedSale.total) - Number(selectedSale.mpFee)
+                                        ).toFixed(2)}
+                                    </Label>
                                 </div>
                             </>
                         )}

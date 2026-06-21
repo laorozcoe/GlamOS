@@ -9,10 +9,11 @@ interface MultiCheckoutModalProps {
     onClose: () => void;
     events: any[]; // The daily appointments
     onProceedToPayment: (selectedAppointments: any[], totalSum: number) => void;
+    canViewClientData?: boolean;
 }
 
 export const MultiCheckoutModal: React.FC<MultiCheckoutModalProps> = ({
-    isOpen, onClose, events, onProceedToPayment
+    isOpen, onClose, events, onProceedToPayment, canViewClientData = true
 }) => {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -22,8 +23,9 @@ export const MultiCheckoutModal: React.FC<MultiCheckoutModalProps> = ({
 
     const filteredEvents = unpaidEvents.filter((event) => {
         const term = searchTerm.toLowerCase();
-        const clientName = (event.guestName || "Cliente sin nombre").toLowerCase();
         const serviceName = (event.title || "").toLowerCase();
+        if (!canViewClientData) return serviceName.includes(term);
+        const clientName = (event.guestName || "Cliente sin nombre").toLowerCase();
         return clientName.includes(term) || serviceName.includes(term);
     });
 
@@ -140,7 +142,7 @@ export const MultiCheckoutModal: React.FC<MultiCheckoutModalProps> = ({
                                         </div>
                                         <div className="flex-1">
                                             <p className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                                {event.guestName || "Cliente sin nombre"}
+                                                {canViewClientData ? (event.guestName || "Cliente sin nombre") : "Cliente"}
                                                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                                                     {dateStr}
                                                 </span>

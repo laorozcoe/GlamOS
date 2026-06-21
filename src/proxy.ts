@@ -3,16 +3,17 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 
 // 🌍 rutas públicas
-const publicRoutes = ["/api/auth", "/not-found", "/error-404", "/schedule", "/seed", "testPrint"]
+const publicRoutes = ["/api/auth", "/api/mp/webhook", "/not-found", "/error-404", "/schedule", "/seed", "testPrint"]
 
 // 🔐 rutas por rol
 const roleBasedRoutes = {
   ADMIN: [
     "/sales",
-    "/payroll", 
+    "/payroll",
     "/permissions",
     "/services",
-    "/employees"
+    "/employees",
+    "/settlements"
   ],
   RECEPTION: [
     "/customers"

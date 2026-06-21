@@ -819,6 +819,9 @@ export const createSalePrisma = async (data) => {
         totals, // Objeto { subtotal, discount, total }
         mpPaymentId = null,
         mpFee = null,
+        mpNetReceived = null,
+        mpTaxes = null,
+        mpReleaseDate = null,
         promotionDiscount = null,
     } = data;
 
@@ -874,12 +877,15 @@ export const createSalePrisma = async (data) => {
                 },
             });
 
-            // 4. Guardar campos raw SQL (mpPaymentId, mpFee, promotionDiscount — Prisma client no los conoce)
-            if (mpPaymentId || mpFee != null || promotionDiscount != null) {
+            // 4. Guardar campos MP y de promociones (raw SQL para no depender del cliente generado)
+            if (mpPaymentId || mpFee != null || mpNetReceived != null || mpTaxes != null || mpReleaseDate != null || promotionDiscount != null) {
                 await tx.$executeRawUnsafe(
-                    `UPDATE "Sale" SET "mpPaymentId" = $1, "mpFee" = $2, "promotionDiscount" = $3 WHERE id = $4`,
+                    `UPDATE "Sale" SET "mpPaymentId" = $1, "mpFee" = $2, "mpNetReceived" = $3, "mpTaxes" = $4, "mpReleaseDate" = $5, "promotionDiscount" = $6 WHERE id = $7`,
                     mpPaymentId ?? null,
                     mpFee ?? null,
+                    mpNetReceived ?? null,
+                    mpTaxes ?? null,
+                    mpReleaseDate ? new Date(mpReleaseDate) : null,
                     promotionDiscount ?? null,
                     newSale.id
                 );
@@ -967,7 +973,7 @@ export async function getSalesPrisma(businessId) {
 
     const placeholders = sales.map((_, i) => `$${i + 1}`).join(', ');
     const mpRows = await prisma.$queryRawUnsafe(
-        `SELECT id::text, "mpFee", "mpPaymentId" FROM "Sale" WHERE id::text IN (${placeholders})`,
+        `SELECT id::text, "mpFee", "mpPaymentId", "mpNetReceived", "mpTaxes" FROM "Sale" WHERE id::text IN (${placeholders})`,
         ...sales.map(s => s.id)
     );
     const mpMap = Object.fromEntries(mpRows.map(r => [r.id, r]));
@@ -976,6 +982,8 @@ export async function getSalesPrisma(businessId) {
         ...s,
         mpFee: mpMap[s.id]?.mpFee ?? null,
         mpPaymentId: mpMap[s.id]?.mpPaymentId ?? null,
+        mpNetReceived: mpMap[s.id]?.mpNetReceived ?? null,
+        mpTaxes: mpMap[s.id]?.mpTaxes ?? null,
     }));
 }
 
@@ -999,12 +1007,15 @@ export async function getSaleByAppointmentPrisma(businessId, appointmentId) {
     if (!sale) return sale;
 
     const mpRows = await prisma.$queryRaw`
-        SELECT "mpFee", "mpPaymentId" FROM "Sale" WHERE id::text = ${sale.id}
+        SELECT "mpFee", "mpPaymentId", "mpNetReceived", "mpTaxes", "mpReleaseDate" FROM "Sale" WHERE id::text = ${sale.id}
     `;
     return {
         ...sale,
         mpFee: mpRows[0]?.mpFee ?? null,
         mpPaymentId: mpRows[0]?.mpPaymentId ?? null,
+        mpNetReceived: mpRows[0]?.mpNetReceived ?? null,
+        mpTaxes: mpRows[0]?.mpTaxes ?? null,
+        mpReleaseDate: mpRows[0]?.mpReleaseDate ?? null,
     };
 }
 
@@ -1268,6 +1279,19 @@ export async function getDailySummary(businessId, start) {
         },
     })
 
+    // Mapa saleId -> mpFee (campo guardado vía raw SQL, no lo conoce el cliente Prisma)
+    const feeRows = await prisma.$queryRaw`
+        SELECT id::text AS id, "mpFee"
+        FROM "Sale"
+        WHERE "businessId" = ${businessId}
+          AND status = 'COMPLETED'
+          AND active = true
+          AND "createdAt" >= ${startOfDay}
+          AND "createdAt" <= ${endOfDay}
+          AND "mpFee" IS NOT NULL
+    `;
+    const feeMap = Object.fromEntries(feeRows.map((r) => [r.id, Number(r.mpFee) || 0]));
+
     // Variables para los totales globales del negocio
     let totalDay = 0
     let totalCashDay = 0
@@ -1279,6 +1303,7 @@ export async function getDailySummary(businessId, start) {
         let cash = 0
         let card = 0
         let transfer = 0
+        let mpFee = 0
 
         emp.sales.forEach((sale) => {
             sale.payments.forEach((payment) => {
@@ -1297,7 +1322,10 @@ export async function getDailySummary(businessId, start) {
                 }
                 totalDay += payment.amount
             })
+            mpFee += feeMap[sale.id] || 0
         })
+
+        const gross = cash + card + transfer
 
         return {
             id: emp.id,
@@ -1305,23 +1333,15 @@ export async function getDailySummary(businessId, start) {
             cash,
             card,
             transfer,
+            mpFee,                 // comisión MP del día para esta empleada
+            gross,                 // total bruto cobrado
+            net: gross - mpFee,    // neto real tras comisión MP
             pendingAppointments: emp.appointments.length,
             sales: emp.sales,
         }
     })
 
-    // Sum MP fees for card sales today (raw SQL — field not in Prisma client)
-    const mpFeeRows = await prisma.$queryRaw`
-        SELECT COALESCE(SUM("mpFee"), 0) AS total_fee
-        FROM "Sale"
-        WHERE "businessId" = ${businessId}
-          AND status = 'COMPLETED'
-          AND active = true
-          AND "createdAt" >= ${startOfDay}
-          AND "createdAt" <= ${endOfDay}
-          AND "mpFee" IS NOT NULL
-    `;
-    const totalMpFeeDay = Number(mpFeeRows[0]?.total_fee ?? 0);
+    const totalMpFeeDay = Object.values(feeMap).reduce((a, b) => a + b, 0);
 
     return {
         date: startOfDay,
@@ -1331,6 +1351,7 @@ export async function getDailySummary(businessId, start) {
         totaTransferDay,
         totalMpFeeDay,
         netCardDay: totalCardDay - totalMpFeeDay,
+        netDay: totalDay - totalMpFeeDay,   // neto total del día (todos los métodos)
         employeeStats,
     }
 }

@@ -157,8 +157,10 @@ export const useCalendarLogic = () => {
         const email = session?.user?.email;
         const currentEmployee = employees.find(e => e.user?.email === email);
         const canCreate = isAdmin || currentEmployee?.canCreateAppointments;
-        
-        return { role, isAdmin, currentEmployee, canCreate };
+        // ADMIN y RECEPTION siempre ven datos del cliente; empleados respetan su permiso
+        const canViewClientData = isAdmin || role === "RECEPTION" || (currentEmployee?.canViewClientData ?? true);
+
+        return { role, isAdmin, currentEmployee, canCreate, canViewClientData };
     };
 
     const resetModalFields = () => {
@@ -686,6 +688,9 @@ export const useCalendarLogic = () => {
             );
             const mpPaymentId: string | null = cardTerminalPayment?.mpPaymentId ?? null;
             const mpFee: number | null = cardTerminalPayment?.mpFee ?? null;
+            const mpNetReceived: number | null = cardTerminalPayment?.mpNetReceived ?? null;
+            const mpTaxes: number | null = cardTerminalPayment?.mpTaxes ?? null;
+            const mpReleaseDate: string | null = cardTerminalPayment?.mpReleaseDate ?? null;
 
             const salePayload = {
                 businessId: business?.id,
@@ -705,6 +710,9 @@ export const useCalendarLogic = () => {
                 payment: paymentData.payments, // Múltiples pagos
                 mpPaymentId,
                 mpFee,
+                mpNetReceived,
+                mpTaxes,
+                mpReleaseDate,
                 promotionDiscount: paymentData.promotionDiscount ?? null,
             };
 

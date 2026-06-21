@@ -4,8 +4,8 @@ import React, { useState, useEffect } from "react";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
-import { getBusinessSettings, updateBusinessSettings, savePaymentTerminals, updateThemeColors } from "./actions";
-import { Save, Plus, Trash2, CheckCircle2, ShieldCheck, Store, Clock, Palette } from "lucide-react";
+import { getBusinessSettings, updateBusinessSettings, savePaymentTerminals, updateThemeColors, listMpDevices, changeMpDeviceMode } from "./actions";
+import { Save, Plus, Trash2, CheckCircle2, ShieldCheck, Store, Clock, Palette, RefreshCw, Wifi, AlertTriangle } from "lucide-react";
 import { toast } from "react-toastify";
 
 // ── Color palette ─────────────────────────────────────────────────────────────
@@ -91,10 +91,12 @@ export default function SettingsClient() {
     address: "",
     mpAccessToken: "",
     mpStoreId: "",
+    mpWebhookSecret: "",
     openHour: 9,
     closeHour: 18,
     weekStartDay: 1
   });
+  const [businessId, setBusinessId] = useState("");
 
   // Terminals
   const [terminals, setTerminals] = useState<any[]>([]);
@@ -124,10 +126,12 @@ export default function SettingsClient() {
           address: data.address || "",
           mpAccessToken: data.mpAccessToken || "",
           mpStoreId: data.mpStoreId || "",
+          mpWebhookSecret: data.mpWebhookSecret || "",
           openHour: data.openHour ?? 9,
           closeHour: data.closeHour ?? 18,
           weekStartDay: data.weekStartDay ?? 1
         });
+        setBusinessId(data.id || "");
         setTerminals(data.terminals || []);
         if (data.themeColors && typeof data.themeColors === "object" && !Array.isArray(data.themeColors)) {
           setThemeColors(data.themeColors as ThemeColors);
@@ -169,6 +173,64 @@ export default function SettingsClient() {
       toast.error("Error guardando datos base");
     } finally {
       setSavingBase(false);
+    }
+  };
+
+  // ── Terminales detectadas en MercadoPago ──
+  const [mpDevices, setMpDevices] = useState<any[]>([]);
+  const [loadingDevices, setLoadingDevices] = useState(false);
+  const [changingMode, setChangingMode] = useState<string | null>(null);
+
+  const handleDetectDevices = async () => {
+    setLoadingDevices(true);
+    try {
+      const res = await listMpDevices();
+      if (res.error) {
+        toast.error(res.error);
+        setMpDevices([]);
+      } else {
+        setMpDevices(res.devices || []);
+        if ((res.devices || []).length === 0) {
+          toast.info("No se encontraron terminales en esta cuenta de MercadoPago.");
+        }
+      }
+    } catch {
+      toast.error("Error al consultar las terminales de MercadoPago");
+    } finally {
+      setLoadingDevices(false);
+    }
+  };
+
+  // Agrega una terminal detectada a la lista local (si no existe ya por posId)
+  const importDevice = (device: any) => {
+    if (terminals.some((t) => t.posId === device.id)) {
+      toast.info("Esa terminal ya está en tu lista.");
+      return;
+    }
+    const friendly = device.id.split("__")[0]?.replace(/_/g, " ") || "Terminal";
+    setTerminals([
+      ...terminals,
+      { id: null, name: friendly, posId: device.id, isDefault: terminals.length === 0 },
+    ]);
+    toast.success("Terminal agregada. No olvides Guardar Terminales.");
+  };
+
+  const handleChangeMode = async (device: any, mode: "PDV" | "STANDALONE") => {
+    setChangingMode(device.id);
+    try {
+      const res = await changeMpDeviceMode(device.id, mode);
+      if (res.error) {
+        toast.error(res.error);
+      } else {
+        toast.success(`Modo cambiado a ${mode}. Reinicia la terminal para aplicar el cambio.`);
+        setMpDevices((prev) =>
+          prev.map((d) => (d.id === device.id ? { ...d, operating_mode: mode } : d))
+        );
+      }
+    } catch {
+      toast.error("Error al cambiar el modo de la terminal");
+    } finally {
+      setChangingMode(null);
     }
   };
 
@@ -347,6 +409,28 @@ export default function SettingsClient() {
             <span className="text-xs text-gray-400">Identificador creado dentro del dashboard de MP.</span>
           </div>
 
+          <div>
+            <Label className="mb-1 block text-sm font-bold text-gray-700 dark:text-gray-300">Clave secreta del Webhook</Label>
+            <Input
+              type="password"
+              name="mpWebhookSecret"
+              value={formData.mpWebhookSecret}
+              onChange={handleBaseChange}
+              placeholder="Clave generada al configurar el webhook en MP"
+              className="w-full text-sm font-mono"
+            />
+            <span className="text-xs text-gray-400">Se usa para validar que los avisos de pago vengan realmente de MercadoPago.</span>
+          </div>
+
+          {/* URL del webhook para pegar en el panel de MercadoPago */}
+          <div className="rounded-xl bg-white dark:bg-gray-900/40 border border-blue-100 dark:border-blue-900/40 p-4">
+            <p className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">URL del Webhook (configúrala en MP → Webhooks → Pagos)</p>
+            <code className="block text-xs font-mono text-blue-700 dark:text-blue-300 break-all bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2">
+              {(typeof window !== "undefined" ? window.location.origin : "https://TU-DOMINIO")}/api/mp/webhook?businessId={businessId || "<ID_NEGOCIO>"}
+            </code>
+            <p className="text-[11px] text-gray-400 mt-1">Recibe el monto neto real (ya descontada comisión + IVA) y lo guarda en cada venta.</p>
+          </div>
+
           <div className="flex justify-end pt-2">
             <Button onClick={handleSaveBase} disabled={savingBase} variant="primary">
               {savingBase ? "Guardando..." : "Guardar Credenciales"}
@@ -465,10 +549,88 @@ export default function SettingsClient() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Terminales Físicas (Cajas)</h2>
-          <Button variant="outline" size="sm" onClick={addTerminal}>
-            <Plus className="w-4 h-4 mr-1" /> Nueva Terminal
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleDetectDevices} disabled={loadingDevices}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loadingDevices ? "animate-spin" : ""}`} />
+              {loadingDevices ? "Buscando..." : "Detectar de MercadoPago"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={addTerminal}>
+              <Plus className="w-4 h-4 mr-1" /> Manual
+            </Button>
+          </div>
         </div>
+
+        {/* Terminales detectadas en MercadoPago */}
+        {mpDevices.length > 0 && (
+          <div className="mb-5 border border-blue-200 dark:border-blue-900/40 rounded-2xl overflow-hidden">
+            <div className="bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 flex items-center gap-2 text-sm font-semibold text-blue-800 dark:text-blue-300">
+              <Wifi className="w-4 h-4" /> Terminales encontradas en tu cuenta de MercadoPago
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-white/5">
+              {mpDevices.map((d) => {
+                const isPdv = d.operating_mode === "PDV";
+                const alreadyAdded = terminals.some((t) => t.posId === d.id);
+                return (
+                  <div key={d.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white dark:bg-transparent">
+                    <div className="min-w-0">
+                      <p className="font-mono text-xs text-gray-700 dark:text-gray-300 break-all">{d.id}</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        {isPdv ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                            <CheckCircle2 className="w-3 h-3" /> Integrada (PDV)
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            <AlertTriangle className="w-3 h-3" /> Standalone — no recibe cobros
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      {!isPdv && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleChangeMode(d, "PDV")}
+                          disabled={changingMode === d.id}
+                        >
+                          {changingMode === d.id ? "Activando..." : "Activar PDV"}
+                        </Button>
+                      )}
+                      {isPdv && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (window.confirm(
+                              "¿Volver esta terminal a modo STANDALONE?\n\nDejará de recibir cobros desde el sistema: los cobros con tarjeta dejarán de funcionar en la app hasta reactivar PDV. Tendrás que reiniciar la terminal para que el cambio tome efecto."
+                            )) {
+                              handleChangeMode(d, "STANDALONE");
+                            }
+                          }}
+                          disabled={changingMode === d.id}
+                          className="text-amber-600 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-900/20"
+                        >
+                          {changingMode === d.id ? "Cambiando..." : "Volver a Standalone"}
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        onClick={() => importDevice(d)}
+                        disabled={alreadyAdded}
+                      >
+                        {alreadyAdded ? "Ya agregada" : "Usar esta"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="px-4 py-2.5 text-xs text-gray-500 bg-gray-50 dark:bg-white/2">
+              Tras "Activar PDV" debes <b>reiniciar físicamente</b> la terminal para que tome el cambio.
+            </p>
+          </div>
+        )}
 
         <div className="border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden">
           <table className="w-full text-left text-sm">

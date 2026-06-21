@@ -366,7 +366,9 @@ export default function CalendarGrid() {
                           }}
                           onClick={() => logic.handleEventClick(event)}
                         >
-                          <div className="font-bold">{event.title}</div>
+                          <div className="font-bold">
+                            {userInfo?.canViewClientData !== false ? event.title : "Cita"}
+                          </div>
                           <div className="opacity-80">{formatTime(event.start)} - {getDurationInMinutes(event.start, event.end)}m</div>
                         </div>
                       );
@@ -412,6 +414,7 @@ export default function CalendarGrid() {
         setCustomer={logic.setCustomer}
         isAdmin={userInfo?.isAdmin || userInfo?.role === "RECEPTION"}
         canCreateAppointments={userInfo?.role !== "EMPLOYEE" || !!userInfo?.canCreate}
+        canViewClientData={userInfo?.canViewClientData ?? true}
         onResolveGhost={logic.handleResolveGhost}
       />
 
@@ -431,6 +434,7 @@ export default function CalendarGrid() {
         event={logic.selectedEvent}
         onReprint={logic.handleReprintTicket}
         sale={logic.saleForModal}
+        canViewClientData={userInfo?.canViewClientData ?? true}
       />
 
       <MultiCheckoutModal
@@ -438,6 +442,7 @@ export default function CalendarGrid() {
         onClose={() => logic.setShowMultiCheckout(false)}
         events={logic.events}
         onProceedToPayment={logic.handleProceedToMultiPayment}
+        canViewClientData={userInfo?.canViewClientData ?? true}
       />
 
       {logic.extraServicesModal && (

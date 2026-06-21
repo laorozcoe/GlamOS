@@ -5,6 +5,7 @@ import Label from "@/components/form/Label"
 import moment from "moment"
 import Button from "@/components/ui/button/Button";
 import { Printer } from "lucide-react";
+import { PaymentMethodBadge, SaleAmount } from "./PaymentMeta";
 
 export default function TableMobile({ sales, onReprint, onRowClick }) {
 
@@ -29,12 +30,7 @@ export default function TableMobile({ sales, onReprint, onRowClick }) {
                                 {sale.folio}
                             </div>
                             <div>
-                                <Label className="font-semibold text-gray-900 dark:text-white text-base leading-tight">
-                                    {sale.total} $
-                                </Label>
-                                {/* <p className="text-sm text-gray-500 dark: mt-0.5">
-                                    {sale.email || "Sin correo"}
-                                </p> */}
+                                <SaleAmount sale={sale} />
                             </div>
                         </div>
                         <div className="flex items-center gap-2 text-gray-300  ">
@@ -49,14 +45,11 @@ export default function TableMobile({ sales, onReprint, onRowClick }) {
                         {/* <ChevronRight className="text-gray-300 w-5 h-5" /> */}
                     </div>
 
-                    <div className="flex items-center gap-2 justify-between text-xs text-gray-300 border-t border-gray-50 dark:border-gray-800 pt-5">
-                        <div className='flex flex-row flex-nowrap gap-2'>
-                            <Calendar size={18} />
-                            <Label>{moment(sale.createdAt).format("YYYY-MM-DD")}</Label>
-                        </div>
-                        <div className='flex flex-row flex-nowrap gap-2'>
-                            <Calendar size={18} />
-                            <Label>{moment(sale.createdAt).format("hh:mm:SS a")}</Label>
+                    <div className="border-t border-gray-50 dark:border-gray-800 pt-4 flex items-center justify-between gap-2">
+                        <PaymentMethodBadge sale={sale} />
+                        <div className='flex flex-row flex-nowrap gap-1.5 text-xs text-gray-300 items-center'>
+                            <Calendar size={16} />
+                            <Label>{moment(sale.createdAt).format("YYYY-MM-DD hh:mm a")}</Label>
                         </div>
                     </div>
 

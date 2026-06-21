@@ -52,6 +52,7 @@ model Business {
   mpAccessToken String?
   mpPublicKey   String?
   mpStoreId     String?
+  mpWebhookSecret String? // Clave secreta para validar la firma de los webhooks de MP
 
   coupons           Coupon[]
   promotions        Promotion[]
@@ -123,7 +124,8 @@ model Employee {
   commission  Float    @default(0.0)
   baseSalary  Float    @default(0.0)
   rating      Float    @default(0.0)
-  canCreateAppointments Boolean @default(true) // <-- NUEVO
+  canCreateAppointments Boolean @default(true)
+  canViewClientData     Boolean @default(true)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
 
@@ -473,7 +475,10 @@ model Sale {
   status        SaleStatus @default(COMPLETED)
   notes         String? // Para auditoría: "Se aplicó descuento por retraso"
   mpPaymentId       String?    // ID del pago en MercadoPago (cobros con terminal)
-  mpFee             Float?     // Comisión cobrada por MP sobre este pago
+  mpFee             Float?     // Comisión cobrada por MP sobre este pago (incluye IVA)
+  mpNetReceived     Float?     // Monto neto que realmente entró a la cuenta (tras comisión+IVA)
+  mpTaxes           Float?     // Impuestos retenidos sobre la transacción
+  mpReleaseDate     DateTime?  // Fecha en que MP libera el dinero a la cuenta
   promotionDiscount Float?     // Descuento total aplicado por promociones automáticas
   createdAt     DateTime   @default(now()) // LA HORA REAL DEL COBRO
   updatedAt     DateTime   @updatedAt

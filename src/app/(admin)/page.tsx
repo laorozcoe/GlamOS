@@ -171,31 +171,48 @@ export default function DailySummaryScreen() {
             <p className="text-gray-500 text-lg animate-pulse">Cargando métricas del día...</p>
           </div> :
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Ingreso Total */}
             <div onClick={() => handleGlobalClick("ALL")} className="cursor-pointer transition-transform hover:scale-105">
-              <ComponentCard className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-center items-center h-full" title={"Ingreso Total Hoy"}>
-                <Label className="text-4xl font-extrabold text-gray-900">${summary.totalDay.toFixed(2)}</Label>
-              </ComponentCard>
-            </div>
-            <div onClick={() => handleGlobalClick("CASH")} className="cursor-pointer transition-transform hover:scale-105">
-              <ComponentCard className="bg-green-50 rounded-xl shadow-sm border border-green-100 p-6 flex flex-col justify-center items-center h-full" title="Total Efectivo">
-                <Label className="text-3xl font-bold" color="text-green-600">${summary.totalCashDay.toFixed(2)}</Label>
-              </ComponentCard>
-            </div>
-            <div onClick={() => handleGlobalClick("CARD")} className="cursor-pointer transition-transform hover:scale-105">
-              <ComponentCard className="bg-blue-50 rounded-xl shadow-sm border border-blue-100 p-6 flex flex-col justify-center items-center h-full" title="Total Tarjeta">
-                <Label className="text-3xl font-bold" color="text-blue-600">${summary.totalCardDay.toFixed(2)}</Label>
+              <div className="h-full flex flex-col rounded-2xl border border-gray-100 bg-white shadow-sm p-6 dark:border-gray-800 dark:bg-white/3">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Ingreso Neto Hoy</h3>
+                <p className="mt-2 text-4xl font-extrabold text-gray-900 dark:text-white">${summary.netDay.toFixed(2)}</p>
                 {summary.totalMpFeeDay > 0 && (
-                  <div className="mt-1 text-center">
-                    <p className="text-xs text-orange-500">Comisión MP: -${summary.totalMpFeeDay.toFixed(2)}</p>
-                    <p className="text-sm font-bold text-green-600">Neto: ${summary.netCardDay.toFixed(2)}</p>
+                  <div className="mt-3 pt-3 space-y-0.5 border-t border-gray-100 dark:border-gray-800">
+                    <p className="text-xs text-gray-400">Bruto: ${summary.totalDay.toFixed(2)}</p>
+                    <p className="text-xs text-orange-500 dark:text-orange-400">Comisión MP: -${summary.totalMpFeeDay.toFixed(2)}</p>
                   </div>
                 )}
-              </ComponentCard>
+              </div>
             </div>
+
+            {/* Efectivo */}
+            <div onClick={() => handleGlobalClick("CASH")} className="cursor-pointer transition-transform hover:scale-105">
+              <div className="h-full flex flex-col rounded-2xl border border-green-100 bg-green-50 shadow-sm p-6 dark:border-green-900/40 dark:bg-green-900/10">
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Efectivo</h3>
+                <p className="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">${summary.totalCashDay.toFixed(2)}</p>
+              </div>
+            </div>
+
+            {/* Tarjeta (con neto y comisión) */}
+            <div onClick={() => handleGlobalClick("CARD")} className="cursor-pointer transition-transform hover:scale-105">
+              <div className="h-full flex flex-col rounded-2xl border border-blue-100 bg-blue-50 shadow-sm p-6 dark:border-blue-900/40 dark:bg-blue-900/10">
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">Tarjeta (neto)</h3>
+                <p className="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">${summary.netCardDay.toFixed(2)}</p>
+                {summary.totalMpFeeDay > 0 && (
+                  <div className="mt-3 pt-3 space-y-0.5 border-t border-blue-100 dark:border-blue-900/40">
+                    <p className="text-xs text-gray-400">Bruto: ${summary.totalCardDay.toFixed(2)}</p>
+                    <p className="text-xs text-orange-500 dark:text-orange-400">Comisión MP: -${summary.totalMpFeeDay.toFixed(2)}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Transferencia */}
             <div onClick={() => handleGlobalClick("TRANSFER")} className="cursor-pointer transition-transform hover:scale-105">
-              <ComponentCard className="bg-violet-50 rounded-xl shadow-sm border border-violet-100 p-6 flex flex-col justify-center items-center h-full" title="Total Transferencia">
-                <Label className="text-3xl font-bold" color="text-violet-600">${summary.totaTransferDay.toFixed(2)}</Label>
-              </ComponentCard>
+              <div className="h-full flex flex-col rounded-2xl border border-violet-100 bg-violet-50 shadow-sm p-6 dark:border-violet-900/40 dark:bg-violet-900/10">
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Transferencia</h3>
+                <p className="mt-2 text-3xl font-bold text-violet-600 dark:text-violet-400">${summary.totaTransferDay.toFixed(2)}</p>
+              </div>
             </div>
           </div>
         }
@@ -213,6 +230,17 @@ export default function DailySummaryScreen() {
                 <ComponentCard title={emp.name}>
                   <div className="p-4 space-y-4">
 
+                    {/* Neto destacado — número grande para lectura rápida */}
+                    <div className="text-center pb-4 border-b border-gray-100 dark:border-gray-800">
+                      <p className="text-xs uppercase tracking-wide text-gray-400 font-medium">Neto hoy</p>
+                      <p className="text-4xl font-extrabold text-green-600 dark:text-green-400">${emp.net.toFixed(2)}</p>
+                      {emp.mpFee > 0 && (
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          Bruto ${emp.gross.toFixed(2)} · comisión MP -${emp.mpFee.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-gray-600">
                         <Banknote className="w-5 h-5 text-green-500" />
@@ -224,9 +252,14 @@ export default function DailySummaryScreen() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-gray-600">
                         <CreditCard className="w-5 h-5 text-blue-500" />
-                        <Label>Tarjeta</Label>
+                        <Label>Tarjeta {emp.mpFee > 0 ? "(neto)" : ""}</Label>
                       </div>
-                      <Label className="font-semibold text-gray-900">${emp.card.toFixed(2)}</Label>
+                      <div className="text-right">
+                        <Label className="font-semibold text-gray-900 dark:text-white">${(emp.card - emp.mpFee).toFixed(2)}</Label>
+                        {emp.mpFee > 0 && (
+                          <p className="text-[10px] text-gray-400 line-through leading-none">${emp.card.toFixed(2)}</p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between">
