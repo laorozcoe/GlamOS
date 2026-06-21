@@ -76,6 +76,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const openPollsRef = useRef(0);
     // ~7 sondeos x 3s ≈ 21s sin que el cobro llegue al dispositivo => no responde
     const MAX_OPEN_POLLS = 7;
+    // Evita finalizar la venta más de una vez tras aprobarse el cobro con tarjeta
+    const autoFinalizedRef = useRef(false);
 
     const stopPolling = () => {
         if (pollRef.current) {
@@ -112,6 +114,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             setTerminalError(null);
             setTerminalMpFee(null);
             currentIntentIdRef.current = null;
+            autoFinalizedRef.current = false;
             stopPolling();
 
             getActiveTerminals().then((t) => {
@@ -358,6 +361,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             coveredServiceIds,
         });
     };
+
+    // Al aprobarse el cobro con tarjeta, finaliza la venta automáticamente (una sola vez)
+    // para que nadie se quede sin presionar "Confirmar". Pequeño delay para mostrar el "aprobado".
+    useEffect(() => {
+        if (terminalStatus !== 'approved' || autoFinalizedRef.current) return;
+        if (totalPaid < effectiveTotal) return; // el cobro debe cubrir el total
+        autoFinalizedRef.current = true;
+        const t = setTimeout(() => handleConfirm(), 1200);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [terminalStatus, totalPaid, effectiveTotal]);
 
     const showTerminalSelector = paymentMethod === 'CARD' && terminals.length > 0 && balanceRemaining > 0;
     const isTerminalActive = ['creating', 'connecting', 'waiting', 'processing'].includes(terminalStatus);
@@ -774,23 +788,33 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
                     {/* ── Footer ── */}
                     <div className="p-6 border-t border-gray-100 dark:border-gray-800 mt-auto bg-gray-50/50 dark:bg-gray-800/30 flex gap-3">
-                        <Button
-                            onClick={onClose}
-                            variant="outline"
-                            className="flex-1 py-3 text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl"
-                        >
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={handleConfirm}
-                            disabled={isConfirmDisabled}
-                            className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition-all
-                            ${isConfirmDisabled
-                                    ? 'bg-gray-400 dark:bg-gray-700 cursor-not-allowed'
-                                    : 'bg-black hover:bg-gray-800 hover:scale-[1.02]'}`}
-                        >
-                            Confirmar Pago
-                        </Button>
+                        {terminalStatus === 'approved' ? (
+                            // Cobro con tarjeta aprobado: la venta se finaliza sola, sin botón que olvidar.
+                            <div className="flex-1 py-3 flex items-center justify-center gap-2 rounded-xl bg-green-600 text-white font-bold">
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Guardando venta...
+                            </div>
+                        ) : (
+                            <>
+                                <Button
+                                    onClick={onClose}
+                                    variant="outline"
+                                    className="flex-1 py-3 text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={handleConfirm}
+                                    disabled={isConfirmDisabled}
+                                    className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition-all
+                                    ${isConfirmDisabled
+                                            ? 'bg-gray-400 dark:bg-gray-700 cursor-not-allowed'
+                                            : 'bg-black hover:bg-gray-800 hover:scale-[1.02]'}`}
+                                >
+                                    Confirmar Pago
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </div>
             </Modal>

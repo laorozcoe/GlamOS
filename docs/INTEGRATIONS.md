@@ -178,6 +178,15 @@ Capa de conciliación: MercadoPago avisa cuando un pago se confirma/liquida y se
 - `PATCH /point/integration-api/devices/{id}` con `{ operating_mode: 'PDV' }` — pone la terminal en modo integrado (server action `changeMpDeviceMode`). **Requiere reiniciar la terminal.**
 - Estados del intent en el cobro: `OPEN` (aún no llega al equipo) → `ON_TERMINAL` (esperando tarjeta) → `PROCESSING` → `FINISHED` / `CANCELED`. Cancelar por API solo funciona en `OPEN`; en `ON_TERMINAL` se cancela en el dispositivo.
 
+### Finalización automática (tarjeta)
+
+En `PaymentModal`, cuando el cobro con terminal llega a `FINISHED` (estado `approved`), la venta se
+**finaliza automáticamente** una sola vez (guard `autoFinalizedRef`): tras ~1.2 s mostrando "aprobado"
+se llama a `onFinalize` → `handleFinalizePayment` (crea venta + pagos, imprime ticket, refresca y
+cierra los modales). Durante ese lapso el footer muestra "Guardando venta..." y se ocultan los botones
+Cancelar/Confirmar para no cancelar un cobro ya realizado. Los pagos en **efectivo/transferencia** se
+siguen confirmando manualmente con "Confirmar Pago".
+
 ---
 
 ## Prisma & PostgreSQL

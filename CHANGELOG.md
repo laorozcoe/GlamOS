@@ -23,6 +23,10 @@ cliente, y mejoras de UX consistentes en dashboard, ventas y calendario.
   dropdown para cambiarla.
 - **Modo simulación** (`MP_SIMULATE=true`, solo desarrollo): permite probar todo el flujo sin
   terminal física. Apagado por defecto.
+- **Finalización automática del cobro con tarjeta**: al aprobarse en la terminal, la venta se
+  guarda sola (registra venta + pagos, imprime ticket, refresca y cierra) tras un breve "aprobado",
+  para que nadie se quede sin presionar "Confirmar". El footer muestra "Guardando venta..." y ya no
+  permite Cancelar un cobro ya realizado. Efectivo/transferencia siguen confirmándose manualmente.
 
 ### 💰 Dinero neto real (comisión + IVA)
 
