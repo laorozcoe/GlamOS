@@ -21,12 +21,24 @@ cliente, y mejoras de UX consistentes en dashboard, ventas y calendario.
   **volver a STANDALONE** (con confirmación), e importar una terminal con su `device_id`.
 - **Selección en el cobro**: se preselecciona la terminal **predeterminada**; con 2+ terminales hay
   dropdown para cambiarla.
+- **Modo por terminal guardada**: la tabla de terminales muestra una columna **Conexión** con el modo
+  actual (PDV/Standalone) y un botón para alternarlo por fila. Los modos se detectan automáticamente
+  al abrir Configuración (si hay Access Token), sin tener que pulsar "Detectar" cada vez.
 - **Modo simulación** (`MP_SIMULATE=true`, solo desarrollo): permite probar todo el flujo sin
   terminal física. Apagado por defecto.
 - **Finalización automática del cobro con tarjeta**: al aprobarse en la terminal, la venta se
   guarda sola (registra venta + pagos, imprime ticket, refresca y cierra) tras un breve "aprobado",
   para que nadie se quede sin presionar "Confirmar". El footer muestra "Guardando venta..." y ya no
   permite Cancelar un cobro ya realizado. Efectivo/transferencia siguen confirmándose manualmente.
+- **Flujo de cobro unificado (simplificación)**: con tarjeta + terminal ya NO existe el botón
+  "Agregar Pago" (que registraba un pago sin cobrar). Ahora hay un único botón **"Cobrar $X en
+  terminal"** que siempre cobra de verdad. Soporta **pago parcial** (ej. $5 con tarjeta del total
+  de $10 y el resto en efectivo). Efectivo/transferencia conservan "Agregar Pago".
+- **Fix crítico — pagos rechazados ya no crean ventas falsas**: el intent puede llegar a `FINISHED`
+  aunque el pago esté **rechazado** (neto $0). Antes esto generaba una venta "pagada" sin cobro real
+  (mostrando comisión = total). Ahora la ruta de polling verifica `payData.status === 'approved'`;
+  si no, devuelve `ERROR` y el modal muestra *"Pago rechazado por el banco. No se cobró nada"* sin
+  registrar venta.
 
 ### 💰 Dinero neto real (comisión + IVA)
 

@@ -136,6 +136,12 @@ export default function SettingsClient() {
         if (data.themeColors && typeof data.themeColors === "object" && !Array.isArray(data.themeColors)) {
           setThemeColors(data.themeColors as ThemeColors);
         }
+        // Detectar en segundo plano el modo (PDV/STANDALONE) de cada terminal
+        if (data.mpAccessToken) {
+          listMpDevices()
+            .then((r) => { if (!r.error) setMpDevices(r.devices || []); })
+            .catch(() => {});
+        }
       }
     } catch (e) {
       toast.error("Error al cargar configuraciones");
@@ -213,6 +219,23 @@ export default function SettingsClient() {
       { id: null, name: friendly, posId: device.id, isDefault: terminals.length === 0 },
     ]);
     toast.success("Terminal agregada. No olvides Guardar Terminales.");
+  };
+
+  // Modo actual (PDV/STANDALONE) de una terminal guardada, según lo detectado en MP.
+  const modeForPos = (posId: string): string | null =>
+    mpDevices.find((d) => d.id === posId)?.operating_mode ?? null;
+
+  // Alterna el modo de una terminal guardada (pide confirmación al volver a Standalone).
+  const toggleSavedTerminalMode = (posId: string) => {
+    const mode = modeForPos(posId);
+    if (mode === "PDV") {
+      if (!window.confirm(
+        "¿Volver esta terminal a modo STANDALONE?\n\nDejará de recibir cobros desde el sistema: los cobros con tarjeta dejarán de funcionar en la app hasta reactivar PDV. Tendrás que reiniciar la terminal para que el cambio tome efecto."
+      )) return;
+      handleChangeMode({ id: posId }, "STANDALONE");
+    } else {
+      handleChangeMode({ id: posId }, "PDV");
+    }
   };
 
   const handleChangeMode = async (device: any, mode: "PDV" | "STANDALONE") => {
@@ -638,6 +661,7 @@ export default function SettingsClient() {
               <tr>
                 <th className="p-4 font-semibold">Caja / Nombre</th>
                 <th className="p-4 font-semibold">POS ID (Mercado Pago)</th>
+                <th className="p-4 font-semibold">Conexión</th>
                 <th className="p-4 font-semibold text-center">Principal</th>
                 <th className="p-4 font-semibold text-right">Acción</th>
               </tr>
@@ -661,6 +685,42 @@ export default function SettingsClient() {
                       className="w-full text-sm font-mono"
                     />
                   </td>
+                  <td className="p-4">
+                    {(() => {
+                      const mode = modeForPos(t.posId);
+                      if (!t.posId) {
+                        return <span className="text-xs text-gray-400">—</span>;
+                      }
+                      if (mode === null) {
+                        return <span className="text-xs text-gray-400">Sin detectar</span>;
+                      }
+                      const isPdv = mode === "PDV";
+                      return (
+                        <div className="flex flex-col gap-1.5 items-start">
+                          {isPdv ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                              <CheckCircle2 className="w-3 h-3" /> Integrada (PDV)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                              <AlertTriangle className="w-3 h-3" /> Standalone
+                            </span>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleSavedTerminalMode(t.posId)}
+                            disabled={changingMode === t.posId}
+                            className={isPdv ? "text-amber-600 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-900/20" : ""}
+                          >
+                            {changingMode === t.posId
+                              ? "Cambiando..."
+                              : isPdv ? "Volver a Standalone" : "Activar PDV"}
+                          </Button>
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="p-4 text-center">
                     <label className="flex justify-center cursor-pointer">
                       <input
@@ -681,8 +741,8 @@ export default function SettingsClient() {
               ))}
               {terminals.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-6 text-center text-gray-500">
-                    No hay terminales configuradas para este negocio. Haz clic en "Nueva Terminal" para registrar la primera.
+                  <td colSpan={5} className="p-6 text-center text-gray-500">
+                    No hay terminales configuradas para este negocio. Haz clic en "Manual" o "Detectar de MercadoPago" para registrar la primera.
                   </td>
                 </tr>
               )}

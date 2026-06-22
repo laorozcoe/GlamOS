@@ -77,6 +77,19 @@ export async function GET(
 
         if (payRes.ok) {
             const payData = await payRes.json();
+
+            // ⚠️ El intent puede llegar a FINISHED aunque el pago haya sido RECHAZADO.
+            // Solo tratamos como cobro exitoso si el pago está 'approved'. Si no,
+            // devolvemos ERROR para que el front NO registre una venta sin cobro real.
+            if (payData.status !== 'approved') {
+                return NextResponse.json({
+                    state: 'ERROR',
+                    paymentId: null,
+                    rejected: true,
+                    statusDetail: payData.status_detail || payData.status || 'rejected',
+                });
+            }
+
             // Sum all fees paid by the seller (merchant)
             const fees = (payData.fee_details || payData.fee_detail || []) as { fee_payer: string; amount: number }[];
             const totalFee = fees

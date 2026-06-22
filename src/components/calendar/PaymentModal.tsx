@@ -11,6 +11,7 @@ import { applyPromotions, PromotionResult } from "@/lib/applyPromotions";
 import { QRScannerModal } from "./QRScannerModal";
 import { CouponSearchModal } from "./CouponSearchModal";
 import { useBusiness } from "@/context/BusinessContext";
+import { toast } from "react-toastify";
 
 interface PaymentItem {
     method: 'CASH' | 'CARD' | 'TRANSFER';
@@ -205,6 +206,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         const terminal = terminals.find(t => t.id === selectedTerminalId);
         if (!terminal) return;
 
+        // Monto a cobrar: lo que escriban (acotado al saldo) o el saldo completo si está vacío.
+        // Permite pagos parciales con tarjeta (ej. $5 de $10 y el resto en efectivo).
+        const entered = Number(amountReceived);
+        const balanceAtStart = balanceRemaining;
+        const chargeAmount = (!isNaN(entered) && entered > 0)
+            ? Math.min(entered, balanceAtStart)
+            : balanceAtStart;
+        if (chargeAmount <= 0) return;
+        // ¿Este cobro cubre todo el saldo restante?
+        const fullyPays = chargeAmount >= balanceAtStart - 0.001;
+
         setTerminalStatus('creating');
         setTerminalError(null);
         stopPolling();
@@ -214,8 +226,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    amount: Math.round(balanceRemaining * 100) / 100,
-                    description: `Cobro ${business.name || 'Salon'}`,
+                    amount: Math.round(chargeAmount * 100) / 100,
                     posId: terminal.posId,
                     businessId: business.id,
                 }),
@@ -255,12 +266,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         setTerminalStatus('processing');
                     } else if (state === 'FINISHED') {
                         stopPolling();
-                        setTerminalStatus('approved');
                         setTerminalMpFee(pollData.mpFee ?? null);
                         setPayments(prev => [...prev, {
                             method: 'CARD',
-                            amount: balanceRemaining,
-                            received: balanceRemaining,
+                            amount: chargeAmount,
+                            received: chargeAmount,
                             change: 0,
                             mpPaymentId: pollData.paymentId ?? null,
                             mpFee: pollData.mpFee ?? null,
@@ -268,12 +278,23 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             mpTaxes: pollData.taxes ?? null,
                             mpReleaseDate: pollData.releaseDate ?? null,
                         }]);
+                        setAmountReceived('');
+                        if (fullyPays) {
+                            // Cubre el total → se marca aprobado y la venta se finaliza sola
+                            setTerminalStatus('approved');
+                        } else {
+                            // Pago parcial con tarjeta aprobado → seguir cobrando el resto
+                            setTerminalStatus('idle');
+                            toast.success(`Tarjeta aprobada: $${chargeAmount.toFixed(2)}. Falta cobrar el resto.`);
+                        }
                     } else if (state === 'CANCELED') {
                         stopPolling();
                         setTerminalStatus('cancelled');
                     } else if (state === 'ERROR') {
                         stopPolling();
-                        setTerminalError('Error en la terminal');
+                        setTerminalError(pollData.rejected
+                            ? 'Pago rechazado por el banco. No se cobró nada — intenta de nuevo u otra tarjeta.'
+                            : 'Error en la terminal');
                         setTerminalStatus('rejected');
                     }
                 } catch {
@@ -373,8 +394,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [terminalStatus, totalPaid, effectiveTotal]);
 
-    const showTerminalSelector = paymentMethod === 'CARD' && terminals.length > 0 && balanceRemaining > 0;
     const isTerminalActive = ['creating', 'connecting', 'waiting', 'processing'].includes(terminalStatus);
+
+    // Con tarjeta + terminal integrada, el cobro SIEMPRE pasa por la terminal (no se puede
+    // registrar un pago con tarjeta sin cobrarlo). Sin terminales, tarjeta = captura manual.
+    const cardUsesTerminal = paymentMethod === 'CARD' && terminals.length > 0;
+    const enteredNum = Number(amountReceived);
+    const chargeAmountPreview = (!isNaN(enteredNum) && enteredNum > 0)
+        ? Math.min(enteredNum, balanceRemaining)
+        : balanceRemaining;
 
     return (
         <>
@@ -625,54 +653,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
                                 <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
 
-                                    {/* ── Terminal MP (CARD + terminals disponibles) ── */}
-                                    {showTerminalSelector && (
-                                        <div className="space-y-3">
-                                            {/* Selector de terminal */}
-                                            {terminals.length > 1 && (
-                                                <div>
-                                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                                                        Terminal
-                                                    </label>
-                                                    <select
-                                                        value={selectedTerminalId}
-                                                        onChange={(e) => setSelectedTerminalId(e.target.value)}
-                                                        disabled={isTerminalActive}
-                                                        className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
-                                                    >
-                                                        <option value="">Seleccionar terminal...</option>
-                                                        {terminals.map((t) => (
-                                                            <option key={t.id} value={t.id}>{t.name}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            )}
-
-                                            {/* Status de terminal */}
-                                            {terminalStatus === 'idle' || terminalStatus === 'cancelled' || terminalStatus === 'rejected' ? (
-                                                <div className="space-y-2">
-                                                    {(terminalStatus === 'rejected' || terminalStatus === 'cancelled') && (
-                                                        <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">
-                                                            <XCircle className="w-4 h-4 shrink-0" />
-                                                            {terminalStatus === 'cancelled' ? 'Cobro cancelado' : terminalError || 'Pago rechazado en terminal'}
-                                                        </div>
-                                                    )}
-                                                    <button
-                                                        onClick={handleChargeOnTerminal}
-                                                        disabled={!selectedTerminalId}
-                                                        className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white font-bold flex items-center justify-center gap-2 transition-colors"
-                                                    >
-                                                        <Terminal className="w-4 h-4" />
-                                                        Cobrar ${balanceRemaining.toLocaleString()} en Terminal
-                                                    </button>
-                                                </div>
-                                            ) : terminalStatus === 'creating' ? (
+                                    {/* Cobro en curso / aprobado en terminal: solo se muestra el estado */}
+                                    {cardUsesTerminal && (isTerminalActive || terminalStatus === 'approved') ? (
+                                        <div className="space-y-2">
+                                            {terminalStatus === 'creating' && (
                                                 <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3 text-sm text-blue-800 dark:text-blue-200">
                                                     <Loader2 className="w-5 h-5 animate-spin shrink-0 text-blue-600" />
                                                     <span className="font-medium">Enviando cobro a la terminal...</span>
                                                 </div>
-                                            ) : terminalStatus === 'connecting' ? (
-                                                <div className="space-y-2">
+                                            )}
+                                            {terminalStatus === 'connecting' && (
+                                                <>
                                                     <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3 text-sm text-blue-800 dark:text-blue-200">
                                                         <Loader2 className="w-5 h-5 animate-spin shrink-0 text-blue-600" />
                                                         <div>
@@ -680,15 +671,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                             <p className="text-xs opacity-75">Verifica que el dispositivo esté encendido y con internet</p>
                                                         </div>
                                                     </div>
-                                                    <button
-                                                        onClick={handleCancelTerminal}
-                                                        className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                                                    >
+                                                    <button onClick={handleCancelTerminal} className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors">
                                                         Cancelar cobro
                                                     </button>
-                                                </div>
-                                            ) : terminalStatus === 'waiting' ? (
-                                                <div className="space-y-2">
+                                                </>
+                                            )}
+                                            {terminalStatus === 'waiting' && (
+                                                <>
                                                     <div className="p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 flex items-center gap-3 text-sm text-yellow-800 dark:text-yellow-200">
                                                         <Loader2 className="w-5 h-5 animate-spin shrink-0 text-yellow-600" />
                                                         <div>
@@ -702,14 +691,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                             {terminalError}
                                                         </div>
                                                     )}
-                                                    <button
-                                                        onClick={handleCancelTerminal}
-                                                        className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                                                    >
+                                                    <button onClick={handleCancelTerminal} className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors">
                                                         Cancelar cobro
                                                     </button>
-                                                </div>
-                                            ) : terminalStatus === 'processing' ? (
+                                                </>
+                                            )}
+                                            {terminalStatus === 'processing' && (
                                                 <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3 text-sm text-blue-800 dark:text-blue-200">
                                                     <Loader2 className="w-5 h-5 animate-spin shrink-0 text-blue-600" />
                                                     <div>
@@ -717,7 +704,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                         <p className="text-xs opacity-75">No retires la tarjeta</p>
                                                     </div>
                                                 </div>
-                                            ) : terminalStatus === 'approved' ? (
+                                            )}
+                                            {terminalStatus === 'approved' && (
                                                 <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-sm">
                                                     <div className="flex items-center gap-2 text-green-800 dark:text-green-300 font-bold mb-1">
                                                         <CheckCircle className="w-4 h-4" />
@@ -725,27 +713,44 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                     </div>
                                                     {terminalMpFee != null && terminalMpFee > 0 && (
                                                         <p className="text-xs text-orange-600 dark:text-orange-400">
-                                                            Comisión MP: -${terminalMpFee.toFixed(2)} · Neto: ${(balanceRemaining - terminalMpFee).toFixed(2)}
+                                                            Comisión MP: -${terminalMpFee.toFixed(2)}
                                                         </p>
                                                     )}
                                                 </div>
-                                            ) : null}
-
-                                            {/* Divider para entrada manual alternativa */}
-                                            <div className="flex items-center gap-2 text-xs text-gray-400">
-                                                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-                                                <span>o cobrar manualmente</span>
-                                                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-                                            </div>
+                                            )}
                                         </div>
-                                    )}
-
-                                    {/* ── Entrada manual de monto ── */}
-                                    {!isTerminalActive && (
+                                    ) : (
                                         <>
+                                            {/* Error de un cobro previo con tarjeta */}
+                                            {cardUsesTerminal && (terminalStatus === 'rejected' || terminalStatus === 'cancelled') && (
+                                                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">
+                                                    <XCircle className="w-4 h-4 shrink-0" />
+                                                    {terminalStatus === 'cancelled' ? 'Cobro cancelado' : terminalError || 'Pago rechazado en terminal'}
+                                                </div>
+                                            )}
+
+                                            {/* Selector de terminal (si hay 2+) */}
+                                            {cardUsesTerminal && terminals.length > 1 && (
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Terminal</label>
+                                                    <select
+                                                        value={selectedTerminalId}
+                                                        onChange={(e) => setSelectedTerminalId(e.target.value)}
+                                                        className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                                    >
+                                                        <option value="">Seleccionar terminal...</option>
+                                                        {terminals.map((t) => (
+                                                            <option key={t.id} value={t.id}>{t.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+
+                                            {/* Monto (permite pago parcial) */}
                                             <div>
                                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                                     {paymentMethod === 'CASH' ? 'Cantidad Recibida' : 'Cantidad a Cobrar'}
+                                                    <span className="ml-1 font-normal text-gray-400">— déjalo vacío para el total</span>
                                                 </label>
                                                 <div className="relative">
                                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
@@ -754,8 +759,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                         value={amountReceived}
                                                         onChange={(e) => setAmountReceived(e.target.value)}
                                                         className="w-full pl-8 pr-4 py-3 text-xl font-bold border-2 border-gray-300 dark:border-gray-700 rounded-xl focus:border-black dark:focus:border-white outline-none dark:bg-gray-800 dark:text-white"
-                                                        placeholder="0.00"
-                                                        onKeyDown={(e) => { if (e.key === 'Enter') handleAddPayment(); }}
+                                                        placeholder={balanceRemaining.toFixed(2)}
+                                                        onKeyDown={(e) => { if (e.key === 'Enter') { cardUsesTerminal ? handleChargeOnTerminal() : handleAddPayment(); } }}
                                                     />
                                                 </div>
                                             </div>
@@ -771,14 +776,26 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                 </div>
                                             )}
 
-                                            <Button
-                                                onClick={handleAddPayment}
-                                                className="w-full py-3"
-                                                variant="outline"
-                                                disabled={!canAddPayment}
-                                            >
-                                                Agregar Pago
-                                            </Button>
+                                            {/* Acción única: tarjeta con terminal cobra en la terminal; lo demás agrega pago */}
+                                            {cardUsesTerminal ? (
+                                                <button
+                                                    onClick={handleChargeOnTerminal}
+                                                    disabled={!selectedTerminalId || balanceRemaining <= 0}
+                                                    className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white font-bold flex items-center justify-center gap-2 transition-colors"
+                                                >
+                                                    <Terminal className="w-4 h-4" />
+                                                    Cobrar ${chargeAmountPreview.toLocaleString()} en terminal
+                                                </button>
+                                            ) : (
+                                                <Button
+                                                    onClick={handleAddPayment}
+                                                    className="w-full py-3"
+                                                    variant="outline"
+                                                    disabled={!canAddPayment}
+                                                >
+                                                    Agregar Pago
+                                                </Button>
+                                            )}
                                         </>
                                     )}
                                 </div>

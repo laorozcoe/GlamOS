@@ -187,6 +187,17 @@ cierra los modales). Durante ese lapso el footer muestra "Guardando venta..." y 
 Cancelar/Confirmar para no cancelar un cobro ya realizado. Los pagos en **efectivo/transferencia** se
 siguen confirmando manualmente con "Confirmar Pago".
 
+### Cobro unificado + verificación de pago aprobado
+
+- **Un solo botón por método**: con tarjeta + terminal, la acción es siempre **"Cobrar $X en terminal"**
+  (cobra de verdad). Se eliminó el "Agregar Pago" para tarjeta-con-terminal, que registraba un pago
+  sin cobrarlo. Soporta **pago parcial**: el monto escrito (acotado al saldo) se cobra en la terminal;
+  si se deja vacío, cobra el saldo completo. Efectivo/transferencia siguen usando "Agregar Pago".
+- **Solo se registra si el pago fue aprobado**: el intent de Point puede llegar a `FINISHED` aun con un
+  pago **rechazado** (neto $0). La ruta `GET /api/mp/payment-intent/[intentId]` ahora valida
+  `payData.status === 'approved'`; si no lo es, responde `state: 'ERROR'` y el front muestra el rechazo
+  **sin crear venta**. Esto evita ventas "pagadas" sin cobro real.
+
 ---
 
 ## Prisma & PostgreSQL
