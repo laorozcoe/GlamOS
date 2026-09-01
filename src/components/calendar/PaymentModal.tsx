@@ -890,7 +890,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Terminal Desconectada</h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                         La terminal <strong>{terminalToConfigure?.name}</strong> se encuentra en modo independiente (Standalone). 
-                        Para poder enviar cobros automáticamente, debemos cambiarla a modo Integrado (PDV).
+                        Haz clic abajo para cambiarla a modo Integrado (PDV).
+                        <br/><br/>
+                        <span className="text-orange-600 font-bold dark:text-orange-400">¡Importante!</span> Después de activarla, <strong>deberás reiniciar físicamente la terminal</strong> (apagarla y prenderla) para que aplique el cambio antes de cobrar.
                     </p>
                     <div className="flex flex-col gap-3">
                         <Button 
