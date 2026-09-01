@@ -3,7 +3,7 @@ import { Modal } from "@/components/ui/modal";
 import Label from "../form/Label";
 import Button from "../ui/button/Button";
 import InputField from "../form/input/InputField";
-import { Trash, Search, QrCode, X, Tag, CheckCircle, AlertCircle, Loader2, Terminal, XCircle, Sparkles } from "lucide-react";
+import { Trash, Search, QrCode, X, Tag, CheckCircle, AlertCircle, Loader2, Terminal, XCircle, Sparkles, CreditCard } from "lucide-react";
 import { validateCoupon } from "@/app/(admin)/(others-pages)/coupons/actions";
 import { getActiveTerminals } from "@/app/(admin)/(others-pages)/settings/actions";
 import { getActivePromotions } from "@/app/(admin)/(others-pages)/promotions/actions";
@@ -770,16 +770,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                             <button
                                                                 key={t.id}
                                                                 onClick={() => setSelectedTerminalId(t.id)}
-                                                                className={`p-2 rounded-xl border-2 flex items-center justify-start gap-2 transition-all text-left ${
+                                                                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all text-center ${
                                                                     selectedTerminalId === t.id
                                                                         ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 shadow-sm'
                                                                         : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-brand-300'
                                                                 }`}
                                                             >
-                                                                <Terminal className={`w-4 h-4 shrink-0 ${selectedTerminalId === t.id ? 'text-brand-500' : 'text-gray-400'}`} />
-                                                                <div className="min-w-0">
-                                                                    <p className="text-xs font-bold line-clamp-1">{t.name}</p>
-                                                                </div>
+                                                                <p className="text-sm font-black line-clamp-1 w-full">{t.name}</p>
+                                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Terminal</p>
                                                             </button>
                                                         ))}
                                                     </div>
@@ -826,7 +824,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                         disabled={!selectedTerminalId || balanceRemaining <= 0}
                                         className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white font-bold flex items-center justify-center gap-2 transition-colors"
                                     >
-                                        <Terminal className="w-4 h-4" />
+                                        <CreditCard className="w-4 h-4" />
                                         Cobrar ${chargeAmountPreview.toLocaleString()}
                                     </button>
                                 ) : (

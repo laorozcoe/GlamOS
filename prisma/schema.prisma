@@ -53,6 +53,7 @@ model Business {
   mpPublicKey   String?
   mpStoreId     String?
   mpWebhookSecret String? // Clave secreta para validar la firma de los webhooks de MP
+  mpAccounts    Json?     // Array de tokens adicionales [{ id, name, accessToken, storeId }]
 
   coupons           Coupon[]
   promotions        Promotion[]
