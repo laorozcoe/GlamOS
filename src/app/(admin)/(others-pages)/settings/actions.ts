@@ -62,6 +62,48 @@ export async function changeMpDeviceMode(
   return { operating_mode: data.operating_mode ?? operating_mode };
 }
 
+// Verifica el estado real de múltiples terminales
+export async function checkTerminalsStatus(terminals: any[]): Promise<Record<string, string>> {
+  if (SIMULATE) {
+    const map: Record<string, string> = {};
+    terminals.forEach(t => map[t.posId] = "PDV");
+    return map;
+  }
+
+  // Agrupar por access token para minimizar peticiones
+  const tokensToPosIds = new Map<string, string[]>();
+  const defaultToken = await getMpToken();
+  
+  terminals.forEach(t => {
+    const tk = t.mpAccessToken || defaultToken;
+    if (tk) {
+      if (!tokensToPosIds.has(tk)) tokensToPosIds.set(tk, []);
+      tokensToPosIds.get(tk)!.push(t.posId);
+    }
+  });
+
+  const resultMap: Record<string, string> = {};
+
+  const promises = Array.from(tokensToPosIds.entries()).map(async ([token, posIds]) => {
+    const res = await fetch("https://api.mercadopago.com/point/integration-api/devices", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const devices = data.devices || [];
+      devices.forEach((d: any) => {
+        if (posIds.includes(d.id)) {
+          resultMap[d.id] = d.operating_mode;
+        }
+      });
+    }
+  });
+
+  await Promise.all(promises);
+  return resultMap;
+}
+
 export async function getBusinessSettings() {
   const businessCtx = await getBusiness();
   if (!businessCtx) throw new Error("No business found");

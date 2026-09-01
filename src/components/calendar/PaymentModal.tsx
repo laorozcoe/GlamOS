@@ -3,9 +3,9 @@ import { Modal } from "@/components/ui/modal";
 import Label from "../form/Label";
 import Button from "../ui/button/Button";
 import InputField from "../form/input/InputField";
-import { Trash, Search, QrCode, X, Tag, CheckCircle, AlertCircle, Loader2, Terminal, XCircle, Sparkles, CreditCard } from "lucide-react";
+import { Trash, Search, QrCode, X, Tag, CheckCircle, AlertCircle, Loader2, Terminal, XCircle, Sparkles, CreditCard, AlertTriangle } from "lucide-react";
 import { validateCoupon } from "@/app/(admin)/(others-pages)/coupons/actions";
-import { getActiveTerminals } from "@/app/(admin)/(others-pages)/settings/actions";
+import { getActiveTerminals, checkTerminalsStatus, changeMpDeviceMode } from "@/app/(admin)/(others-pages)/settings/actions";
 import { getActivePromotions } from "@/app/(admin)/(others-pages)/promotions/actions";
 import { applyPromotions, PromotionResult } from "@/lib/applyPromotions";
 import { QRScannerModal } from "./QRScannerModal";
@@ -67,6 +67,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
     // ---- Terminal MP ----
     const [terminals, setTerminals] = useState<any[]>([]);
+    const [terminalModes, setTerminalModes] = useState<Record<string, string>>({});
+    const [modesLoading, setModesLoading] = useState(false);
+    const [terminalToConfigure, setTerminalToConfigure] = useState<any | null>(null);
+    const [configuringMode, setConfiguringMode] = useState(false);
+
     const [selectedTerminalId, setSelectedTerminalId] = useState<string>('');
     const [terminalStatus, setTerminalStatus] = useState<TerminalStatus>('idle');
     const [terminalError, setTerminalError] = useState<string | null>(null);
@@ -766,20 +771,29 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                         Selecciona la Terminal
                                                     </label>
                                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                                        {terminals.map((t) => (
-                                                            <button
-                                                                key={t.id}
-                                                                onClick={() => setSelectedTerminalId(t.id)}
-                                                                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all text-center ${
-                                                                    selectedTerminalId === t.id
-                                                                        ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 shadow-sm'
-                                                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-brand-300'
-                                                                }`}
-                                                            >
-                                                                <p className="text-sm font-black line-clamp-1 w-full">{t.name}</p>
-                                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Terminal</p>
-                                                            </button>
-                                                        ))}
+                                                        {terminals.map((t) => {
+                                                            const mode = terminalModes[t.posId];
+                                                            const isDisconnected = !modesLoading && mode !== "PDV";
+                                                            return (
+                                                                <button
+                                                                    key={t.id}
+                                                                    onClick={() => isDisconnected ? setTerminalToConfigure(t) : setSelectedTerminalId(t.id)}
+                                                                    className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all text-center relative ${
+                                                                        isDisconnected
+                                                                            ? 'border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-400 hover:bg-orange-100'
+                                                                            : selectedTerminalId === t.id
+                                                                                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 shadow-sm'
+                                                                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-brand-300'
+                                                                    }`}
+                                                                >
+                                                                    {isDisconnected && <AlertTriangle className="w-4 h-4 text-orange-500 absolute top-1 right-1" />}
+                                                                    <p className="text-sm font-black line-clamp-1 w-full truncate px-1">{t.name}</p>
+                                                                    <p className="text-[10px] opacity-70 font-bold uppercase tracking-wider">
+                                                                        {isDisconnected ? 'Desconectada' : 'Terminal'}
+                                                                    </p>
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             )}
@@ -856,6 +870,54 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 onSelect={(code) => applyCoupon(code)}
                 subtotal={subtotalAfterPromo}
             />
+
+            <Modal isOpen={!!terminalToConfigure} onClose={() => setTerminalToConfigure(null)} className="max-w-sm">
+                <div className="p-6 text-center">
+                    <div className="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertTriangle className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Terminal Desconectada</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                        La terminal <strong>{terminalToConfigure?.name}</strong> se encuentra en modo independiente (Standalone). 
+                        Para poder enviar cobros automáticamente, debemos cambiarla a modo Integrado (PDV).
+                    </p>
+                    <div className="flex flex-col gap-3">
+                        <Button 
+                            onClick={async () => {
+                                if (!terminalToConfigure) return;
+                                setConfiguringMode(true);
+                                try {
+                                    const r = await changeMpDeviceMode(terminalToConfigure.posId, "PDV", terminalToConfigure.mpAccessToken);
+                                    if (r.error) {
+                                        toast.error(r.error);
+                                    } else {
+                                        toast.success("Terminal configurada correctamente. ¡Por favor REINICIALA ahora!");
+                                        setTerminalModes(prev => ({ ...prev, [terminalToConfigure.posId]: "PDV" }));
+                                        setSelectedTerminalId(terminalToConfigure.id);
+                                        setTerminalToConfigure(null);
+                                    }
+                                } catch(e) {
+                                    toast.error("Error al configurar terminal");
+                                } finally {
+                                    setConfiguringMode(false);
+                                }
+                            }}
+                            disabled={configuringMode}
+                            className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl"
+                        >
+                            {configuringMode ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Vincular Terminal Ahora"}
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setTerminalToConfigure(null)}
+                            disabled={configuringMode}
+                            className="w-full py-3 rounded-xl"
+                        >
+                            Cancelar
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </>
     );
 };
