@@ -3,6 +3,7 @@ import { Modal } from "@/components/ui/modal";
 import Select from "@/components/form/Select";
 import InputField from '@/components/form/input/InputField';
 import { ServiceSelector } from "@/components/calendar/mobile/ServiceSelector";
+import { ProductBrowserModal } from "@/components/calendar/ProductBrowserModal";
 import Button from "../ui/button/Button";
 import { Trash, User, Calendar, Sparkles, Receipt, ChevronRight, ChevronLeft, SquarePlus, Search, Check, X, Tag } from 'lucide-react';
 import Label from "@/components/form/Label";
@@ -56,6 +57,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isServiceBrowserOpen, setIsServiceBrowserOpen] = useState(false);
+    const [isProductBrowserOpen, setIsProductBrowserOpen] = useState(false);
 
     // --- HELPERS ---
     const employeeOptions = employees.map((e: any) => ({
@@ -181,15 +183,21 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                                 <Button
                                     variant="outline"
                                     onClick={() => setExtraServicesModal(true)}
-                                    className="px-4 py-2 border-brand-200 text-brand-600 hover:bg-brand-50 flex-1 sm:flex-none dark:border-brand-800 dark:text-brand-400 dark:hover:bg-brand-900/30"
+                                    className="px-4 py-2 border-brand-200 text-brand-600 hover:bg-brand-50 flex-1 sm:flex-none dark:border-brand-800 dark:text-brand-400 dark:hover:bg-brand-900/30 hidden sm:flex"
                                 >
-                                    + Servicio Extra
+                                    + Extra
                                 </Button>
                                 <Button
                                     onClick={() => setIsServiceBrowserOpen(true)}
                                     className="px-5 py-2 flex-1 sm:flex-none bg-brand-500 hover:bg-brand-600 shadow-md"
                                 >
-                                    + Catálogo
+                                    + Servicio
+                                </Button>
+                                <Button
+                                    onClick={() => setIsProductBrowserOpen(true)}
+                                    className="px-5 py-2 flex-1 sm:flex-none bg-blue-500 hover:bg-blue-600 shadow-md"
+                                >
+                                    + Producto
                                 </Button>
                             </div>
                         </div>
@@ -306,6 +314,20 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
                     <Button className="w-full py-3" onClick={() => setIsServiceBrowserOpen(false)}>Hecho</Button>
                 </div>
             </Modal>
+
+            {/* Sub-Modal: Selector de Productos */}
+            <ProductBrowserModal
+                isOpen={isProductBrowserOpen}
+                onClose={() => setIsProductBrowserOpen(false)}
+                onAddProduct={(product, price) => {
+                    props.onAddService({
+                        productId: product.id,
+                        name: product.name,
+                        price: price,
+                        duration: 0
+                    });
+                }}
+            />
 
             {/* Modal Eliminar */}
             <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} className="max-w-sm p-6 rounded-2xl bg-white dark:bg-gray-900">

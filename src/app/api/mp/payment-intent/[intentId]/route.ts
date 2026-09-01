@@ -40,18 +40,30 @@ export async function GET(
         return NextResponse.json({ error: 'businessId requerido' }, { status: 400 });
     }
 
+    const terminalId = searchParams.get('terminalId');
+
     const business = await prisma.business.findUnique({
         where: { id: businessId },
         select: { mpAccessToken: true },
     });
 
-    if (!business?.mpAccessToken) {
+    let terminalToken: string | null = null;
+    if (terminalId) {
+        const terminal = await prisma.paymentTerminal.findUnique({
+            where: { id: terminalId }
+        });
+        terminalToken = terminal?.mpAccessToken || null;
+    }
+
+    const tokenToUse = terminalToken || business?.mpAccessToken;
+
+    if (!tokenToUse) {
         return NextResponse.json({ error: 'Sin token MP' }, { status: 400 });
     }
 
     const intentRes = await fetch(
         `https://api.mercadopago.com/point/integration-api/payment-intents/${intentId}`,
-        { headers: { Authorization: `Bearer ${business.mpAccessToken}` } }
+        { headers: { Authorization: `Bearer ${tokenToUse}` } }
     );
 
     if (!intentRes.ok) {
@@ -72,7 +84,7 @@ export async function GET(
 
         const payRes = await fetch(
             `https://api.mercadopago.com/v1/payments/${paymentId}`,
-            { headers: { Authorization: `Bearer ${business.mpAccessToken}` } }
+            { headers: { Authorization: `Bearer ${tokenToUse}` } }
         );
 
         if (payRes.ok) {

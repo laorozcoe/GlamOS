@@ -8,10 +8,13 @@ import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
 import { usePrinter } from "@/hooks/usePrinter";
 import { PrinterStatus } from "@/components/Print/PrinterStatus";
+import { ShoppingBag } from "lucide-react";
+import { DirectSaleModal } from "@/components/sales/DirectSaleModal";
 
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
+  const [isDirectSaleOpen, setIsDirectSaleOpen] = useState(false);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
   const { status, connect, device, openDrawer } = usePrinter();
@@ -165,6 +168,15 @@ const AppHeader: React.FC = () => {
             } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
         >
           <div className="flex items-center gap-2 2xsm:gap-3">
+            {/* Venta Directa Button */}
+            <button
+              onClick={() => setIsDirectSaleOpen(true)}
+              className="flex items-center justify-center w-10 h-10 text-gray-700 bg-gray-100 rounded-full hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors relative group"
+              aria-label="Venta Directa"
+            >
+              <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            </button>
+
             {/* <!-- Dark Mode Toggler --> */}
             <ThemeToggleButton />
             {/* <!-- Dark Mode Toggler --> */}
@@ -174,7 +186,7 @@ const AppHeader: React.FC = () => {
           </div>
           {/* <!-- User Area --> */}
           <UserDropdown />
-
+          <DirectSaleModal isOpen={isDirectSaleOpen} onClose={() => setIsDirectSaleOpen(false)} />
         </div>
       </div>
     </header>

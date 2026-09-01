@@ -47,7 +47,11 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                     ${totalAmount}
                 </Label>
                 <p className="text-gray-500 text-sm mt-1">Total Pagado</p>
-                {sale?.payments?.length > 0 && (
+                {sale === undefined ? (
+                    <div className="mt-3 flex justify-center">
+                        <div className="w-24 h-6 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-full"></div>
+                    </div>
+                ) : sale?.payments?.length > 0 && (
                     <div className="mt-3 flex justify-center">
                         <PaymentMethodBadge sale={sale} />
                     </div>
@@ -79,7 +83,13 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                 <hr className="border-dashed border-gray-200" />
 
                 {/* Liquidación MercadoPago (cobro con terminal) */}
-                {sale?.mpPaymentId && sale?.mpFee != null && (() => {
+                {sale === undefined ? (
+                    <div className="space-y-2 animate-pulse">
+                        <div className="w-32 h-3 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                        <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                        <div className="w-full h-12 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+                    </div>
+                ) : sale?.mpPaymentId && sale?.mpFee != null ? (() => {
                     const gross = Number(sale.total ?? totalAmount ?? 0);
                     const net = sale.mpNetReceived != null
                         ? Number(sale.mpNetReceived)
@@ -108,7 +118,7 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                             )}
                         </div>
                     );
-                })()}
+                })() : null}
 
                 {/* Cupón aplicado */}
                 {sale?.coupon && (
@@ -161,7 +171,12 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                 <hr className="border-dashed border-gray-200" />
 
                 {/* Total */}
-                {sale && (
+                {sale === undefined ? (
+                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl text-sm space-y-1.5 animate-pulse">
+                        <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                        <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded pt-1 mt-1 border-t border-gray-200 dark:border-gray-700"></div>
+                    </div>
+                ) : sale ? (
                     <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl text-sm space-y-1.5">
                         {sale.discount > 0 && (
                             <>
@@ -180,7 +195,7 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                             <span>${Number(sale.total).toLocaleString()}</span>
                         </div>
                     </div>
-                )}
+                ) : null}
 
                 {/* Fecha y Notas */}
                 <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl text-xs space-y-2">

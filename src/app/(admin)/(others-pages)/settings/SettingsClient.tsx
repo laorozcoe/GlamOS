@@ -216,7 +216,7 @@ export default function SettingsClient() {
     const friendly = device.id.split("__")[0]?.replace(/_/g, " ") || "Terminal";
     setTerminals([
       ...terminals,
-      { id: null, name: friendly, posId: device.id, isDefault: terminals.length === 0 },
+      { id: null, name: friendly, posId: device.id, mpAccessToken: "", isDefault: terminals.length === 0 },
     ]);
     toast.success("Terminal agregada. No olvides Guardar Terminales.");
   };
@@ -258,7 +258,7 @@ export default function SettingsClient() {
   };
 
   const addTerminal = () => {
-    setTerminals([...terminals, { id: null, name: "", posId: "", isDefault: terminals.length === 0 }]);
+    setTerminals([...terminals, { id: null, name: "", posId: "", mpAccessToken: "", isDefault: terminals.length === 0 }]);
   };
 
   const updateTerminal = (index: number, field: string, value: any) => {
@@ -678,12 +678,21 @@ export default function SettingsClient() {
                     />
                   </td>
                   <td className="p-4">
-                    <Input
-                      value={t.posId}
-                      onChange={(e) => updateTerminal(i, "posId", e.target.value)}
-                      placeholder="Ej: SMARTPOS_1"
-                      className="w-full text-sm font-mono"
-                    />
+                    <div className="space-y-2">
+                      <Input
+                        value={t.posId}
+                        onChange={(e) => updateTerminal(i, "posId", e.target.value)}
+                        placeholder="POS ID (Ej: SMARTPOS_1)"
+                        className="w-full text-sm font-mono"
+                      />
+                      <Input
+                        value={t.mpAccessToken || ""}
+                        onChange={(e) => updateTerminal(i, "mpAccessToken", e.target.value)}
+                        placeholder="Access Token (Si es de otra cuenta MP)"
+                        className="w-full text-xs font-mono"
+                        type="password"
+                      />
+                    </div>
                   </td>
                   <td className="p-4">
                     {(() => {

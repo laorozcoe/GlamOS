@@ -24,8 +24,14 @@ export async function POST(req: NextRequest) {
         select: { mpAccessToken: true },
     });
 
-    if (!business?.mpAccessToken) {
-        return NextResponse.json({ error: 'No hay token de MercadoPago configurado' }, { status: 400 });
+    const terminal = await prisma.paymentTerminal.findFirst({
+        where: { businessId, posId }
+    });
+
+    const tokenToUse = terminal?.mpAccessToken || business?.mpAccessToken;
+
+    if (!tokenToUse) {
+        return NextResponse.json({ error: 'No hay token de MercadoPago configurado para esta terminal ni para el negocio' }, { status: 400 });
     }
 
     // La API de Point exige el monto en CENTAVOS (entero) y un mínimo de $5 (500 centavos).
@@ -40,7 +46,7 @@ export async function POST(req: NextRequest) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${business.mpAccessToken}`,
+                Authorization: `Bearer ${tokenToUse}`,
             },
             // El esquema actual de Point solo acepta amount + additional_info.
             // (description y payment.type ya NO se permiten y devuelven 400.)
@@ -82,7 +88,13 @@ export async function DELETE(req: NextRequest) {
         select: { mpAccessToken: true },
     });
 
-    if (!business?.mpAccessToken) {
+    const terminal = await prisma.paymentTerminal.findFirst({
+        where: { businessId, posId }
+    });
+
+    const tokenToUse = terminal?.mpAccessToken || business?.mpAccessToken;
+
+    if (!tokenToUse) {
         return NextResponse.json({ error: 'Sin token MP' }, { status: 400 });
     }
 
@@ -91,7 +103,7 @@ export async function DELETE(req: NextRequest) {
         `https://api.mercadopago.com/point/integration-api/devices/${posId}/payment-intents/${intentId}`,
         {
             method: 'DELETE',
-            headers: { Authorization: `Bearer ${business.mpAccessToken}` },
+            headers: { Authorization: `Bearer ${tokenToUse}` },
         }
     );
 

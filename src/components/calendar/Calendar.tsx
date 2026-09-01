@@ -352,11 +352,11 @@ export default function CalendarGrid() {
                     .map((event: any) => {
                       const pos = getPositionStyles(formatTime(event.start), getDurationInMinutes(event.start, event.end), startHour);
 
+                      const isLoading = logic.loadingEventId === event.id;
                       return (
                         <div
                           key={event.id}
-                          className={`absolute p-2 rounded-md border-l-4 dark:border shadow-sm text-xs font-medium cursor-pointer hover:brightness-95 pointer-events-auto transition-all ${colors[index]}`}
-                          // className={`absolute p-2 rounded-md border-l-4 shadow-sm text-xs font-medium cursor-pointer hover:brightness-95 pointer-events-auto transition-all`}
+                          className={`absolute p-2 rounded-md border-l-4 dark:border shadow-sm text-xs font-medium cursor-pointer hover:brightness-95 pointer-events-auto transition-all ${colors[index]} ${isLoading ? 'animate-pulse opacity-60 scale-95 duration-150' : ''}`}
                           style={{
                             top: pos.top,
                             height: pos.height,

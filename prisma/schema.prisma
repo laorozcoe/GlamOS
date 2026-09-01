@@ -56,6 +56,8 @@ model Business {
 
   coupons           Coupon[]
   promotions        Promotion[]
+  productCategories ProductCategory[]
+  products          Product[]
 }
 
 //////////////////////
@@ -67,6 +69,7 @@ model PaymentTerminal {
   businessId  String
   name        String   // Ej: "Caja Principal", "Barra"
   posId       String   // ID en Mercado Pago
+  mpAccessToken String? // Token específico de esta terminal (si es de otra cuenta)
   isDefault   Boolean  @default(false)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -184,6 +187,45 @@ model ServiceCategory {
 
   business Business  @relation(fields: [businessId], references: [id])
   services Service[]
+}
+
+//////////////////////
+// 🛍️ CATEGORÍAS DE PRODUCTOS
+//////////////////////
+
+model ProductCategory {
+  id         String    @id @default(uuid())
+  businessId String
+  name       String    // Ropa, Joyería, Cabello
+  order      Int?
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  business Business  @relation(fields: [businessId], references: [id])
+  products Product[]
+}
+
+//////////////////////
+// 🛍️ PRODUCTOS
+//////////////////////
+
+model Product {
+  id            String          @id @default(uuid())
+  businessId    String
+  categoryId    String
+  name          String
+  description   String?
+  price         Float
+  variablePrice Boolean         @default(false)
+  stock         Int             @default(0)
+  barcode       String?
+
+  active        Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+
+  business      Business        @relation(fields: [businessId], references: [id])
+  category      ProductCategory @relation(fields: [categoryId], references: [id])
+  saleItems     SaleItem[]
 }
 
 //////////////////////
@@ -499,7 +541,8 @@ model SaleItem {
   id            String  @id @default(uuid())
   saleId        String
   serviceId     String?
-  description   String // Nombre del servicio al momento de vender (Snapshot)
+  productId     String?
+  description   String // Nombre del servicio o producto al momento de vender (Snapshot)
   price         Float // Precio al que se vendió (histórico)
   quantity      Int     @default(1)
   couponCovered Boolean @default(false) // true = este ítem fue cubierto por una cortesía
@@ -507,6 +550,7 @@ model SaleItem {
 
   sale    Sale     @relation(fields: [saleId], references: [id])
   service Service? @relation(fields: [serviceId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
 }
 
 //////////////////////

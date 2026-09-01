@@ -54,11 +54,11 @@ export const useCalendarLogic = () => {
     const [showPayModal, setShowPayModal] = useState(false);
     const [saleForModal, setSaleForModal] = useState<any>(null);
 
-    // Multi-Checkout Integración
     const [showMultiCheckout, setShowMultiCheckout] = useState(false);
     const [isMultiCheckoutMode, setIsMultiCheckoutMode] = useState(false);
     const [multiAppointments, setMultiAppointments] = useState<any[]>([]);
     const [multiTotalSum, setMultiTotalSum] = useState<number>(0);
+    const [loadingEventId, setLoadingEventId] = useState<string | null>(null);
 
     const handleProceedToMultiPayment = (selectedAppointments: any[], totalSum: number) => {
         setMultiAppointments(selectedAppointments);
@@ -171,6 +171,8 @@ export const useCalendarLogic = () => {
         setCustomer({ name: "", phone: "" });
         setDate("");
         setTime("");
+        setTimeEnd("");
+        setLoadingEventId(null);
         setIsMultiCheckoutMode(false);
         setMultiAppointments([]);
     };
@@ -215,12 +217,23 @@ export const useCalendarLogic = () => {
 
         const status = event.paymentStatus;
         if (status === "PAID") {
-            setShowSaleDetails(true);
-            setSaleForModal(null);
             if (event.id && business?.id) {
+                setLoadingEventId(event.id);
                 getSaleByAppointmentPrisma(business.id, event.id)
-                    .then(setSaleForModal)
-                    .catch(() => setSaleForModal(null));
+                    .then((saleData) => {
+                        setSaleForModal(saleData);
+                        setShowSaleDetails(true);
+                    })
+                    .catch(() => {
+                        setSaleForModal(null);
+                        setShowSaleDetails(true);
+                    })
+                    .finally(() => {
+                        setLoadingEventId(null);
+                    });
+            } else {
+                setSaleForModal(null);
+                setShowSaleDetails(true);
             }
         } else {
             setSelectedEmployee(event.employee);
@@ -541,7 +554,8 @@ export const useCalendarLogic = () => {
                 }
 
                 const itemsList = (appt.services || []).map((s: any) => ({
-                    serviceId: s.serviceId,
+                    serviceId: s.serviceId || null,
+                    productId: s.productId || null,
                     description: s.service?.descriptionTicket || s.service?.name || appt.title || "Servicio",
                     price: Number(s.price),
                     quantity: 1
@@ -632,6 +646,7 @@ export const useCalendarLogic = () => {
                     acc[key] = {
                         id: appt.id || null,
                         serviceId: appt.serviceId || null,
+                        productId: appt.productId || null,
                         quantity: 0,
                         ticket_desc: appt.descriptionTicket || appt.name || "Servicio",
                         name: appt.name || "Servicio",
@@ -702,10 +717,11 @@ export const useCalendarLogic = () => {
                 totals: totals,
                 items: itemsList.map((item: any) => ({
                     serviceId: item.serviceId,
+                    productId: item.productId,
                     description: item.ticket_desc,
                     price: item.unitPrice,
                     quantity: item.quantity,
-                    couponCovered: item.serviceId != null && coveredServiceIds.includes(item.serviceId),
+                    couponCovered: coveredServiceIds.includes(item.serviceId)
                 })),
                 payment: paymentData.payments, // Múltiples pagos
                 mpPaymentId,
@@ -874,6 +890,7 @@ export const useCalendarLogic = () => {
     return {
         getUserInfo,
         calendarRef,
+        loadingEventId,
         isOpen, openModal, closeModal,
         employees, services, servicesCategories, events,
         date, setDate, time, setTime, timeEnd, setTimeEnd,

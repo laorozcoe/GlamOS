@@ -120,12 +120,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
             getActiveTerminals().then((t) => {
                 setTerminals(t);
-                // Preseleccionar: única terminal, o la marcada como predeterminada, o la primera.
+                // Preseleccionar: única terminal, o la marcada como predeterminada.
                 if (t.length === 1) {
                     setSelectedTerminalId(t[0].id);
                 } else if (t.length > 1) {
-                    const def = t.find((x: any) => x.isDefault) ?? t[0];
-                    setSelectedTerminalId(def.id);
+                    const def = t.find((x: any) => x.isDefault);
+                    setSelectedTerminalId(def ? def.id : '');
                 } else {
                     setSelectedTerminalId('');
                 }
@@ -242,7 +242,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             pollRef.current = setInterval(async () => {
                 try {
                     const pollRes = await fetch(
-                        `/api/mp/payment-intent/${data.intentId}?businessId=${business.id}`
+                        `/api/mp/payment-intent/${data.intentId}?businessId=${business.id}&terminalId=${selectedTerminalId}`
                     );
                     const pollData = await pollRes.json();
                     const state: string = pollData.state;
@@ -729,23 +729,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                 </div>
                                             )}
 
-                                            {/* Selector de terminal (si hay 2+) */}
-                                            {cardUsesTerminal && terminals.length > 1 && (
-                                                <div>
-                                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Terminal</label>
-                                                    <select
-                                                        value={selectedTerminalId}
-                                                        onChange={(e) => setSelectedTerminalId(e.target.value)}
-                                                        className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                                    >
-                                                        <option value="">Seleccionar terminal...</option>
-                                                        {terminals.map((t) => (
-                                                            <option key={t.id} value={t.id}>{t.name}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            )}
-
                                             {/* Monto (permite pago parcial) */}
                                             <div>
                                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
@@ -776,25 +759,31 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                 </div>
                                             )}
 
-                                            {/* Acción única: tarjeta con terminal cobra en la terminal; lo demás agrega pago */}
-                                            {cardUsesTerminal ? (
-                                                <button
-                                                    onClick={handleChargeOnTerminal}
-                                                    disabled={!selectedTerminalId || balanceRemaining <= 0}
-                                                    className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white font-bold flex items-center justify-center gap-2 transition-colors"
-                                                >
-                                                    <Terminal className="w-4 h-4" />
-                                                    Cobrar ${chargeAmountPreview.toLocaleString()} en terminal
-                                                </button>
-                                            ) : (
-                                                <Button
-                                                    onClick={handleAddPayment}
-                                                    className="w-full py-3"
-                                                    variant="outline"
-                                                    disabled={!canAddPayment}
-                                                >
-                                                    Agregar Pago
-                                                </Button>
+                                            {/* Selector de terminal (si hay 2+) */}
+                                            {cardUsesTerminal && terminals.length > 1 && (
+                                                <div className="pt-2">
+                                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                                        Selecciona la Terminal
+                                                    </label>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                        {terminals.map((t) => (
+                                                            <button
+                                                                key={t.id}
+                                                                onClick={() => setSelectedTerminalId(t.id)}
+                                                                className={`p-2 rounded-xl border-2 flex items-center justify-start gap-2 transition-all text-left ${
+                                                                    selectedTerminalId === t.id
+                                                                        ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 shadow-sm'
+                                                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-brand-300'
+                                                                }`}
+                                                            >
+                                                                <Terminal className={`w-4 h-4 shrink-0 ${selectedTerminalId === t.id ? 'text-brand-500' : 'text-gray-400'}`} />
+                                                                <div className="min-w-0">
+                                                                    <p className="text-xs font-bold line-clamp-1">{t.name}</p>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             )}
                                         </>
                                     )}
@@ -820,16 +809,35 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 >
                                     Cancelar
                                 </Button>
-                                <Button
-                                    onClick={handleConfirm}
-                                    disabled={isConfirmDisabled}
-                                    className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition-all
-                                    ${isConfirmDisabled
-                                            ? 'bg-gray-400 dark:bg-gray-700 cursor-not-allowed'
-                                            : 'bg-black hover:bg-gray-800 hover:scale-[1.02]'}`}
-                                >
-                                    Confirmar Pago
-                                </Button>
+                                {balanceRemaining <= 0 ? (
+                                    <Button
+                                        onClick={handleConfirm}
+                                        disabled={isConfirmDisabled}
+                                        className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition-all
+                                        ${isConfirmDisabled
+                                                ? 'bg-gray-400 dark:bg-gray-700 cursor-not-allowed'
+                                                : 'bg-black hover:bg-gray-800 hover:scale-[1.02]'}`}
+                                    >
+                                        Confirmar Pago
+                                    </Button>
+                                ) : cardUsesTerminal ? (
+                                    <button
+                                        onClick={handleChargeOnTerminal}
+                                        disabled={!selectedTerminalId || balanceRemaining <= 0}
+                                        className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white font-bold flex items-center justify-center gap-2 transition-colors"
+                                    >
+                                        <Terminal className="w-4 h-4" />
+                                        Cobrar ${chargeAmountPreview.toLocaleString()}
+                                    </button>
+                                ) : (
+                                    <Button
+                                        onClick={handleAddPayment}
+                                        className="flex-1 py-3 shadow-lg"
+                                        disabled={!canAddPayment}
+                                    >
+                                        Agregar Pago
+                                    </Button>
+                                )}
                             </>
                         )}
                     </div>

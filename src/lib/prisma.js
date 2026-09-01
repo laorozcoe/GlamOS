@@ -842,7 +842,8 @@ export const createSalePrisma = async (data) => {
                     // 2. Creamos los ítems de la venta en la misma operación (Nested Write)
                     items: {
                         create: items.map((item) => ({
-                            serviceId: item.serviceId, // Puede ser null si es cargo extra manual
+                            serviceId: item.serviceId || null,
+                            productId: item.productId || null,
                             description: item.description,
                             price: item.price,
                             quantity: item.quantity || 1,

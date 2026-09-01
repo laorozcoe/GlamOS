@@ -155,6 +155,7 @@ export async function savePaymentTerminals(terminals: any[]) {
          data: {
            name: t.name,
            posId: t.posId,
+           mpAccessToken: t.mpAccessToken || null,
            isDefault: t.isDefault
          }
        });
@@ -164,6 +165,7 @@ export async function savePaymentTerminals(terminals: any[]) {
            businessId: businessCtx.id,
            name: t.name,
            posId: t.posId,
+           mpAccessToken: t.mpAccessToken || null,
            isDefault: t.isDefault
          }
        });

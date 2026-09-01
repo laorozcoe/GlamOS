@@ -1,8 +1,7 @@
 import { headers } from "next/headers"
 import { getBusinessPrisma } from "@/lib/prisma"
 
-// const DEFAULT_SLUG = process.env.DEV_BUSINESS_SLUG || "testsalon";
-const DEFAULT_SLUG = process.env.DEV_BUSINESS_SLUG || "brillartebloom";
+const DEFAULT_SLUG = process.env.DEV_BUSINESS_SLUG || "testsalon";
 
 export async function getBusiness() {
     try {

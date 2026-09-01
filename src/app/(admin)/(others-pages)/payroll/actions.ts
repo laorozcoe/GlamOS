@@ -43,10 +43,27 @@ export async function getPayrollData(startDateISO: string, endDateISO: string) {
   const payrollData = employees.map((employee: any) => {
     const employeeSales = sales.filter((s: any) => s.employeeId === employee.id);
 
-    let totalSalesGenerated = 0;
+    let totalSalesGenerated = 0; // Solo para comisiones (servicios)
+    let totalProductsGenerated = 0; // Para reportes (productos)
 
     employeeSales.forEach((s: any) => {
-      totalSalesGenerated += s.total;
+      // Sumamos solo el valor de los servicios (no productos)
+      const serviceItems = (s.items || []).filter((item: any) => item.productId === null);
+      const productItems = (s.items || []).filter((item: any) => item.productId !== null);
+      
+      const servicesTotal = serviceItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+      const productsTotal = productItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+      
+      let ticketServiceRevenue = servicesTotal;
+      if ((s.discount > 0 || s.promotionDiscount > 0) && servicesTotal > 0) {
+        const totalDiscount = (s.discount || 0) + (s.promotionDiscount || 0);
+        const subtotal = servicesTotal + productsTotal;
+        const discountRatio = subtotal > 0 ? (servicesTotal / subtotal) : 1;
+        ticketServiceRevenue -= (totalDiscount * discountRatio);
+      }
+
+      totalSalesGenerated += ticketServiceRevenue;
+      totalProductsGenerated += productsTotal;
     });
 
     const commissionPay = totalSalesGenerated * (employee.commission / 100);
