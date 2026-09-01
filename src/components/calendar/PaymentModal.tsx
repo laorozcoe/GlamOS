@@ -134,6 +134,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 } else {
                     setSelectedTerminalId('');
                 }
+                
+                // Fetch live status
+                if (t.length > 0) {
+                    setModesLoading(true);
+                    checkTerminalsStatus(t).then(modes => {
+                        setTerminalModes(modes);
+                        setModesLoading(false);
+                    }).catch(() => setModesLoading(false));
+                } else {
+                    setModesLoading(false);
+                }
             }).catch(() => setTerminals([]));
 
             if (business?.id && cartItems.length > 0) {
