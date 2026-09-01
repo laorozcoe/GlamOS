@@ -789,7 +789,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                             return (
                                                                 <button
                                                                     key={t.id}
-                                                                    onClick={() => isDisconnected ? setTerminalToConfigure(t) : setSelectedTerminalId(t.id)}
+                                                                    onClick={() => setSelectedTerminalId(t.id)}
                                                                     className={`w-[140px] p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all text-center relative ${
                                                                         isDisconnected
                                                                             ? 'border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-400 hover:bg-orange-100'
@@ -807,6 +807,28 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                             );
                                                         })}
                                                     </div>
+                                                    
+                                                    {cardUsesTerminal && selectedTerminalId && terminalModes[terminals.find(t => t.id === selectedTerminalId)?.posId || ''] !== "PDV" && (
+                                                        <div className="mt-4 p-4 rounded-xl bg-orange-50 border border-orange-200 dark:bg-orange-900/20 dark:border-orange-800 text-sm flex flex-col gap-2 animate-in fade-in">
+                                                            <div className="flex items-center gap-2 text-orange-800 dark:text-orange-300 font-bold">
+                                                                <AlertTriangle className="w-5 h-5 shrink-0" />
+                                                                Terminal Desconectada
+                                                            </div>
+                                                            <p className="text-orange-700 dark:text-orange-400">
+                                                                El cobro <strong>no se enviará automáticamente</strong> a la maquinita. Deberás teclear el monto en tu app de Mercado Pago. Al registrarlo aquí, el dinero se sumará a los reportes de la cuenta asignada a esta terminal.
+                                                            </p>
+                                                            <button 
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    const t = terminals.find(t => t.id === selectedTerminalId);
+                                                                    if (t) setTerminalToConfigure(t);
+                                                                }}
+                                                                className="text-orange-600 dark:text-orange-400 font-bold underline text-left hover:text-orange-800 dark:hover:text-orange-300"
+                                                            >
+                                                                ¿Es una Point Smart / Air? Intentar conectar a internet (PDV)
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </>

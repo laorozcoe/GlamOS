@@ -860,6 +860,7 @@ export const createSalePrisma = async (data) => {
                                 amountReceived: p.received,
                                 changeReturned: p.change,
                                 status: 'COMPLETED',
+                                terminalId: p.terminalId || null,
                             }))
                             : {
                                 businessId,
@@ -868,6 +869,7 @@ export const createSalePrisma = async (data) => {
                                 amountReceived: payment.received,
                                 changeReturned: payment.change,
                                 status: 'COMPLETED',
+                                terminalId: payment.terminalId || null,
                             },
                     },
                 },
