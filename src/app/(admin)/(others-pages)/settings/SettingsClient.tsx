@@ -433,6 +433,17 @@ export default function SettingsClient() {
           Agrega aquí las cuentas de Mercado Pago que usarás para cobrar. Una vez agregadas, baja a "Terminales Físicas" y dale a Detectar.
         </p>
 
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg dark:bg-yellow-900/20">
+          <div className="flex items-start">
+            <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-500 mr-3 shrink-0 mt-0.5" />
+            <div className="text-sm text-yellow-800 dark:text-yellow-200">
+              <span className="font-bold">¿Es obligatorio llenar el Webhook Secret?</span> No. La terminal funcionará y registrará tus cobros perfectamente sin él. 
+              Sin embargo, te recomendamos llenarlo si quieres que tus reportes de ganancias en el sistema sean exactos "al centavo", 
+              ya que el webhook es la única forma en que Mercado Pago nos notifica la comisión final exacta que te descontaron de cada venta.
+            </div>
+          </div>
+        </div>
+
         <div className="bg-blue-50 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/40 p-6 rounded-2xl space-y-6 mb-12">
           <div className="space-y-4">
             {formData.mpAccounts.map((acc, i) => (
