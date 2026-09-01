@@ -187,18 +187,42 @@ export default function SettingsClient() {
   const [loadingDevices, setLoadingDevices] = useState(false);
   const [changingMode, setChangingMode] = useState<string | null>(null);
 
-  const handleDetectDevices = async () => {
+  const handleDetectDevices = async (explicitToken?: string) => {
     setLoadingDevices(true);
     try {
-      const res = await listMpDevices();
-      if (res.error) {
-        toast.error(res.error);
-        setMpDevices([]);
+      // Si pasan un token explícito, lo agregamos. Si no, tomamos el default (undefined) y los ya guardados.
+      const tokensToScan = new Set<string | undefined>([undefined]);
+      if (explicitToken) {
+        tokensToScan.add(explicitToken);
       } else {
-        setMpDevices(res.devices || []);
-        if ((res.devices || []).length === 0) {
-          toast.info("No se encontraron terminales en esta cuenta de MercadoPago.");
+        terminals.forEach(t => {
+          if (t.mpAccessToken?.trim()) tokensToScan.add(t.mpAccessToken.trim());
+        });
+      }
+
+      let allDevices: any[] = [];
+      let lastError = "";
+
+      for (const token of Array.from(tokensToScan)) {
+        const res = await listMpDevices(token);
+        if (!res.error && res.devices) {
+          // Marcamos de dónde vino para cuando el usuario le de "importar"
+          const mapped = res.devices.map(d => ({ ...d, sourceToken: token || "" }));
+          allDevices = [...allDevices, ...mapped];
+        } else {
+          lastError = res.error || "Error";
         }
+      }
+
+      // Eliminar duplicados por ID (por si acaso un token es el mismo)
+      const uniqueDevices = Array.from(new Map(allDevices.map(item => [item.id, item])).values());
+      setMpDevices(uniqueDevices);
+
+      if (uniqueDevices.length === 0) {
+        if (explicitToken) toast.error(lastError || "No se encontraron terminales en ese token.");
+        else toast.info("No se encontraron terminales en las cuentas.");
+      } else if (explicitToken) {
+        toast.success(`Se encontraron ${uniqueDevices.length} terminales en total.`);
       }
     } catch {
       toast.error("Error al consultar las terminales de MercadoPago");
@@ -216,7 +240,7 @@ export default function SettingsClient() {
     const friendly = device.id.split("__")[0]?.replace(/_/g, " ") || "Terminal";
     setTerminals([
       ...terminals,
-      { id: null, name: friendly, posId: device.id, mpAccessToken: "", isDefault: terminals.length === 0 },
+      { id: null, name: friendly, posId: device.id, mpAccessToken: device.sourceToken || "", isDefault: terminals.length === 0 },
     ]);
     toast.success("Terminal agregada. No olvides Guardar Terminales.");
   };
@@ -226,28 +250,28 @@ export default function SettingsClient() {
     mpDevices.find((d) => d.id === posId)?.operating_mode ?? null;
 
   // Alterna el modo de una terminal guardada (pide confirmación al volver a Standalone).
-  const toggleSavedTerminalMode = (posId: string) => {
-    const mode = modeForPos(posId);
+  const toggleSavedTerminalMode = (t: any) => {
+    const mode = modeForPos(t.posId);
     if (mode === "PDV") {
       if (!window.confirm(
         "¿Volver esta terminal a modo STANDALONE?\n\nDejará de recibir cobros desde el sistema: los cobros con tarjeta dejarán de funcionar en la app hasta reactivar PDV. Tendrás que reiniciar la terminal para que el cambio tome efecto."
       )) return;
-      handleChangeMode({ id: posId }, "STANDALONE");
+      handleChangeMode(t, "STANDALONE");
     } else {
-      handleChangeMode({ id: posId }, "PDV");
+      handleChangeMode(t, "PDV");
     }
   };
 
   const handleChangeMode = async (device: any, mode: "PDV" | "STANDALONE") => {
-    setChangingMode(device.id);
+    setChangingMode(device.posId);
     try {
-      const res = await changeMpDeviceMode(device.id, mode);
+      const res = await changeMpDeviceMode(device.posId, mode, device.mpAccessToken);
       if (res.error) {
         toast.error(res.error);
       } else {
         toast.success(`Modo cambiado a ${mode}. Reinicia la terminal para aplicar el cambio.`);
         setMpDevices((prev) =>
-          prev.map((d) => (d.id === device.id ? { ...d, operating_mode: mode } : d))
+          prev.map((d) => (d.id === device.posId ? { ...d, operating_mode: mode } : d))
         );
       }
     } catch {
@@ -570,10 +594,17 @@ export default function SettingsClient() {
 
       {/* SECCION 4: TERMINALES */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">Terminales Físicas (Cajas)</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h2 className="text-xl font-bold">Terminales Físicas (Cajas)</h2>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleDetectDevices} disabled={loadingDevices}>
+            <Button variant="outline" size="sm" onClick={() => {
+              const token = window.prompt("Pega el Access Token (APP_USR-...) de la otra cuenta para buscar sus terminales:");
+              if (token?.trim()) handleDetectDevices(token.trim());
+            }} disabled={loadingDevices}>
+              {loadingDevices ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+              Escanear Token
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => handleDetectDevices()} disabled={loadingDevices}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loadingDevices ? "animate-spin" : ""}`} />
               {loadingDevices ? "Buscando..." : "Detectar de MercadoPago"}
             </Button>
@@ -718,7 +749,7 @@ export default function SettingsClient() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => toggleSavedTerminalMode(t.posId)}
+                            onClick={() => toggleSavedTerminalMode(t)}
                             disabled={changingMode === t.posId}
                             className={isPdv ? "text-amber-600 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-900/20" : ""}
                           >

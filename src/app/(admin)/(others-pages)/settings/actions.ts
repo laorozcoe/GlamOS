@@ -22,11 +22,11 @@ async function getMpToken() {
 }
 
 // Lista las terminales registradas en la cuenta de MercadoPago del negocio.
-export async function listMpDevices(): Promise<{ devices?: any[]; error?: string }> {
+export async function listMpDevices(customToken?: string): Promise<{ devices?: any[]; error?: string }> {
   if (SIMULATE) return { devices: SIM_DEVICES };
 
-  const token = await getMpToken();
-  if (!token) return { error: "No hay Access Token de MercadoPago configurado. Guárdalo primero." };
+  const token = customToken || (await getMpToken());
+  if (!token) return { error: "No hay Access Token configurado." };
 
   const res = await fetch("https://api.mercadopago.com/point/integration-api/devices", {
     headers: { Authorization: `Bearer ${token}` },
@@ -41,11 +41,12 @@ export async function listMpDevices(): Promise<{ devices?: any[]; error?: string
 // Requiere reiniciar la terminal para que tome efecto.
 export async function changeMpDeviceMode(
   deviceId: string,
-  operating_mode: "PDV" | "STANDALONE"
+  operating_mode: "PDV" | "STANDALONE",
+  customToken?: string
 ): Promise<{ operating_mode?: string; error?: string }> {
   if (SIMULATE) return { operating_mode };
 
-  const token = await getMpToken();
+  const token = customToken || (await getMpToken());
   if (!token) return { error: "No hay Access Token de MercadoPago configurado." };
 
   const res = await fetch(
