@@ -770,7 +770,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                                         Selecciona la Terminal
                                                     </label>
-                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                    <div className="flex flex-wrap justify-center gap-3">
                                                         {terminals.map((t) => {
                                                             const mode = terminalModes[t.posId];
                                                             const isDisconnected = !modesLoading && mode !== "PDV";
@@ -778,7 +778,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                                 <button
                                                                     key={t.id}
                                                                     onClick={() => isDisconnected ? setTerminalToConfigure(t) : setSelectedTerminalId(t.id)}
-                                                                    className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all text-center relative ${
+                                                                    className={`w-[140px] p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all text-center relative ${
                                                                         isDisconnected
                                                                             ? 'border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-400 hover:bg-orange-100'
                                                                             : selectedTerminalId === t.id
