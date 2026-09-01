@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     const business = await prisma.business.findUnique({
         where: { id: businessId },
-        select: { mpAccessToken: true, mpWebhookSecret: true },
+        select: { mpAccessToken: true, mpWebhookSecret: true, mpAccounts: true },
     });
 
     // Validación de firma (si hay secreto configurado)
@@ -86,18 +86,30 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true });
     }
 
-    if (!business?.mpAccessToken) {
+    const accounts = (business?.mpAccounts as any[]) || [];
+    let tokensToTry = [business?.mpAccessToken, ...accounts.map(a => a.mpAccessToken)].filter(Boolean);
+    // Remove duplicates
+    tokensToTry = Array.from(new Set(tokensToTry));
+
+    if (tokensToTry.length === 0) {
         return NextResponse.json({ received: true, warning: 'Sin token MP' });
     }
 
     // Consultamos el pago para obtener el neto real liquidado
     try {
-        const payRes = await fetch(`https://api.mercadopago.com/v1/payments/${dataId}`, {
-            headers: { Authorization: `Bearer ${business.mpAccessToken}` },
-            cache: 'no-store',
-        });
-        if (payRes.ok) {
-            const pay = await payRes.json();
+        let pay: any = null;
+        for (const token of tokensToTry) {
+            const payRes = await fetch(`https://api.mercadopago.com/v1/payments/${dataId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store',
+            });
+            if (payRes.ok) {
+                pay = await payRes.json();
+                break;
+            }
+        }
+
+        if (pay) {
             const td = pay.transaction_details || {};
             const net = td.net_received_amount ?? null;
             const fee = net != null && pay.transaction_amount != null
