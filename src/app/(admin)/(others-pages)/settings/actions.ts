@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma2";
 import { getBusiness } from "@/lib/getBusiness";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 
 const SIMULATE = process.env.MP_SIMULATE === "true";
 
@@ -64,6 +64,7 @@ export async function changeMpDeviceMode(
 
 // Verifica el estado real de múltiples terminales
 export async function checkTerminalsStatus(terminals: any[]): Promise<Record<string, string>> {
+  noStore();
   if (SIMULATE) {
     const map: Record<string, string> = {};
     terminals.forEach(t => map[t.posId] = "PDV");
@@ -93,7 +94,7 @@ export async function checkTerminalsStatus(terminals: any[]): Promise<Record<str
       const data = await res.json();
       const devices = data.devices || [];
       devices.forEach((d: any) => {
-        if (posIds.includes(d.id)) {
+        if (posIds.includes(d.id) || posIds.map(p=>p.trim()).includes(d.id.trim())) {
           resultMap[d.id] = d.operating_mode;
         }
       });
@@ -167,6 +168,7 @@ export async function updateBusinessSettings(data: any) {
 }
 
 export async function getActiveTerminals() {
+  noStore();
   const businessCtx = await getBusiness();
   if (!businessCtx) throw new Error("No business found");
 

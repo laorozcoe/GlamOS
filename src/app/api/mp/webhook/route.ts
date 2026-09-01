@@ -68,15 +68,25 @@ export async function POST(req: NextRequest) {
         select: { mpAccessToken: true, mpWebhookSecret: true, mpAccounts: true },
     });
 
+    const accounts = (business?.mpAccounts as any[]) || [];
+    const allSecrets = [business?.mpWebhookSecret, ...accounts.map(a => a.webhookSecret)].filter(Boolean);
+
     // Validación de firma (si hay secreto configurado)
-    if (business?.mpWebhookSecret) {
-        const valid = isValidSignature({
-            xSignature: req.headers.get('x-signature'),
-            xRequestId: req.headers.get('x-request-id'),
-            dataId,
-            secret: business.mpWebhookSecret,
-        });
-        if (!valid) {
+    // Si hay múltiples secretos, validamos contra todos y pasamos si al menos uno coincide
+    if (allSecrets.length > 0) {
+        const xSignature = req.headers.get('x-signature');
+        const xRequestId = req.headers.get('x-request-id');
+        let anyValid = false;
+        
+        for (const secret of allSecrets) {
+            if (isValidSignature({ xSignature, xRequestId, dataId, secret })) {
+                anyValid = true;
+                break;
+            }
+        }
+        
+        if (!anyValid && xSignature) {
+            // Si mandó firma y no cuadró con ninguno de los secretos, rechazamos
             return NextResponse.json({ error: 'Firma inválida' }, { status: 401 });
         }
     }
@@ -86,7 +96,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true });
     }
 
-    const accounts = (business?.mpAccounts as any[]) || [];
     let tokensToTry = [business?.mpAccessToken, ...accounts.map(a => a.mpAccessToken)].filter(Boolean);
     // Remove duplicates
     tokensToTry = Array.from(new Set(tokensToTry));

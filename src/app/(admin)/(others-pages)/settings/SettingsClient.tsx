@@ -447,7 +447,7 @@ export default function SettingsClient() {
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pr-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pr-10">
                   <div>
                     <Label className="mb-1 block text-xs font-bold text-gray-700 dark:text-gray-300">Identificador</Label>
                     <Input
@@ -488,6 +488,20 @@ export default function SettingsClient() {
                       className="w-full text-sm font-mono"
                     />
                   </div>
+                  <div>
+                    <Label className="mb-1 block text-xs font-bold text-gray-700 dark:text-gray-300">Webhook Secret</Label>
+                    <Input
+                      type="password"
+                      value={acc.webhookSecret || ""}
+                      onChange={(e) => {
+                        const newAccounts = [...formData.mpAccounts];
+                        newAccounts[i].webhookSecret = e.target.value;
+                        setFormData({ ...formData, mpAccounts: newAccounts });
+                      }}
+                      placeholder="Clave secreta"
+                      className="w-full text-sm font-mono"
+                    />
+                  </div>
                 </div>
               </div>
             ))}
@@ -503,18 +517,7 @@ export default function SettingsClient() {
             <Plus className="w-4 h-4 mr-2" /> Agregar Cuenta
           </Button>
 
-          <div className="pt-4 border-t border-blue-200 dark:border-blue-800">
-            <Label className="mb-1 block text-sm font-bold text-gray-700 dark:text-gray-300">Clave secreta del Webhook (Global)</Label>
-            <Input
-              type="password"
-              name="mpWebhookSecret"
-              value={formData.mpWebhookSecret}
-              onChange={handleBaseChange}
-              placeholder="Clave generada al configurar el webhook en MP"
-              className="w-full text-sm font-mono"
-            />
-            <span className="text-xs text-gray-400">Se usa para validar que los avisos de pago vengan realmente de MercadoPago.</span>
-          </div>
+
 
           <div className="rounded-xl bg-white dark:bg-gray-900/40 border border-blue-100 dark:border-blue-900/40 p-4">
             <p className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">URL del Webhook (configúrala en MP → Webhooks → Pagos)</p>
