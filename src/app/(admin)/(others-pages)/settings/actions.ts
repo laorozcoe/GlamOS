@@ -43,7 +43,7 @@ export async function changeMpDeviceMode(
   deviceId: string,
   operating_mode: "PDV" | "STANDALONE",
   customToken?: string
-): Promise<{ operating_mode?: string; error?: string }> {
+): Promise<{ operating_mode?: string; error?: string; isManualRequired?: boolean }> {
   if (SIMULATE) return { operating_mode };
 
   const token = customToken || (await getMpToken());
@@ -60,7 +60,10 @@ export async function changeMpDeviceMode(
   const data = await res.json();
   if (!res.ok) {
     if (data?.message === "Device is not allowed to perform this action" || data?.error === "113") {
-        return { error: "Tu modelo de terminal física no permite activar el modo PDV automáticamente. Debes hacerlo manualmente en la pantalla de la terminal (Configuración > Modo de Operación > PDV o Integrado)." };
+        return { 
+            error: "Requiere configuración manual en la terminal física.",
+            isManualRequired: true 
+        };
     }
     return { error: data?.message || "Error al cambiar el modo" };
   }

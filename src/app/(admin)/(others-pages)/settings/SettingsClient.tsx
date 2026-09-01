@@ -188,6 +188,7 @@ export default function SettingsClient() {
   const [mpDevices, setMpDevices] = useState<any[]>([]);
   const [loadingDevices, setLoadingDevices] = useState(false);
   const [changingMode, setChangingMode] = useState<string | null>(null);
+  const [manualConfigTerminal, setManualConfigTerminal] = useState<any | null>(null);
 
   const handleDetectDevices = async (explicitToken?: string) => {
     setLoadingDevices(true);
@@ -268,7 +269,9 @@ export default function SettingsClient() {
     setChangingMode(device.posId);
     try {
       const res = await changeMpDeviceMode(device.posId, mode, device.mpAccessToken);
-      if (res.error) {
+      if (res.isManualRequired) {
+        setManualConfigTerminal(device);
+      } else if (res.error) {
         toast.error(res.error);
       } else {
         toast.success(`Modo cambiado a ${mode}. Reinicia la terminal para aplicar el cambio.`);
@@ -326,7 +329,40 @@ export default function SettingsClient() {
         <div className="flex items-center gap-2 mb-4 text-brand-600 dark:text-brand-400">
           <Store className="w-6 h-6" />
           <h2 className="text-xl font-bold">Datos del Local</h2>
+    
+      {manualConfigTerminal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-gray-100 dark:border-gray-800">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShieldCheck className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Configuración Manual Requerida</h3>
+              <div className="text-sm text-gray-600 dark:text-gray-300 mb-6 text-left space-y-2">
+                <p>
+                  Por seguridad, tu modelo de terminal física (<strong>{manualConfigTerminal?.name}</strong>) no permite que cambiemos el modo automáticamente desde internet.
+                </p>
+                <p className="font-bold mt-2 text-gray-800 dark:text-gray-200">Sigue estos pasos en la pantalla de tu terminal física:</p>
+                <ol className="list-decimal pl-5 space-y-1">
+                  <li>Entra al <strong>Menú</strong> principal (ícono de engranaje o tres líneas).</li>
+                  <li>Ve a <strong>Configuración</strong> o Ajustes.</li>
+                  <li>Selecciona <strong>Modo de Operación</strong>.</li>
+                  <li>Cámbialo a modo <strong>PDV / Integrado</strong>.</li>
+                  <li><strong className="text-brand-600 dark:text-brand-400">Apaga y prende</strong> tu terminal.</li>
+                </ol>
+                <p className="text-xs text-gray-500 mt-2 text-center">Una vez que hagas esto, el sistema la detectará conectada al refrescar la página.</p>
+              </div>
+              <Button 
+                onClick={() => setManualConfigTerminal(null)}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl"
+              >
+                Entendido, ya lo hice
+              </Button>
+            </div>
+          </div>
         </div>
+      )}
+    </div>
         <div className="bg-gray-50 border border-gray-100 dark:bg-white/5 dark:border-white/10 p-6 rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label className="mb-1 block text-sm font-medium">Nombre de la Sucursal</Label>

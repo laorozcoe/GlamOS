@@ -70,6 +70,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [terminalModes, setTerminalModes] = useState<Record<string, string>>({});
     const [modesLoading, setModesLoading] = useState(false);
     const [terminalToConfigure, setTerminalToConfigure] = useState<any | null>(null);
+    const [manualConfigTerminal, setManualConfigTerminal] = useState<any | null>(null);
     const [configuringMode, setConfiguringMode] = useState(false);
 
     const [selectedTerminalId, setSelectedTerminalId] = useState<string>('');
@@ -901,7 +902,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 setConfiguringMode(true);
                                 try {
                                     const r = await changeMpDeviceMode(terminalToConfigure.posId, "PDV", terminalToConfigure.mpAccessToken);
-                                    if (r.error) {
+                                    if (r.isManualRequired) {
+                                        setManualConfigTerminal(terminalToConfigure);
+                                        setTerminalToConfigure(null);
+                                    } else if (r.error) {
                                         toast.error(r.error);
                                     } else {
                                         toast.success("Terminal configurada correctamente. ¡Por favor REINICIALA ahora!");
