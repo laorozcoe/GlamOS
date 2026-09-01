@@ -782,14 +782,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                                         isDisconnected
                                                                             ? 'border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-400 hover:bg-orange-100'
                                                                             : selectedTerminalId === t.id
-                                                                                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 shadow-sm'
-                                                                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-brand-300'
+                                                                                ? 'border-brand-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm ring-1 ring-brand-500'
+                                                                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-gray-300'
                                                                     }`}
                                                                 >
                                                                     {isDisconnected && <AlertTriangle className="w-4 h-4 text-orange-500 absolute top-1 right-1" />}
                                                                     <p className="text-sm font-black line-clamp-1 w-full truncate px-1">{t.name}</p>
-                                                                    <p className="text-[10px] opacity-70 font-bold uppercase tracking-wider">
-                                                                        {isDisconnected ? 'Desconectada' : 'Terminal'}
+                                                                    <p className={`text-[10px] font-bold uppercase tracking-wider ${isDisconnected ? 'text-orange-600 opacity-80' : 'text-green-600'}`}>
+                                                                        {isDisconnected ? 'Desconectada' : 'Conectada'}
                                                                     </p>
                                                                 </button>
                                                             );
