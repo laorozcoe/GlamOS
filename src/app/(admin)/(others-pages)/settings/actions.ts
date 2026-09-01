@@ -58,7 +58,12 @@ export async function changeMpDeviceMode(
     }
   );
   const data = await res.json();
-  if (!res.ok) return { error: data?.message || "Error al cambiar el modo" };
+  if (!res.ok) {
+    if (data?.message === "Device is not allowed to perform this action" || data?.error === "113") {
+        return { error: "Tu modelo de terminal física no permite activar el modo PDV automáticamente. Debes hacerlo manualmente en la pantalla de la terminal (Configuración > Modo de Operación > PDV o Integrado)." };
+    }
+    return { error: data?.message || "Error al cambiar el modo" };
+  }
   return { operating_mode: data.operating_mode ?? operating_mode };
 }
 
