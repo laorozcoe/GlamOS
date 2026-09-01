@@ -486,6 +486,134 @@ export default function SettingsClient() {
         </div>
       </section>
 
+      {/* SECCION 4: TERMINALES */}
+      <section>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div>
+            <h2 className="text-xl font-bold">Terminales Físicas (Cajas)</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Agrega tus cajas. Si una terminal es de otra socia, pega su Access Token y haz clic en Detectar.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => handleDetectDevices()} disabled={loadingDevices}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${loadingDevices ? "animate-spin" : ""}`} />
+              {loadingDevices ? "Buscando..." : "Detectar Terminales"}
+            </Button>
+            <Button variant="outline" onClick={addTerminal}>
+              <Plus className="w-4 h-4 mr-2" /> Agregar Caja
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          {terminals.map((t, i) => {
+            const mode = modeForPos(t.posId);
+            const isPdv = mode === "PDV";
+            return (
+              <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+                {/* Header (Nombre y Acciones) */}
+                <div className="bg-gray-50 dark:bg-white/5 p-4 border-b border-gray-200 dark:border-white/10 flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <Label className="text-[10px] uppercase font-bold text-gray-500 mb-1">Nombre de la Caja</Label>
+                    <Input
+                      value={t.name}
+                      onChange={(e) => updateTerminal(i, "name", e.target.value)}
+                      placeholder="Ej: Caja Ana"
+                      className="w-full text-sm font-bold bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
+                    />
+                  </div>
+                  <button onClick={() => removeTerminal(i)} className="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0 mt-4">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                {/* Body (Identificadores) */}
+                <div className="p-4 space-y-4 flex-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-[10px] uppercase font-bold text-gray-500 mb-1">POS ID (Identificador)</Label>
+                      <Input
+                        value={t.posId}
+                        onChange={(e) => updateTerminal(i, "posId", e.target.value)}
+                        placeholder="Ej: SMARTPOS_1"
+                        className="w-full text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] uppercase font-bold text-gray-500 mb-1">Access Token (Socia)</Label>
+                      <Input
+                        value={t.mpAccessToken || ""}
+                        onChange={(e) => updateTerminal(i, "mpAccessToken", e.target.value)}
+                        placeholder="Opcional (APP_USR-...)"
+                        className="w-full text-xs font-mono"
+                        type="password"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer (Estado y Modo) */}
+                <div className="bg-gray-50 dark:bg-white/2 p-4 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {!t.posId ? (
+                      <span className="text-xs text-gray-400 font-medium">Esperando POS ID...</span>
+                    ) : mode === null ? (
+                      <span className="text-xs text-gray-400 font-medium">Sin detectar</span>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {isPdv ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                            <CheckCircle2 className="w-3 h-3" /> Integrada (PDV)
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            <AlertTriangle className="w-3 h-3" /> Standalone
+                          </span>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleSavedTerminalMode(t)}
+                          disabled={changingMode === t.posId}
+                          className={`text-[11px] h-7 px-2 ${isPdv ? "text-amber-600 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-900/20" : ""}`}
+                        >
+                          {changingMode === t.posId ? "Cambiando..." : isPdv ? "Volver Standalone" : "Activar PDV"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer group shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={t.isDefault}
+                      onChange={(e) => updateTerminal(i, "isDefault", e.target.checked)}
+                      className="w-4 h-4 text-brand-500 rounded border-gray-300 focus:ring-brand-500 focus:ring-2 cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-brand-600">Caja Principal</span>
+                  </label>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {terminals.length === 0 && (
+          <div className="p-8 text-center text-gray-500 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl mb-4">
+            No hay terminales configuradas para este negocio. Haz clic en "Agregar Caja" o "Detectar Terminales".
+          </div>
+        )}
+
+        {terminals.length > 0 && (
+          <div className="mt-4 flex justify-end">
+            <Button onClick={handleSaveTerminals} disabled={savingTerms}>
+              {savingTerms ? "Sincronizando..." : <><CheckCircle2 className="w-4 h-4 mr-2" /> Guardar Terminales</>}
+            </Button>
+          </div>
+        )}
+      </section>
+
       {/* SECCION 3: COLORES DEL LOCAL */}
       <section>
         <div className="flex items-center gap-2 mb-4 text-brand-600 dark:text-brand-400">
@@ -592,211 +720,7 @@ export default function SettingsClient() {
         </div>
       </section>
 
-      {/* SECCION 4: TERMINALES */}
-      <section>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h2 className="text-xl font-bold">Terminales Físicas (Cajas)</h2>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => {
-              const token = window.prompt("Pega el Access Token (APP_USR-...) de la otra cuenta para buscar sus terminales:");
-              if (token?.trim()) handleDetectDevices(token.trim());
-            }} disabled={loadingDevices}>
-              {loadingDevices ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-              Escanear Token
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => handleDetectDevices()} disabled={loadingDevices}>
-              <RefreshCw className={`w-4 h-4 mr-1 ${loadingDevices ? "animate-spin" : ""}`} />
-              {loadingDevices ? "Buscando..." : "Detectar de MercadoPago"}
-            </Button>
-            <Button variant="outline" size="sm" onClick={addTerminal}>
-              <Plus className="w-4 h-4 mr-1" /> Manual
-            </Button>
-          </div>
-        </div>
 
-        {/* Terminales detectadas en MercadoPago */}
-        {mpDevices.length > 0 && (
-          <div className="mb-5 border border-blue-200 dark:border-blue-900/40 rounded-2xl overflow-hidden">
-            <div className="bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 flex items-center gap-2 text-sm font-semibold text-blue-800 dark:text-blue-300">
-              <Wifi className="w-4 h-4" /> Terminales encontradas en tu cuenta de MercadoPago
-            </div>
-            <div className="divide-y divide-gray-100 dark:divide-white/5">
-              {mpDevices.map((d) => {
-                const isPdv = d.operating_mode === "PDV";
-                const alreadyAdded = terminals.some((t) => t.posId === d.id);
-                return (
-                  <div key={d.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white dark:bg-transparent">
-                    <div className="min-w-0">
-                      <p className="font-mono text-xs text-gray-700 dark:text-gray-300 break-all">{d.id}</p>
-                      <div className="mt-1 flex items-center gap-2">
-                        {isPdv ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                            <CheckCircle2 className="w-3 h-3" /> Integrada (PDV)
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                            <AlertTriangle className="w-3 h-3" /> Standalone — no recibe cobros
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 shrink-0">
-                      {!isPdv && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleChangeMode(d, "PDV")}
-                          disabled={changingMode === d.id}
-                        >
-                          {changingMode === d.id ? "Activando..." : "Activar PDV"}
-                        </Button>
-                      )}
-                      {isPdv && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (window.confirm(
-                              "¿Volver esta terminal a modo STANDALONE?\n\nDejará de recibir cobros desde el sistema: los cobros con tarjeta dejarán de funcionar en la app hasta reactivar PDV. Tendrás que reiniciar la terminal para que el cambio tome efecto."
-                            )) {
-                              handleChangeMode(d, "STANDALONE");
-                            }
-                          }}
-                          disabled={changingMode === d.id}
-                          className="text-amber-600 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-900/20"
-                        >
-                          {changingMode === d.id ? "Cambiando..." : "Volver a Standalone"}
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        onClick={() => importDevice(d)}
-                        disabled={alreadyAdded}
-                      >
-                        {alreadyAdded ? "Ya agregada" : "Usar esta"}
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="px-4 py-2.5 text-xs text-gray-500 bg-gray-50 dark:bg-white/2">
-              Tras "Activar PDV" debes <b>reiniciar físicamente</b> la terminal para que tome el cambio.
-            </p>
-          </div>
-        )}
-
-        <div className="border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
-              <tr>
-                <th className="p-4 font-semibold">Caja / Nombre</th>
-                <th className="p-4 font-semibold">POS ID (Mercado Pago)</th>
-                <th className="p-4 font-semibold">Conexión</th>
-                <th className="p-4 font-semibold text-center">Principal</th>
-                <th className="p-4 font-semibold text-right">Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {terminals.map((t, i) => (
-                <tr key={i} className="border-b border-gray-100 dark:border-white/5 bg-white dark:bg-transparent">
-                  <td className="p-4">
-                    <Input
-                      value={t.name}
-                      onChange={(e) => updateTerminal(i, "name", e.target.value)}
-                      placeholder="Ej: Caja Principal"
-                      className="w-full text-sm"
-                    />
-                  </td>
-                  <td className="p-4">
-                    <div className="space-y-2">
-                      <Input
-                        value={t.posId}
-                        onChange={(e) => updateTerminal(i, "posId", e.target.value)}
-                        placeholder="POS ID (Ej: SMARTPOS_1)"
-                        className="w-full text-sm font-mono"
-                      />
-                      <Input
-                        value={t.mpAccessToken || ""}
-                        onChange={(e) => updateTerminal(i, "mpAccessToken", e.target.value)}
-                        placeholder="Access Token (Si es de otra cuenta MP)"
-                        className="w-full text-xs font-mono"
-                        type="password"
-                      />
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    {(() => {
-                      const mode = modeForPos(t.posId);
-                      if (!t.posId) {
-                        return <span className="text-xs text-gray-400">—</span>;
-                      }
-                      if (mode === null) {
-                        return <span className="text-xs text-gray-400">Sin detectar</span>;
-                      }
-                      const isPdv = mode === "PDV";
-                      return (
-                        <div className="flex flex-col gap-1.5 items-start">
-                          {isPdv ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                              <CheckCircle2 className="w-3 h-3" /> Integrada (PDV)
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                              <AlertTriangle className="w-3 h-3" /> Standalone
-                            </span>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleSavedTerminalMode(t)}
-                            disabled={changingMode === t.posId}
-                            className={isPdv ? "text-amber-600 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-900/20" : ""}
-                          >
-                            {changingMode === t.posId
-                              ? "Cambiando..."
-                              : isPdv ? "Volver a Standalone" : "Activar PDV"}
-                          </Button>
-                        </div>
-                      );
-                    })()}
-                  </td>
-                  <td className="p-4 text-center">
-                    <label className="flex justify-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={t.isDefault}
-                        onChange={(e) => updateTerminal(i, "isDefault", e.target.checked)}
-                        className="w-5 h-5 text-brand-500 rounded border-gray-300 focus:ring-brand-500 focus:ring-2"
-                      />
-                    </label>
-                    {t.isDefault && <div className="text-[10px] text-brand-600 font-bold mt-1 uppercase">Predeterminada</div>}
-                  </td>
-                  <td className="p-4 text-right">
-                    <button onClick={() => removeTerminal(i)} className="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {terminals.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-6 text-center text-gray-500">
-                    No hay terminales configuradas para este negocio. Haz clic en "Manual" o "Detectar de MercadoPago" para registrar la primera.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          {terminals.length > 0 && (
-            <div className="bg-gray-50 dark:bg-white/2 p-4 flex justify-end">
-              <Button onClick={handleSaveTerminals} disabled={savingTerms}>
-                {savingTerms ? "Sincronizando..." : <><CheckCircle2 className="w-4 h-4 mr-2" /> Guardar Terminales</>}
-              </Button>
-            </div>
-          )}
-        </div>
-      </section>
 
     </div>
   );
