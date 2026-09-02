@@ -43,6 +43,13 @@ const navItems: NavItem[] = [
     adminOnly: true, // Asumimos Admin Only por confidencialidad financiera a menos que queramos que recepcionista vea.
   },
   {
+    icon: <PieChartIcon />,
+    name: "Reportes",
+    path: "/reports",
+    adminOnly: true,
+  },
+
+  {
     icon: <BadgeDollarSign />,
     name: "Liquidaciones",
     path: "/settlements",
