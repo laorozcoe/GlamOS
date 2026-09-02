@@ -66,10 +66,11 @@ export async function getFinancialMetrics(startDate: Date, endDate: Date) {
 }
 
 export async function getClientMetrics(startDate: Date, endDate: Date) {
-    const business = await getBusiness();
-    if (!business) return null;
-    const businessId = business.id;
+  const business = await getBusiness();
+  if (!business) return null;
+  const businessId = business.id;
 
+  // 1. Nuevos clientes agregados al CRM
   const newClientsCount = await prisma.client.count({
     where: {
       businessId,
@@ -78,52 +79,83 @@ export async function getClientMetrics(startDate: Date, endDate: Date) {
     }
   });
 
-  const returningClients = await prisma.sale.groupBy({
-    by: ['clientId'],
+  // 2. Traer TODAS las ventas completadas para extraer el nombre del cliente 
+  // (ya sea de clientId o de appointment.guestName)
+  const allSales = await prisma.sale.findMany({
     where: {
       businessId,
       status: "COMPLETED",
-      createdAt: { gte: startDate, lte: endDate },
-      clientId: { not: null },
       active: true,
-      client: {
-        createdAt: { lt: startDate }
+    },
+    select: {
+      id: true,
+      total: true,
+      createdAt: true,
+      client: { select: { id: true, name: true, phone: true } },
+      appointment: { select: { guestName: true, guestPhone: true } }
+    }
+  });
+
+  // Agrupar por identificador de cliente (usamos ID si existe, sino el nombre en minúsculas)
+  const clientStats = new Map();
+  let returningClientsCount = 0;
+
+  for (const sale of allSales) {
+    let clientName = sale.client?.name || sale.appointment?.guestName || "Público General";
+    let clientPhone = sale.client?.phone || sale.appointment?.guestPhone || "";
+    let clientIdKey = sale.client?.id || clientName.toLowerCase().trim();
+
+    if (clientIdKey === "público general" || clientIdKey === "") {
+        clientIdKey = "publico_general_" + sale.id; // Evitar agrupar todo en público general si no hay nombre
+    }
+
+    if (!clientStats.has(clientIdKey)) {
+      clientStats.set(clientIdKey, {
+        id: clientIdKey,
+        name: clientName,
+        phone: clientPhone,
+        totalSpent: 0,
+        visitsCount: 0,
+        firstVisit: sale.createdAt,
+        visitsInRange: 0
+      });
+    }
+
+    const stats = clientStats.get(clientIdKey);
+    // Actualizar la fecha de primera visita si encontramos una más antigua
+    if (sale.createdAt < stats.firstVisit) {
+        stats.firstVisit = sale.createdAt;
+    }
+
+    // Si la venta está en el rango actual
+    if (sale.createdAt >= startDate && sale.createdAt <= endDate) {
+        stats.totalSpent += sale.total;
+        stats.visitsCount += 1;
+        stats.visitsInRange += 1;
+    }
+  }
+
+  // Filtrar los que tuvieron visitas en el rango
+  const clientsInRange = Array.from(clientStats.values()).filter((c: any) => c.visitsInRange > 0);
+
+  // Calcular recurrentes (primera visita antes del rango, y visitó en el rango)
+  for (const client of clientsInRange) {
+      if (client.firstVisit < startDate) {
+          returningClientsCount++;
       }
-    },
-  });
-  const returningClientsCount = returningClients.length;
+  }
 
-  const topClientsData = await prisma.sale.groupBy({
-    by: ['clientId'],
-    where: {
-      businessId,
-      status: "COMPLETED",
-      createdAt: { gte: startDate, lte: endDate },
-      clientId: { not: null },
-      active: true,
-    },
-    _sum: { total: true },
-    _count: { _all: true },
-    orderBy: { _sum: { total: 'desc' } },
-    take: 10,
-  });
-
-  const topClientIds = topClientsData.map(t => t.clientId as string);
-  const clients = await prisma.client.findMany({
-    where: { id: { in: topClientIds } },
-    select: { id: true, name: true, phone: true }
-  });
-  
-  const topClients = topClientsData.map(t => {
-    const c = clients.find(cl => cl.id === t.clientId);
-    return {
-      id: t.clientId as string,
-      name: c?.name || "Desconocido",
-      phone: c?.phone || "",
-      totalSpent: t._sum.total || 0,
-      visitsCount: t._count._all || 0,
-    };
-  });
+  // Ordenar por gasto y tomar los 10 mejores
+  const topClients = clientsInRange
+    .sort((a: any, b: any) => b.totalSpent - a.totalSpent)
+    .slice(0, 10)
+    .map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        phone: c.phone,
+        totalSpent: c.totalSpent,
+        visitsCount: c.visitsCount
+    }));
 
   return {
     newClientsCount,
