@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
-import { getBusinessSettings, updateBusinessSettings, savePaymentTerminals, updateThemeColors, listMpDevices, changeMpDeviceMode } from "./actions";
+import { getBusinessSettings, updateBusinessSettings, savePaymentTerminals, updateThemeColors, listMpDevices, changeMpDeviceMode, simulateDemoData } from "./actions";
 import { Save, Plus, Trash2, CheckCircle2, ShieldCheck, Store, Clock, Palette, RefreshCw, Wifi, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -82,6 +82,8 @@ export default function SettingsClient() {
   const [savingBase, setSavingBase] = useState(false);
   const [savingTerms, setSavingTerms] = useState(false);
   const [savingColors, setSavingColors] = useState(false);
+  const [simulating, setSimulating] = useState(false);
+  const isDemo = business?.slug === "demo";
 
   // Base Data Form
   const [formData, setFormData] = useState({
@@ -154,6 +156,23 @@ export default function SettingsClient() {
 
   const handleColorChange = (key: string, value: string) => {
     setThemeColors((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSimulateDemo = async () => {
+    if (!confirm("Seguro? Esto borrará ventas actuales y generará 14 días de datos de prueba.")) return;
+    setSimulating(true);
+    try {
+      const res = await simulateDemoData();
+      if (res?.error) toast.error(res.error);
+      else {
+        toast.success("Datos de demo generados!");
+        window.location.reload();
+      }
+    } catch {
+      toast.error("Error simulando");
+    } finally {
+      setSimulating(false);
+    }
   };
 
   const handleSaveColors = async () => {
@@ -812,7 +831,17 @@ export default function SettingsClient() {
         </div>
       </section>
 
-
+      {isDemo && (
+        <section className="rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-900/20 mt-6">
+            <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">Herramientas de Demo</h3>
+            <p className="text-sm text-red-600 dark:text-red-300 mb-4">
+                Restablecer y simular datos de ventas y citas para las últimas 2 semanas.
+            </p>
+            <Button onClick={handleSimulateDemo} disabled={simulating} className="bg-red-600 hover:bg-red-700">
+                {simulating ? "Simulando..." : "Simular Ventas y Citas"}
+            </Button>
+        </section>
+      )}
 
     </div>
   );

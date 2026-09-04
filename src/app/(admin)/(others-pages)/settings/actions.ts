@@ -229,3 +229,109 @@ export async function savePaymentTerminals(terminals: any[]) {
   revalidatePath("/settings");
   return { success: true };
 }
+
+export async function simulateDemoData() {
+    const business = await getBusiness();
+    if (!business || business.slug !== 'demo') {
+        return { error: 'Solo disponible en el sitio demo.' };
+    }
+    
+    // 1. Delete all appointments, sales, cash closes for this business
+    await prisma.saleItem.deleteMany({ where: { sale: { businessId: business.id } } });
+    await prisma.payment.deleteMany({ where: { businessId: business.id } });
+    await prisma.sale.deleteMany({ where: { businessId: business.id } });
+    await prisma.appointment.deleteMany({ where: { businessId: business.id } });
+    await prisma.cashClose.deleteMany({ where: { businessId: business.id } });
+    
+    // 2. Fetch employees and services
+    const employees = await prisma.employee.findMany({ where: { businessId: business.id } });
+    if (employees.length === 0) return { error: 'No hay empleadas' };
+    
+    let services = await prisma.service.findMany({ where: { businessId: business.id } });
+    if (services.length === 0) {
+        await prisma.service.createMany({
+            data: [
+                { name: 'Corte de Cabello', price: 200, duration: 30, businessId: business.id },
+                { name: 'Manicura', price: 300, duration: 45, businessId: business.id },
+                { name: 'Tinte', price: 800, duration: 120, businessId: business.id },
+                { name: 'Pedicura', price: 350, duration: 45, businessId: business.id }
+            ]
+        });
+        services = await prisma.service.findMany({ where: { businessId: business.id } });
+    }
+    
+    // 3. Generate random sales and appointments for the last 14 days and next 2 days
+    const now = new Date();
+    const startDate = new Date();
+    startDate.setDate(now.getDate() - 14);
+    
+    const clientNames = ['Laura G.', 'Carmen S.', 'Andrea M.', 'Lucia T.', 'Valeria R.'];
+    const paymentMethods = ['CASH', 'CARD', 'TRANSFER'];
+    
+    for (let d = new Date(startDate); d <= new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000); d.setDate(d.getDate() + 1)) {
+        // Create 2 to 5 appointments per day
+        const numApps = Math.floor(Math.random() * 4) + 2;
+        for (let i = 0; i < numApps; i++) {
+            const emp = employees[Math.floor(Math.random() * employees.length)];
+            const serv = services[Math.floor(Math.random() * services.length)];
+            const guestName = clientNames[Math.floor(Math.random() * clientNames.length)];
+            const hour = Math.floor(Math.random() * 8) + 10; // 10 to 17
+            
+            const start = new Date(d);
+            start.setHours(hour, 0, 0, 0);
+            const end = new Date(start.getTime() + serv.duration * 60000);
+            
+            const isPast = start < now;
+            
+            const app = await prisma.appointment.create({
+                data: {
+                    businessId: business.id,
+                    employeeId: emp.id,
+                    title: serv.name,
+                    start,
+                    end,
+                    guestName,
+                    guestPhone: '5550000000',
+                    status: isPast ? 'COMPLETED' : 'PENDING',
+                    totalAmount: serv.price,
+                }
+            });
+            
+            if (isPast) {
+                // Create Sale
+                const method = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
+                await prisma.sale.create({
+                    data: {
+                        businessId: business.id,
+                        employeeId: emp.id,
+                        appointmentId: app.id,
+                        subtotal: serv.price,
+                        total: serv.price,
+                        status: 'COMPLETED',
+                        createdAt: start,
+                        updatedAt: start,
+                        items: {
+                            create: {
+                                description: serv.name,
+                                quantity: 1,
+                                price: serv.price,
+                                subtotal: serv.price,
+                                serviceId: serv.id
+                            }
+                        },
+                        payments: {
+                            create: {
+                                businessId: business.id,
+                                method: method as any,
+                                amount: serv.price,
+                                status: 'COMPLETED'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    }
+    
+    return { ok: true };
+}
