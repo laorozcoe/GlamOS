@@ -40,7 +40,10 @@ export async function getFinancialMetrics(startDate: Date, endDate: Date) {
 
   const salesByDayMap: Record<string, number> = {};
   sales.forEach(s => {
-    const d = s.createdAt.toISOString().split("T")[0];
+    const d = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Mexico_City',
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(s.createdAt);
     salesByDayMap[d] = (salesByDayMap[d] || 0) + s.total;
   });
   const salesByDay = Object.keys(salesByDayMap).map(k => ({ date: k, amount: salesByDayMap[k] })).sort((a: any, b: any) => a.date.localeCompare(b.date));
@@ -261,7 +264,9 @@ export async function getOperationMetrics(startDate: Date, endDate: Date) {
 
   const hourCounts = new Array(24).fill(0);
   sales.forEach(s => {
-    const hour = s.createdAt.getHours();
+    const mxDateString = s.createdAt.toLocaleString("en-US", { timeZone: "America/Mexico_City" });
+    const mxDate = new Date(mxDateString);
+    const hour = mxDate.getHours();
     hourCounts[hour]++;
   });
 
