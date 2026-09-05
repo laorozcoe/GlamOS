@@ -6,6 +6,7 @@ import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import DateField from "@/components/form/DateField";
 import DataTable, { type Column } from "@/components/ui/table/DataTable";
+import PageShell from "@/components/layout/PageShell";
 import { getAttendanceByDate, upsertManyAttendances } from "./actions";
 import { CheckCircle, Save } from "lucide-react";
 import { toast } from "react-toastify";
@@ -207,18 +208,16 @@ export default function AttendanceClient() {
   ];
 
   return (
-    <div>
-      <div className="mb-6 flex flex-col items-center justify-between gap-4 border-b border-gray-100 pb-4 sm:flex-row dark:border-white/5">
-        <div>
-          <h2 className="text-lg font-bold text-gray-800 dark:text-white/90">Registro Diario</h2>
-          <p className="text-sm text-gray-500">Selecciona el día para organizar asistencias.</p>
-        </div>
-        <div className="flex w-full items-end gap-4 sm:w-auto">
+    <PageShell
+      title="Registro Diario"
+      description="Selecciona el día para organizar asistencias."
+      actions={
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end">
           <DateField
             label="Fecha a consultar"
             value={dateStr}
             onChange={setDateStr}
-            containerClassName="flex-1 sm:w-[200px]"
+            containerClassName="sm:w-[200px]"
           />
           <Button
             onClick={handleSaveAll}
@@ -228,8 +227,8 @@ export default function AttendanceClient() {
             {saving ? "Guardando..." : <><Save className="mr-2 size-4" /> Guardar Todo</>}
           </Button>
         </div>
-      </div>
-
+      }
+    >
       <DataTable
         columns={columns}
         rows={records}
@@ -240,6 +239,6 @@ export default function AttendanceClient() {
           rec.hasRecord ? "bg-brand-50/30 dark:bg-brand-900/10" : ""
         }
       />
-    </div>
+    </PageShell>
   );
 }

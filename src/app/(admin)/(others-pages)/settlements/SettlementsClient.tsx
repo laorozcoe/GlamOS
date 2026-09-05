@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Input from "@/components/form/input/InputField";
 import Button from "@/components/ui/button/Button";
+import FilterBar from "@/components/layout/FilterBar";
+import DateField from "@/components/form/DateField";
 import { getCardNetSummary, requestSettlementReport, listSettlementReports, getSettlementCsv } from "./actions";
 import { toast } from "react-toastify";
 import { RefreshCw, Download, FileText, TrendingDown, Wallet, CreditCard } from "lucide-react";
@@ -125,20 +126,16 @@ export default function SettlementsClient() {
 
   return (
     <div className="space-y-6">
-      {/* Rango de fechas */}
-      <div className="flex flex-wrap items-end gap-3 bg-white dark:bg-white/3 border border-gray-200 dark:border-white/10 rounded-2xl p-4">
-        <div>
-          <label className="block text-xs font-bold text-gray-500 mb-1">Desde</label>
-          <Input type="date" value={begin} onChange={(e) => setBegin(e.target.value)} className="text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-gray-500 mb-1">Hasta</label>
-          <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="text-sm" />
-        </div>
-        <Button onClick={loadSummary} disabled={loadingSummary}>
-          {loadingSummary ? "Calculando..." : "Ver resumen del periodo"}
-        </Button>
-      </div>
+      <FilterBar
+        actions={
+          <Button onClick={loadSummary} disabled={loadingSummary} className="h-11">
+            {loadingSummary ? "Calculando..." : "Ver resumen del periodo"}
+          </Button>
+        }
+      >
+        <DateField label="Desde" value={begin} onChange={setBegin} />
+        <DateField label="Hasta" value={end} onChange={setEnd} />
+      </FilterBar>
 
       {/* Resumen confiable (nuestra BD) */}
       {summary && (

@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  BarChart, PieChart, Users, Scissors, DollarSign, Calendar as CalendarIcon, 
-  Download, Loader2, TrendingUp, AlertTriangle, Clock
+  BarChart, PieChart, Users, Scissors, DollarSign, Calendar as Download, Loader2, TrendingUp, AlertTriangle, Clock
 } from 'lucide-react';
 import { utils, writeFile } from 'xlsx';
 import DateField from "@/components/form/DateField";
+import PageShell from "@/components/layout/PageShell";
+import FilterBar from "@/components/layout/FilterBar";
 import { 
   getFinancialMetrics, getClientMetrics, getEmployeeMetrics, getOperationMetrics 
 } from './actions';
@@ -71,35 +72,20 @@ export default function ReportsClient() {
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <BarChart className="w-6 h-6 text-brand-500" />
+      <PageShell
+        title={
+          <span className="flex items-center gap-2">
+            <BarChart className="h-5 w-5 text-brand-500" />
             Reportes y Analíticas
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">Explora el rendimiento de tu negocio</p>
-        </div>
+          </span>
+        }
+        description="Explora el rendimiento de tu negocio"
+      />
 
-        {/* Filtro de Fechas */}
-        <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-          <CalendarIcon className="w-5 h-5 text-gray-400 ml-2" />
-          <DateField
-            variant="bare"
-            value={startDate}
-            onChange={setStartDate}
-            containerClassName="w-auto"
-            className="text-sm font-medium"
-          />
-          <span className="text-gray-300 dark:text-gray-600">-</span>
-          <DateField
-            variant="bare"
-            value={endDate}
-            onChange={setEndDate}
-            containerClassName="w-auto mr-2"
-            className="text-sm font-medium"
-          />
-        </div>
-      </div>
+      <FilterBar>
+        <DateField label="Desde" value={startDate} onChange={setStartDate} />
+        <DateField label="Hasta" value={endDate} onChange={setEndDate} />
+      </FilterBar>
 
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
