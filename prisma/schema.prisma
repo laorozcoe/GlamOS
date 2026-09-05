@@ -178,6 +178,17 @@ model Employee {
   payrollLines PayrollLine[]
   payrollPeriodsClosed PayrollPeriod[] @relation("PayrollClosedBy")
   
+  /// Horario por dia: 7 entradas, el indice es el dia de la semana de
+  /// JavaScript (0 = domingo). Cada una { trabaja, entrada, salida }.
+  ///
+  /// Sustituye a las cuatro columnas de abajo, que solo permitian un horario
+  /// de lunes a viernes y otro de sabado, dejaban el domingo clavado en "no
+  /// trabaja" y no tenian forma de expresar un dia de descanso -que es lo que
+  /// evita que un dia libre cuente como falta-.
+  workSchedule Json?
+
+  /// @deprecated Las lee `horarioDelDia` solo como respaldo mientras haya
+  /// membresias sin `workSchedule`. No escribir aqui.
   workScheduleStartWeekday String? @db.VarChar(5) // "09:00"
   workScheduleEndWeekday   String? @db.VarChar(5)
   workScheduleStartSaturday String? @db.VarChar(5)
