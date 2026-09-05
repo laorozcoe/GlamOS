@@ -164,7 +164,12 @@ export default function SettingsClient() {
   };
 
   const handleSimulateDemo = async () => {
-    if (!confirm("Seguro? Esto borrará ventas actuales y generará 14 días de datos de prueba.")) return;
+    // El aviso decia solo "ventas" y tambien se lleva las citas y los cortes
+    // de caja, incluidos los que hayas capturado a mano para probar.
+    if (!confirm(
+      "Esto BORRA todas las ventas, citas y cortes de caja del salón demo, " +
+      "incluidos los que hayas capturado a mano, y genera 14 días de datos de prueba. ¿Continuar?"
+    )) return;
     setSimulating(true);
     try {
       const res = await simulateDemoData();

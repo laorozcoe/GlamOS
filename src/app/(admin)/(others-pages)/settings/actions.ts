@@ -239,7 +239,8 @@ export async function savePaymentTerminals(terminals: any[]) {
 }
 
 export async function simulateDemoData() {
-    const business = await requireBusiness(["ADMIN", "RECEPTION"]);
+    // Solo ADMIN: borra TODAS las ventas, citas y cortes de caja del salon.
+    const business = await requireBusiness(["ADMIN"]);
     if (!isDemoBusiness(business)) {
         return { error: 'Solo disponible en el sitio demo.' };
     }
@@ -311,6 +312,13 @@ export async function simulateDemoData() {
                     guestPhone: '5550000000',
                     status: isPast ? 'COMPLETED' : 'PENDING',
                     totalAmount: serv.price,
+                    // El ticket de una cita son sus AppointmentService, no el
+                    // `title`. Sin esta parte la cita se veia con nombre en la
+                    // agenda pero vacia al abrirla, en $0, y no se podia
+                    // cobrar: "agrega al menos un servicio".
+                    services: {
+                        create: [{ serviceId: serv.id, price: serv.price }],
+                    },
                 }
             });
             
