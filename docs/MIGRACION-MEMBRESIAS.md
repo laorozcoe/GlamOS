@@ -60,10 +60,16 @@ No escribe nada. Lee con calma la salida, sobre todo:
 
 ```bash
 node scripts/migrar-membresias.cjs --apply
-npx prisma db push      # debe reportar que no hay cambios
 npx prisma generate
 npm run build
 ```
+
+**Verifica que la primera línea diga `=== APLICANDO DE VERDAD ===`.** Si dice
+`SIMULACIÓN`, la bandera no llegó y no se escribió nada — y correr
+`prisma generate` después deja el cliente nuevo contra la base vieja, con lo
+que la app falla con `column session.businessId does not exist`.
+
+No hace falta `prisma db push`: el script ya aplica el DDL.
 
 Si `db push` propone cambios, **no los aceptes a ciegas**: significa que el
 esquema y la base divergieron en algo. Lee el plan antes.

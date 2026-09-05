@@ -28,7 +28,7 @@
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
-const APPLY = process.argv.includes('--apply');
+const APPLY = process.argv.includes('--apply') || process.argv.includes('--aplicar');
 
 class DryRun extends Error {}
 
@@ -246,7 +246,11 @@ async function run(tx) {
 }
 
 async function main() {
-  log(APPLY ? '\n=== APLICANDO ===\n' : '\n=== SIMULACIÓN (nada se guarda) — usa --apply para aplicar ===\n');
+  log(
+    APPLY
+      ? '\n=== APLICANDO DE VERDAD ===\n'
+      : '\n=== SIMULACIÓN: no se escribe nada. Para aplicar: --apply (o --aplicar) ===\n'
+  );
 
   try {
     await prisma.$transaction(
@@ -256,7 +260,7 @@ async function main() {
       },
       { timeout: 120000, maxWait: 20000 }
     );
-    log('\nListo. Ahora corre:  npx prisma db push  y  npx prisma generate');
+    log('\n=== APLICADO ===\nAhora corre:  npx prisma generate');
   } catch (e) {
     if (e instanceof DryRun) {
       log('\nSimulación terminada, no se escribió nada. Repite con --apply cuando estés conforme.');

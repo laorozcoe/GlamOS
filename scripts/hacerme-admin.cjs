@@ -16,7 +16,7 @@ const path = require('path');
 const { Client } = require('pg');
 
 const [email, slug] = process.argv.slice(2);
-const APLICAR = process.argv.includes('--aplicar');
+const APLICAR = process.argv.includes('--aplicar') || process.argv.includes('--apply');
 
 if (!email || !slug) {
   console.log('Uso: node scripts/hacerme-admin.cjs <correo> <slug-del-salon> [--aplicar]');
