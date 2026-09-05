@@ -3,7 +3,7 @@ import React, { useRef, useEffect } from "react";
 import { twMerge } from "tailwind-merge";
 
 type ModalSize = "sm" | "md" | "lg" | "xl" | "2xl" | "full";
-type MobileVariant = "sheet" | "fullscreen";
+type MobileVariant = "centered" | "fullscreen";
 
 interface ModalProps {
   isOpen: boolean;
@@ -20,13 +20,11 @@ interface ModalProps {
   /**
    * Cómo se comporta en pantalla angosta:
    *
-   * - `sheet` (por defecto): hoja inferior. Para confirmaciones y formularios
-   *   cortos, donde ver la pantalla de atrás ayuda a ubicarse.
+   * - `centered` (por defecto): caja centrada con margen, igual que en
+   *   escritorio. Para confirmaciones y formularios cortos.
    * - `fullscreen`: ocupa toda la pantalla. Para flujos completos -crear una
    *   cita, buscar productos-, donde la franja de arriba solo desperdicia
    *   espacio en un celular.
-   *
-   * Desde `sm` los dos vuelven a ser la caja centrada de siempre.
    */
   mobileVariant?: MobileVariant;
 }
@@ -45,11 +43,9 @@ let globalModalCount = 0;
 /**
  * Diálogo modal.
  *
- * En pantalla angosta se comporta como HOJA INFERIOR: pegado abajo, a todo lo
- * ancho y con las esquinas superiores redondeadas. Es lo que corresponde en
- * celular -queda al alcance del pulgar en vez de en el centro de la pantalla-
- * y además evita el recorte que sufría la caja centrada cuando el contenido
- * era alto. A partir de `sm` vuelve a ser la caja centrada de siempre.
+ * Por defecto es una caja centrada en cualquier tamaño de pantalla, con
+ * margen lateral en celular. `mobileVariant="fullscreen"` la convierte en
+ * pantalla completa por debajo de `sm`, para los flujos largos.
  *
  * El contenido tiene scroll propio y el panel está acotado a 92svh, así que un
  * formulario largo scrollea dentro del modal y no empuja la página.
@@ -65,7 +61,7 @@ export const Modal: React.FC<ModalProps> = ({
   showCloseButton = true,
   isFullscreen = false,
   size = "lg",
-  mobileVariant = "sheet",
+  mobileVariant = "centered",
 }) => {
   const esPantallaCompleta = mobileVariant === "fullscreen";
   // Muchas pantallas ya resolvian el ancho a mano con un `max-w-*` sin prefijo
@@ -122,7 +118,7 @@ export const Modal: React.FC<ModalProps> = ({
         // `vh` el último botón queda debajo del borde.
         esPantallaCompleta
           ? "h-svh max-h-svh rounded-none sm:h-auto sm:max-h-[92svh] sm:rounded-3xl"
-          : "max-h-[92svh] rounded-t-3xl sm:rounded-3xl",
+          : "max-h-[92svh] rounded-3xl",
         "sm:w-11/12",
         traeAnchoPropio ? "" : SIZES[size]
       );
@@ -131,13 +127,14 @@ export const Modal: React.FC<ModalProps> = ({
     <div
       className={twMerge(
         "modal fixed inset-0 z-99999 flex justify-center overflow-hidden",
-        // items-end = pegado abajo (hoja); stretch = a toda la pantalla.
-        // Desde sm, los tres van centrados.
+        // El padding del contenedor -y no un margen en el panel- es lo que
+        // separa la caja del borde en celular: así el ancho sigue siendo
+        // `w-full` y no hay que restarle el margen.
         isFullscreen
           ? "items-center"
           : esPantallaCompleta
             ? "items-stretch sm:items-center"
-            : "items-end sm:items-center"
+            : "items-center p-4 sm:p-0"
       )}
     >
       {!isFullscreen && (

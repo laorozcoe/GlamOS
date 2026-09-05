@@ -426,10 +426,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             <Modal
                 isOpen={isOpen}
                 onClose={onClose}
-                // El ancho, el alto y el scroll los resuelve Modal: en celular
-                // es hoja inferior a todo lo ancho y desde sm es caja centrada.
-                // Antes `w-[95svw]` lo dejaba al 95% incluso en un iPhone, y el
-                // contenedor interno abría un segundo scroll.
+                // El ancho, el alto y el scroll los resuelve Modal: caja
+                // centrada, con margen lateral en celular. Antes `w-[95svw]`
+                // lo dejaba al 95% incluso en un iPhone, y el contenedor
+                // interno abría un segundo scroll.
                 className="max-w-lg overflow-hidden p-0 shadow-2xl"
                 size="lg"
                 showCloseButton={true}
