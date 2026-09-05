@@ -176,12 +176,21 @@ export const auth = betterAuth({
       verify: async ({ password, hash }) => verifyPassword(password, hash),
     }
   },
+  // Better Auth rechaza con "Invalid origin" cualquier peticion cuyo Origin no
+  // este aqui. Como cada salon vive en su propio subdominio, tener la lista
+  // escrita a mano significa que ABRIR UN SALON NUEVO ROMPE SU LOGIN hasta que
+  // alguien recuerde agregarlo y volver a desplegar. Por eso la lista tambien
+  // se puede ampliar por variable de entorno, sin tocar el codigo:
+  //
+  //   TRUSTED_ORIGINS=https://salon-nuevo.vercel.app,https://otro.vercel.app
+  //
+  // En Vercel se edita la variable y se redespliega; no hace falta un commit.
   trustedOrigins: [
     "https://brillartebloom.vercel.app",
     "https://evorasalon.vercel.app",
-    // Verifica que este sea el host real del demo: si no coincide, Better Auth
-    // rechaza el login por origen no confiable.
-    "https://demo-glamos.vercel.app"
+    "https://demo-glamos.vercel.app",
+    ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
+    ...(process.env.TRUSTED_ORIGINS?.split(",").map((o) => o.trim()).filter(Boolean) ?? []),
   ],
   user: {
     additionalFields: {
