@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Label from "@/components/form/Label";
@@ -54,6 +54,16 @@ export default function DepositModal({
   const [monto, setMonto] = useState("");
   const [metodo, setMetodo] = useState<"CASH" | "CARD" | "TRANSFER">("CASH");
 
+  // `onClose` NO va en las dependencias: llega como funcion anonima creada en
+  // cada render del padre, asi que su identidad cambia siempre. Tenerla aqui
+  // repetia el efecto sin parar -cargaba, re-renderizaba, volvia a cargar- y
+  // el modal se quedaba en "Leyendo el saldo..." parpadeando. Se usa a traves
+  // de una ref para leer siempre la ultima sin provocar el ciclo.
+  const cerrarRef = useRef(onClose);
+  useEffect(() => {
+    cerrarRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen || !appointmentId) return;
     let vigente = true;
@@ -70,7 +80,7 @@ export default function DepositModal({
         setSaldo(s.saldo);
       } catch (e: any) {
         toast.error(e?.message || "No se pudo leer el saldo de la cita.");
-        onClose();
+        cerrarRef.current();
       } finally {
         if (vigente) setCargando(false);
       }
@@ -79,7 +89,7 @@ export default function DepositModal({
     return () => {
       vigente = false;
     };
-  }, [isOpen, appointmentId, onClose]);
+  }, [isOpen, appointmentId]);
 
   const guardar = async () => {
     if (!appointmentId) return;
