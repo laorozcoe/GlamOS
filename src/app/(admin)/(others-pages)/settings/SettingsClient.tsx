@@ -100,7 +100,8 @@ export default function SettingsClient() {
     mpAccounts: [] as any[],
     openHour: 9,
     closeHour: 18,
-    weekStartDay: 1
+    weekStartDay: 1,
+    lateToleranceMinutes: 10
   });
   const [businessId, setBusinessId] = useState("");
 
@@ -136,7 +137,8 @@ export default function SettingsClient() {
           mpAccounts: (data.mpAccounts as any[]) || (data.mpAccessToken ? [{ id: "legacy", name: "Principal", mpAccessToken: data.mpAccessToken, mpStoreId: data.mpStoreId || "" }] : []),
           openHour: data.openHour ?? 9,
           closeHour: data.closeHour ?? 18,
-          weekStartDay: data.weekStartDay ?? 1
+          weekStartDay: data.weekStartDay ?? 1,
+          lateToleranceMinutes: data.lateToleranceMinutes ?? 10
         });
         setBusinessId(data.id || "");
         setTerminals(data.terminals || []);
@@ -469,6 +471,20 @@ export default function SettingsClient() {
                   </select>
                 </div>
                 <p className="text-[11px] text-gray-400 mt-3 leading-tight">Este día se usará para calcular automáticamente periodos de pago y metas de la sucursal.</p>
+
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <Label className="mb-1 block text-xs font-medium text-gray-500">Tolerancia de Retardo (minutos)</Label>
+                  <Input
+                    type="number"
+                    name="lateToleranceMinutes"
+                    min="0"
+                    max="120"
+                    value={formData.lateToleranceMinutes}
+                    onChange={handleBaseChange}
+                    className="h-10 text-sm"
+                  />
+                  <p className="text-[11px] text-gray-400 mt-3 leading-tight">Minutos de gracia sobre la hora programada. Pasados estos minutos, la asistencia del día se marca como retardo.</p>
+                </div>
               </div>
             </div>
           </div>

@@ -8,7 +8,8 @@ import DateField from "@/components/form/DateField";
 import DataTable, { type Column } from "@/components/ui/table/DataTable";
 import PageShell from "@/components/layout/PageShell";
 import { getAttendanceByDate, upsertManyAttendances } from "./actions";
-import { CheckCircle, Save } from "lucide-react";
+import { esRetardo, minutosDeRetardo } from "@/lib/asistencia";
+import { CheckCircle, Save, AlertTriangle } from "lucide-react";
 import { toast } from "react-toastify";
 
 type AttendanceRecord = {
@@ -25,11 +26,57 @@ type AttendanceRecord = {
   expectedOut: string;
   isAbsent: boolean;
   isExcused: boolean;
+  /// De donde salio la hora. SCHEDULE = quedo el horario y nadie lo confirmo.
+  source: string;
+  semana: {
+    retardos: number;
+    faltas: number;
+    justificadas: number;
+    capturados: number;
+    esperados: number;
+  };
 };
+
+/**
+ * Lo que lleva el empleado en la semana del dia consultado.
+ *
+ * `capturados` frente a `esperados` es el dato que importa: un dia que nadie
+ * toco quedo con el horario precargado, y eso no prueba que la persona haya
+ * llegado a tiempo. El bono de puntualidad no los va a dar por buenos, asi
+ * que conviene verlos aqui, cuando todavia se pueden capturar.
+ */
+function ResumenSemana({ semana }: { semana: AttendanceRecord["semana"] }) {
+  if (!semana || semana.esperados === 0) return null;
+
+  const pendientes = Math.max(0, semana.esperados - semana.capturados);
+
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-500">
+      <span className="font-semibold uppercase tracking-wide text-gray-400">Semana</span>
+      <span className={semana.retardos > 0 ? "font-semibold text-amber-600 dark:text-amber-400" : ""}>
+        {semana.retardos} {semana.retardos === 1 ? "retardo" : "retardos"}
+      </span>
+      {semana.faltas > 0 && (
+        <span className="font-semibold text-red-600 dark:text-red-400">
+          {semana.faltas} {semana.faltas === 1 ? "falta" : "faltas"}
+        </span>
+      )}
+      {semana.justificadas > 0 && (
+        <span className="text-blue-600 dark:text-blue-400">{semana.justificadas} justif.</span>
+      )}
+      {pendientes > 0 && (
+        <span className="text-gray-400">
+          {pendientes} {pendientes === 1 ? "día sin capturar" : "días sin capturar"}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function AttendanceClient() {
   const [dateStr, setDateStr] = useState<string>("");
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [tolerancia, setTolerancia] = useState<number>(10);
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
 
@@ -52,7 +99,8 @@ export default function AttendanceClient() {
     setLoading(true);
     try {
       const data = await getAttendanceByDate(date);
-      setRecords(data as any);
+      setRecords(data.records as any);
+      setTolerancia(data.toleranceMinutes);
     } catch (error) {
       console.error(error);
       toast.error("Error cargando asistencias.");
@@ -121,6 +169,7 @@ export default function AttendanceClient() {
             <span className="font-medium text-brand-600">{rec.expectedIn || "-"}</span> a{" "}
             <span className="font-medium text-brand-600">{rec.expectedOut || "-"}</span>
           </div>
+          <ResumenSemana semana={rec.semana} />
         </div>
       ),
     },
@@ -166,16 +215,29 @@ export default function AttendanceClient() {
     {
       key: "entrada",
       header: "H. Entrada",
-      className: "w-[140px]",
-      cell: (rec) => (
-        <Input
-          type="time"
-          value={rec.checkInTime || ""}
-          onChange={(e) => handleRowChange(rec.employeeId, "checkInTime", e.target.value)}
-          className={`w-full text-sm ${isLocked(rec) ? "opacity-50" : ""}`}
-          disabled={isLocked(rec)}
-        />
-      ),
+      className: "w-[150px]",
+      cell: (rec) => {
+        // Se recalcula mientras se escribe, con la misma regla que usara el
+        // servidor al guardar: quien captura ve el retardo antes de guardar.
+        const tarde = !isLocked(rec) && esRetardo(rec.checkInTime, rec.expectedIn, tolerancia);
+        return (
+          <div className="flex flex-col gap-1">
+            <Input
+              type="time"
+              value={rec.checkInTime || ""}
+              onChange={(e) => handleRowChange(rec.employeeId, "checkInTime", e.target.value)}
+              className={`w-full text-sm ${isLocked(rec) ? "opacity-50" : ""} ${tarde ? "border-amber-400 text-amber-700 dark:text-amber-400" : ""}`}
+              disabled={isLocked(rec)}
+            />
+            {tarde && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="size-3" />
+                Retardo · {minutosDeRetardo(rec.checkInTime, rec.expectedIn, tolerancia)} min
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "salida",
@@ -210,7 +272,7 @@ export default function AttendanceClient() {
   return (
     <PageShell
       title="Registro Diario"
-      description="Selecciona el día para organizar asistencias."
+      description={`Se precarga el horario de cada quien: solo cambia la hora cuando hubo retardo. Tolerancia del salón: ${tolerancia} min.`}
       actions={
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end">
           <DateField
