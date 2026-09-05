@@ -1,18 +1,16 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import Table from "@/components/customers/Table";
-import TableMobile from "@/components/customers/TableMobile";
+
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Phone } from "lucide-react";
+
+import DataTable, { type Column } from "@/components/ui/table/DataTable";
 import Badge from "../ui/badge/Badge";
-import Pagination from "@/components/tables/Pagination"; // Asumiendo que lo guardaste aquí
+import Pagination from "@/components/tables/Pagination";
 import Moddal from "@/components/customers/Modal";
 import { Modal } from "@/components/ui/modal";
 import { createClientPrisma, updateClientPrisma, deleteClientPrisma } from "@/lib/prisma";
 import { useBusiness } from "@/context/BusinessContext";
-import { useRouter } from "next/navigation";
-
-// createClientPrisma(businessId, name, phone, email, notes, employeeId)
-// updateClientPrisma(id, businessId, name, phone, email, notes, employeeId) 
-// deleteClientPrisma(id, businessId) 
 
 // Definimos la interfaz basada en tu esquema de Prisma
 interface Client {
@@ -22,6 +20,7 @@ interface Client {
     email: string | null;
     notes: string | null;
     createdAt: string | Date;
+    employee?: { user?: { name?: string } } | null;
 }
 
 export interface EmployeeUser {
@@ -48,14 +47,16 @@ interface CustomerTableProps {
     employees: Employee[];
 }
 
+/** Número limpio para el enlace de WhatsApp: solo dígitos. */
+const waHref = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
+
 export default function CustomerTable({ customers, employees }: CustomerTableProps) {
     const router = useRouter();
+    const business = useBusiness();
 
     const handleRefresh = () => {
         router.refresh();
     };
-    const business = useBusiness();
-    const [isMobile, setIsMobile] = useState(false);
 
     const initialClient: Client = {
         id: "",
@@ -65,27 +66,13 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
         notes: "",
         createdAt: ""
     };
-    // 1. Estados
+
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [customerToEdit, setCustomerToEdit] = useState<Client>(initialClient); // null = Crear nuevo
+    const [customerToEdit, setCustomerToEdit] = useState<Client>(initialClient); // id vacío = Crear nuevo
     const [openDeleteCustomer, setOpenDeleteCustomer] = useState(false);
-
-    useEffect(() => {
-        const handleResize = () => {
-            const mobile = window.innerWidth < 768;
-            setIsMobile(mobile);
-
-        };
-
-        handleResize();
-        window.addEventListener("resize", handleResize);
-
-        return () => {
-            window.removeEventListener("resize", handleResize);
-        };
-    }, []);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 7; // Ajusta cuántos clientes ver por página
+
+    const itemsPerPage = 7;
 
     // Lógica de paginación
     const totalPages = Math.ceil(customers.length / itemsPerPage);
@@ -98,51 +85,108 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
         setIsModalOpen(true);
     };
 
-    // Abrir modal para EDITAR (Esta se la pasas a la Tabla y al MobileList)
+    // Abrir modal para EDITAR
     const handleEditClient = (customer: Client) => {
-        setCustomerToEdit(customer); // Cargamos los datos
+        setCustomerToEdit(customer);
         setIsModalOpen(true);
     };
 
     // Guardar (Recibe los datos del modal)
     const handleSaveCustomer = async (formData: any) => {
         if (formData.id) {
-            // Lógica de UPDATE (PUT)
-            console.log("Actualizando cliente:", formData);
-            updateClientPrisma(formData.id, business?.id, formData.name, formData.phone, formData.email, formData.notes, formData.employeeId)
+            updateClientPrisma(formData.id, business?.id, formData.name, formData.phone, formData.email, formData.notes, formData.employeeId);
         } else {
-            // Lógica de CREATE (POST)
-            console.log("Creando cliente:", formData);
-            createClientPrisma(business?.id, formData.name, formData.phone, formData.email, formData.notes, formData.employeeId)
+            createClientPrisma(business?.id, formData.name, formData.phone, formData.email, formData.notes, formData.employeeId);
         }
-        handleRefresh()
-        setIsModalOpen(false); // Cerramos modal
-        // refreshData(); // Recargar la lista
+        handleRefresh();
+        setIsModalOpen(false);
     };
 
     const handleDeleteCustomer = () => {
-        console.log("Eliminando cliente", customerToEdit);
         setOpenDeleteCustomer(true);
     };
 
     const deleteCustomer = async () => {
-        console.log("Eliminando cliente", customerToEdit);
-        await deleteClientPrisma(customerToEdit?.id, business?.id)
+        await deleteClientPrisma(customerToEdit?.id, business?.id);
         setCustomerToEdit(initialClient);
-        setIsModalOpen(false)
-        handleRefresh()
+        setIsModalOpen(false);
+        handleRefresh();
         setOpenDeleteCustomer(false);
     };
 
+    // Una sola definición de columnas: DataTable la usa para la tabla en
+    // pantalla ancha y para las tarjetas cuando no cabe.
+    const columns: Column<Client>[] = [
+        {
+            key: "cliente",
+            header: "Cliente",
+            primary: true,
+            cell: (customer) => (
+                <div className="flex items-center gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-100 font-bold uppercase text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                        {customer.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                        <span className="block truncate font-medium text-gray-800 dark:text-white/90">
+                            {customer.name}
+                        </span>
+                        <span className="block truncate text-xs font-normal text-gray-500 dark:text-gray-400">
+                            {customer.email || "Sin correo"}
+                        </span>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: "contacto",
+            header: "Contacto",
+            // En tarjeta el teléfono se muestra como botón de WhatsApp a lo
+            // ancho, en cardFooter: más cómodo de tocar que una insignia.
+            hideOnCard: true,
+            cell: (customer) =>
+                customer.phone ? (
+                    <a
+                        href={waHref(customer.phone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <Badge size="sm" color="success">
+                            {customer.phone}
+                        </Badge>
+                    </a>
+                ) : (
+                    <Badge size="sm" color="light">N/A</Badge>
+                ),
+        },
+        {
+            key: "empleado",
+            header: "Empleado asignado",
+            cell: (customer) => (
+                <span className="block truncate">
+                    {customer.employee?.user?.name || "Sin asignar"}
+                </span>
+            ),
+        },
+        {
+            key: "registro",
+            header: "Registro",
+            cell: (customer) => new Date(customer.createdAt).toLocaleDateString("es-MX"),
+        },
+    ];
+
     return (
         <>
-            <div className="mb-6 flex flex-wrap justify-center sm:justify-between items-center">
-                <button onClick={handleNewClient} className="bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer">
+            <div className="mb-6 flex flex-wrap items-center justify-center gap-3 sm:justify-between">
+                <button
+                    onClick={handleNewClient}
+                    className="h-11 cursor-pointer rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600"
+                >
                     Nuevo Cliente
                 </button>
-                <div className="flex flex-wrap justify-center sm:justify-between items-center px-4 py-3 gap-2">
+                <div className="flex flex-wrap items-center justify-center gap-2 py-3 sm:justify-between">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, customers.length)} de {customers.length} clientes
+                        Mostrando {customers.length === 0 ? 0 : startIndex + 1} a {Math.min(startIndex + itemsPerPage, customers.length)} de {customers.length} clientes
                     </p>
                     <Pagination
                         currentPage={currentPage}
@@ -150,19 +194,33 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
                         onPageChange={setCurrentPage}
                     />
                 </div>
+            </div>
 
-            </div>
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
-                <div className="max-w-full overflow-x-hidden">
-                    {/* {isMobile ? <TableMobile customers={currentData} onRowClick={(customer: any) => console.log(customer)} /> : <Table customers={currentData} onRowClick={(customer: any) => console.log(customer)} />} */}
-                    {/* Tablas */}
-                    {isMobile ? (
-                        <TableMobile customers={currentData} onRowClick={handleEditClient} />
+            <DataTable
+                columns={columns}
+                rows={currentData}
+                rowKey={(customer) => customer.id}
+                onRowClick={handleEditClient}
+                empty="Todavía no hay clientes registrados."
+                cardFooter={(customer) =>
+                    customer.phone ? (
+                        <a
+                            href={waHref(customer.phone)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-green-200 bg-green-50 font-medium text-green-700 hover:bg-green-100 dark:border-green-800 dark:bg-green-900/25 dark:text-green-300"
+                        >
+                            <Phone size={16} />
+                            <span>WhatsApp ({customer.phone})</span>
+                        </a>
                     ) : (
-                        <Table customers={currentData} onRowClick={handleEditClient} />
-                    )}
-                </div>
-            </div>
+                        <div className="flex h-11 w-full items-center justify-center rounded-lg border border-gray-100 bg-gray-50 text-sm text-gray-400 dark:border-white/5 dark:bg-white/3">
+                            Sin teléfono
+                        </div>
+                    )
+                }
+            />
 
             {/* Modal */}
             {isModalOpen && (
@@ -177,29 +235,26 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
             )}
 
             <Modal
-                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
+                className="flex max-w-md items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
                 isOpen={openDeleteCustomer} onClose={() => setOpenDeleteCustomer(false)}
             >
-                {/* HEADER */}
-                <div className="flex-none px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center">
+                <div className="flex flex-none items-center justify-between border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-900">
                     <div>
                         <h5 className="text-xl font-bold text-gray-800 dark:text-white">
-                            Elimiar
+                            Eliminar
                         </h5>
-                        <p className="text-sm text-gray-500 hidden sm:block">¿Estás seguro de eliminar?</p>
+                        <p className="hidden text-sm text-gray-500 sm:block">¿Estás seguro de eliminar?</p>
                     </div>
                 </div>
 
-                <div className="p-4 bg-white border-t border-gray-200 shadow-sm safe-area-pb">
-
+                <div className="safe-area-pb border-t border-gray-200 bg-white p-4 shadow-sm">
                     <div className="flex gap-2">
-                        <button onClick={deleteCustomer} className="flex-1 py-3 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-700">
+                        <button onClick={deleteCustomer} className="flex-1 rounded-xl bg-brand-500 py-3 text-sm font-bold text-white hover:bg-brand-700">
                             Eliminar
                         </button>
-
                     </div>
                 </div>
-            </Modal >
+            </Modal>
         </>
     );
 }

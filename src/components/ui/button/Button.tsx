@@ -6,10 +6,16 @@ interface ButtonProps {
   variant?: "primary" | "outline"; // Button variant
   startIcon?: ReactNode; // Icon before the text
   endIcon?: ReactNode; // Icon after the text
-  onClick?: () => void; // Click handler
+  // Recibe el evento: hace falta para stopPropagation cuando el boton vive
+  // dentro de una fila o tarjeta que a su vez es clickable.
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean; // Disabled state
   className?: string; // Disabled state
-  type?: "button" | "submit" | "reset"; // Disabled state
+  type?: "button" | "submit" | "reset";
+  /** Tooltip nativo. */
+  title?: string;
+  /** Nombre accesible. Obligatorio cuando el boton es solo un icono. */
+  "aria-label"?: string;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -22,6 +28,8 @@ const Button: React.FC<ButtonProps> = ({
   className = "",
   disabled = false,
   type = "button",
+  title,
+  "aria-label": ariaLabel,
 }) => {
   // Size Classes
   const sizeClasses = {
@@ -45,6 +53,8 @@ const Button: React.FC<ButtonProps> = ({
       onClick={onClick}
       disabled={disabled}
       type={type}
+      title={title}
+      aria-label={ariaLabel ?? title}
     >
       {startIcon && <span className="flex items-center">{startIcon}</span>}
       {children}

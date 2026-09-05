@@ -1,102 +1,29 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import Table from "@/components/sales/Table";
-import TableMobile from "@/components/sales/TableMobile";
-import Badge from "../ui/badge/Badge";
-import Pagination from "@/components/tables/Pagination"; // Asumiendo que lo guardaste aquí
-import Moddal from "@/components/customers/Modal";
-import { Modal } from "@/components/ui/modal";
-import { createClientPrisma, updateClientPrisma, deleteClientPrisma } from "@/lib/prisma";
-import { useBusiness } from "@/context/BusinessContext";
-import { useRouter } from "next/navigation";
-import Button from "../ui/button/Button";
-import { usePrinter } from "@/hooks/usePrinter";
+
+import React, { useState } from "react";
+import moment from "moment";
+import { Printer } from "lucide-react";
 import { toast } from "react-toastify";
+
+import DataTable, { type Column } from "@/components/ui/table/DataTable";
+import Pagination from "@/components/tables/Pagination";
+import { Modal } from "@/components/ui/modal";
+import Button from "../ui/button/Button";
 import Label from "@/components/form/Label";
-import { PaymentMethodBadge } from "./PaymentMeta";
-
-// createClientPrisma(businessId, name, phone, email, notes, employeeId)
-// updateClientPrisma(id, businessId, name, phone, email, notes, employeeId) 
-// deleteClientPrisma(id, businessId) 
-
-// Definimos la interfaz basada en tu esquema de Prisma
-// interface Client {
-//     id: string;
-//     name: string;
-//     phone: string | null;
-//     email: string | null;
-//     notes: string | null;
-//     createdAt: string | Date;
-// }
-
-// export interface EmployeeUser {
-//     name: string;
-//     lastName: string;
-//     email: string; // Puede venir vacía según tu JSON
-// }
-
-// export interface Employee {
-//     id: string;
-//     businessId: string;
-//     userId: string;
-//     phone: string;
-//     bio: string;
-//     commission: number;
-//     rating: number;
-//     active: boolean;
-//     createdAt: string; // Viene como ISO String. Si usas 'new Date()' cámbialo a Date
-//     user: EmployeeUser;
-// }
-
-// interface CustomerTableProps {
-//     customers: Client[];
-//     employees: Employee[];
-// }
+import { useBusiness } from "@/context/BusinessContext";
+import { usePrinter } from "@/hooks/usePrinter";
+import { PaymentMethodBadge, SaleAmount } from "./PaymentMeta";
 
 export default function SalesTable({ sales }: any) {
-    // const router = useRouter();
-
-    // const handleRefresh = () => {
-    //     router.refresh();
-    // };
-    // const business = useBusiness();
-    const [isMobile, setIsMobile] = useState(false);
     const business = useBusiness();
     const { printTicket } = usePrinter();
 
-    // const initialClient: Client = {
-    //     id: "",
-    //     name: "",
-    //     phone: "",
-    //     email: "",
-    //     notes: "",
-    //     createdAt: ""
-    // };
-    // // 1. Estados
-    // const [isModalOpen, setIsModalOpen] = useState(false);
-    // const [customerToEdit, setCustomerToEdit] = useState<Client>(initialClient); // null = Crear nuevo
-    // const [openDeleteCustomer, setOpenDeleteCustomer] = useState(false);
-
-    useEffect(() => {
-        const handleResize = () => {
-            const mobile = window.innerWidth < 768;
-            setIsMobile(mobile);
-
-        };
-
-        handleResize();
-        window.addEventListener("resize", handleResize);
-
-        return () => {
-            window.removeEventListener("resize", handleResize);
-        };
-    }, []);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedSale, setSelectedSale] = useState<any | null>(null);
     const [isSaleDetailOpen, setIsSaleDetailOpen] = useState(false);
-    const itemsPerPage = 7; // Ajusta cuántos clientes ver por página
+    const itemsPerPage = 7;
 
-    // // Lógica de paginación
+    // Lógica de paginación
     const totalPages = Math.ceil(sales.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const currentData = sales.slice(startIndex, startIndex + itemsPerPage);
@@ -141,55 +68,80 @@ export default function SalesTable({ sales }: any) {
         setIsSaleDetailOpen(true);
     };
 
-    // // Abrir modal para CREAR
-    // const handleNewClient = () => {
-    //     setCustomerToEdit(initialClient); // Limpiamos para que sea "Nuevo"
-    //     setIsModalOpen(true);
-    // };
+    const employeeName = (sale: any) =>
+        sale.employee?.user
+            ? `${sale.employee.user.name ?? ""} ${sale.employee.user.lastName ?? ""}`.trim()
+            : "Sin asignar";
 
-    // // Abrir modal para EDITAR (Esta se la pasas a la Tabla y al MobileList)
-    // const handleEditClient = (customer: Client) => {
-    //     setCustomerToEdit(customer); // Cargamos los datos
-    //     setIsModalOpen(true);
-    // };
-
-    // // Guardar (Recibe los datos del modal)
-    // const handleSaveCustomer = async (formData: any) => {
-    //     if (formData.id) {
-    //         // Lógica de UPDATE (PUT)
-    //         console.log("Actualizando cliente:", formData);
-    //         updateClientPrisma(formData.id, business?.id, formData.name, formData.phone, formData.email, formData.notes, formData.employeeId)
-    //     } else {
-    //         // Lógica de CREATE (POST)
-    //         console.log("Creando cliente:", formData);
-    //         createClientPrisma(business?.id, formData.name, formData.phone, formData.email, formData.notes, formData.employeeId)
-    //     }
-    //     handleRefresh()
-    //     setIsModalOpen(false); // Cerramos modal
-    //     // refreshData(); // Recargar la lista
-    // };
-
-    // const handleDeleteCustomer = () => {
-    //     console.log("Eliminando cliente", customerToEdit);
-    //     setOpenDeleteCustomer(true);
-    // };
-
-    // const deleteCustomer = async () => {
-    //     console.log("Eliminando cliente", customerToEdit);
-    //     await deleteClientPrisma(customerToEdit?.id, business?.id)
-    //     setCustomerToEdit(initialClient);
-    //     setIsModalOpen(false)
-    //     handleRefresh()
-    //     setOpenDeleteCustomer(false);
-    // };
+    // Una sola definición de columnas para la tabla y para las tarjetas.
+    const columns: Column<any>[] = [
+        {
+            key: "ticket",
+            header: "Ticket",
+            primary: true,
+            cell: (sale) => (
+                <div className="flex items-center gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-100 font-bold uppercase text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
+                        {sale.folio}
+                    </div>
+                    <SaleAmount sale={sale} />
+                </div>
+            ),
+        },
+        {
+            key: "empleado",
+            header: "Empleado",
+            cell: (sale) => <span className="block truncate">{employeeName(sale)}</span>,
+        },
+        {
+            key: "total",
+            header: "Total",
+            align: "right",
+            className: "tabular-nums",
+            // En tarjeta el importe ya viaja junto al folio, en el título.
+            hideOnCard: true,
+            cell: (sale) => <SaleAmount sale={sale} />,
+        },
+        {
+            key: "metodo",
+            header: "Método",
+            cell: (sale) => <PaymentMethodBadge sale={sale} />,
+        },
+        {
+            key: "fecha",
+            header: "Fecha",
+            className: "whitespace-nowrap tabular-nums",
+            cell: (sale) => moment(sale.createdAt).format("YYYY-MM-DD hh:mm a"),
+        },
+        {
+            key: "acciones",
+            header: "Ticket",
+            align: "right",
+            // En tarjeta el botón va a lo ancho en cardFooter.
+            hideOnCard: true,
+            cell: (sale) => (
+                <Button
+                    type="button"
+                    variant="primary"
+                    className="inline-flex items-center justify-center p-0"
+                    onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        handleReprintSale(sale);
+                    }}
+                    title="Reimprimir ticket"
+                >
+                    <Printer size={16} />
+                </Button>
+            ),
+        },
+    ];
 
     return (
         <>
-            <div className="mb-6 flex flex-wrap justify-center sm:justify-end items-center">
-
-                <div className="flex flex-wrap justify-center sm:justify-between items-center px-4 py-3 gap-2">
+            <div className="mb-6 flex flex-wrap items-center justify-center sm:justify-end">
+                <div className="flex flex-wrap items-center justify-center gap-2 px-4 py-3 sm:justify-between">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, sales.length)} de {sales.length} ventas
+                        Mostrando {sales.length === 0 ? 0 : startIndex + 1} a {Math.min(startIndex + itemsPerPage, sales.length)} de {sales.length} ventas
                     </p>
                     <Pagination
                         currentPage={currentPage}
@@ -197,34 +149,44 @@ export default function SalesTable({ sales }: any) {
                         onPageChange={setCurrentPage}
                     />
                 </div>
-
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
-                <div className="max-w-full overflow-x-hidden">
-                    {/* {isMobile ? <TableMobile customers={currentData} onRowClick={(customer: any) => console.log(customer)} /> : <Table customers={currentData} onRowClick={(customer: any) => console.log(customer)} />} */}
-                    {/* Tablas */}
-                    {isMobile ? (
-                        <TableMobile sales={currentData} onReprint={handleReprintSale} onRowClick={handleOpenSaleDetail} />
-                    ) : (
-                        <Table sales={currentData} onReprint={handleReprintSale} onRowClick={handleOpenSaleDetail} />
-                    )}
-                </div>
-            </div>
+            <DataTable
+                columns={columns}
+                rows={currentData}
+                rowKey={(sale) => sale.id}
+                onRowClick={handleOpenSaleDetail}
+                empty="No hay ventas en este periodo."
+                cardFooter={(sale) => (
+                    <Button
+                        type="button"
+                        variant="primary"
+                        className="w-full"
+                        onClick={(e: React.MouseEvent) => {
+                            e.stopPropagation();
+                            handleReprintSale(sale);
+                        }}
+                        title="Reimprimir ticket"
+                    >
+                        <Printer size={16} />
+                        <span className="ml-2">Reimprimir ticket</span>
+                    </Button>
+                )}
+            />
 
             <Modal
                 isOpen={isSaleDetailOpen}
                 onClose={() => setIsSaleDetailOpen(false)}
-                className="w-[95svw] max-w-xl p-0 overflow-hidden"
+                className="w-[95svw] max-w-xl overflow-hidden p-0"
             >
-                <div className="bg-gray-50 dark:bg-gray-800 p-5 border-b border-gray-200 dark:border-gray-700">
+                <div className="border-b border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800">
                     <Label className="text-lg font-bold">Detalle de Venta</Label>
-                    <Label color="text-brand-500 dark:text-brand-400" className="text-sm text-gray-500 mt-1">
+                    <Label color="text-brand-500 dark:text-brand-400" className="mt-1 text-sm text-gray-500">
                         Folio: {selectedSale?.folio || selectedSale?.id?.slice(-6)}
                     </Label>
                 </div>
 
-                <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+                <div className="max-h-[60vh] space-y-4 overflow-y-auto p-5">
                     <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
                             <Label className="text-gray-500">Empleado</Label>
@@ -240,32 +202,32 @@ export default function SalesTable({ sales }: any) {
 
                     {/* Cupón aplicado */}
                     {selectedSale?.coupon && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 text-sm">
+                        <div className="flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-sm dark:border-purple-700 dark:bg-purple-900/20">
                             <span className="text-purple-500">🎟</span>
                             <span className="font-semibold text-purple-700 dark:text-purple-300">
                                 {selectedSale.coupon.category === "COURTESY" ? "Cortesía" : "Cupón"}: {selectedSale.coupon.code}
                             </span>
-                            <span className="ml-auto text-purple-600 dark:text-purple-400 font-bold">
+                            <span className="ml-auto font-bold text-purple-600 dark:text-purple-400">
                                 -{selectedSale?.discount > 0 ? `$${Number(selectedSale.discount).toLocaleString()}` : "aplicado"}
                             </span>
                         </div>
                     )}
 
-                    <div className="border rounded-xl p-4 space-y-2">
+                    <div className="space-y-2 rounded-xl border p-4">
                         <Label className="text-xs font-bold uppercase text-gray-500">Servicios</Label>
                         {(selectedSale?.items || []).length > 0 ? (
                             selectedSale.items.map((item: any) => (
-                                <div key={item.id} className="flex justify-between items-center text-sm gap-2">
-                                    <div className="flex items-center gap-1.5 min-w-0">
+                                <div key={item.id} className="flex items-center justify-between gap-2 text-sm">
+                                    <div className="flex min-w-0 items-center gap-1.5">
                                         <Label className="truncate">{item.description} x{item.quantity || 1}</Label>
                                         {item.couponCovered && (
-                                            <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-700">
+                                            <span className="shrink-0 rounded-full border border-green-200 bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700 dark:border-green-700 dark:bg-green-900/40 dark:text-green-400">
                                                 Cortesía
                                             </span>
                                         )}
                                     </div>
-                                    <Label color={item.couponCovered ? "text-green-600 dark:text-green-400" : "text-brand-500 dark:text-brand-400"} className="font-semibold shrink-0">
-                                        {item.couponCovered ? <span className="line-through text-gray-400 mr-1 text-xs">${Number(item.price || 0) * Number(item.quantity || 1)}</span> : null}
+                                    <Label color={item.couponCovered ? "text-green-600 dark:text-green-400" : "text-brand-500 dark:text-brand-400"} className="shrink-0 font-semibold">
+                                        {item.couponCovered ? <span className="mr-1 text-xs text-gray-400 line-through">${Number(item.price || 0) * Number(item.quantity || 1)}</span> : null}
                                         {item.couponCovered ? "$0" : `$${Number(item.price || 0) * Number(item.quantity || 1)}`}
                                     </Label>
                                 </div>
@@ -275,7 +237,7 @@ export default function SalesTable({ sales }: any) {
                         )}
                     </div>
 
-                    <div className="border rounded-xl p-4 space-y-2 text-sm">
+                    <div className="space-y-2 rounded-xl border p-4 text-sm">
                         {selectedSale?.discount > 0 && (
                             <>
                                 <div className="flex justify-between">
@@ -288,7 +250,7 @@ export default function SalesTable({ sales }: any) {
                                 </div>
                             </>
                         )}
-                        <div className="flex justify-between items-center">
+                        <div className="flex items-center justify-between">
                             <Label className="text-gray-500">Método</Label>
                             {selectedSale && <PaymentMethodBadge sale={selectedSale} />}
                         </div>
@@ -303,7 +265,7 @@ export default function SalesTable({ sales }: any) {
                                     <Label className="font-semibold">-${Number(selectedSale.mpFee).toFixed(2)}</Label>
                                 </div>
                                 {/* Neto destacado */}
-                                <div className="mt-2 flex items-center justify-between rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3">
+                                <div className="mt-2 flex items-center justify-between rounded-xl border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800 dark:bg-green-900/20">
                                     <Label className="font-bold text-green-700 dark:text-green-400">Depósito real (neto)</Label>
                                     <Label className="text-2xl font-extrabold text-green-700 dark:text-green-400">
                                         ${(selectedSale.mpNetReceived != null
@@ -317,7 +279,7 @@ export default function SalesTable({ sales }: any) {
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+                <div className="flex gap-2 border-t border-gray-200 p-4 dark:border-gray-700">
                     <Button variant="outline" className="flex-1" onClick={() => setIsSaleDetailOpen(false)}>
                         Cerrar
                     </Button>
@@ -326,38 +288,6 @@ export default function SalesTable({ sales }: any) {
                     </Button>
                 </div>
             </Modal>
-
-            {/* {isModalOpen && (
-                <Moddal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    onSave={handleSaveCustomer}
-                    customerToEdit={customerToEdit}
-                    employees={employees}
-                    handleDeleteCustomer={handleDeleteCustomer}
-                />
-            )} */}
-
-            {/* <Modal
-                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
-                isOpen={openDeleteCustomer} onClose={() => setOpenDeleteCustomer(false)}
-            >
-                <div className="flex-none px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center">
-                    <div>
-                        <h5 className="text-xl font-bold text-gray-800 dark:text-white">
-                            Elimiar
-                        </h5>
-                        <p className="text-sm text-gray-500 hidden sm:block">¿Estás seguro de eliminar?</p>
-                    </div>
-                </div>
-                <div className="p-4 bg-white border-t border-gray-200 shadow-sm safe-area-pb">
-                    <div className="flex gap-2">
-                        <button onClick={deleteCustomer} className="flex-1 py-3 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-700">
-                            Eliminar
-                        </button>
-                    </div>
-                </div>
-            </Modal > */}
         </>
     );
 }

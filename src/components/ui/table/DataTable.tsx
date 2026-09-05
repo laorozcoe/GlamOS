@@ -19,6 +19,8 @@ export type Column<T> = {
    * Si no se marca ninguna, se usa la primera.
    */
   primary?: boolean;
+  /** Ocupar el ancho completo de la tarjeta en vez de media columna. */
+  fullWidthOnCard?: boolean;
   className?: string;
   headerClassName?: string;
 };
@@ -29,6 +31,8 @@ interface DataTableProps<T> {
   /** Clave estable por fila. */
   rowKey: (row: T, index: number) => string;
   onRowClick?: (row: T) => void;
+  /** Clases extra por fila, en ambas vistas. Util para resaltar estados. */
+  rowClassName?: (row: T) => string;
   /** Que mostrar cuando no hay filas. */
   empty?: ReactNode;
   loading?: boolean;
@@ -42,6 +46,9 @@ const alignClass = {
   center: "text-center",
   right: "text-right",
 } as const;
+
+const FRAME =
+  "rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/3";
 
 /**
  * Tabla que se convierte en lista de tarjetas cuando no cabe.
@@ -67,6 +74,7 @@ export default function DataTable<T>({
   rows,
   rowKey,
   onRowClick,
+  rowClassName,
   empty = "Sin registros",
   loading = false,
   className = "",
@@ -79,7 +87,7 @@ export default function DataTable<T>({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12 text-sm text-gray-500">
+      <div className={twMerge(FRAME, "flex items-center justify-center py-12 text-sm text-gray-500")}>
         Cargando...
       </div>
     );
@@ -87,7 +95,7 @@ export default function DataTable<T>({
 
   if (rows.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12 text-sm text-gray-500">
+      <div className={twMerge(FRAME, "flex items-center justify-center px-4 py-12 text-center text-sm text-gray-500")}>
         {empty}
       </div>
     );
@@ -96,7 +104,7 @@ export default function DataTable<T>({
   return (
     <div className={twMerge("@container w-full", className)}>
       {/* ---------- Vista tabla: solo cuando el contenedor pasa de 48rem ---- */}
-      <div className="hidden overflow-x-auto @3xl:block">
+      <div className={twMerge("hidden overflow-x-auto @3xl:block", FRAME)}>
         <table className="w-full min-w-full">
           <thead>
             <tr className="border-b border-gray-200 dark:border-white/10">
@@ -122,7 +130,8 @@ export default function DataTable<T>({
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 className={twMerge(
                   "transition-colors",
-                  onRowClick && "cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5"
+                  onRowClick && "cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5",
+                  rowClassName?.(row)
                 )}
               >
                 {tableCols.map((col) => (
@@ -150,29 +159,36 @@ export default function DataTable<T>({
             key={rowKey(row, i)}
             onClick={onRowClick ? () => onRowClick(row) : undefined}
             className={twMerge(
-              "rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-white/3",
+              FRAME,
+              "p-4",
               // 44px de area de toque minima en pantallas tactiles.
-              onRowClick && "min-h-11 cursor-pointer active:bg-gray-50 dark:active:bg-white/5"
+              onRowClick && "min-h-11 cursor-pointer active:bg-gray-50 dark:active:bg-white/5",
+              rowClassName?.(row)
             )}
           >
             {primary && (
-              <div className="mb-2 text-base font-semibold text-gray-800 dark:text-white/90">
+              <div className="mb-3 text-base font-semibold text-gray-800 dark:text-white/90">
                 {primary.cell(row)}
               </div>
             )}
 
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
-              {rest.map((col) => (
-                <div key={col.key} className="min-w-0">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
-                    {col.header}
-                  </dt>
-                  <dd className="truncate text-sm text-gray-700 dark:text-gray-300">
-                    {col.cell(row)}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            {rest.length > 0 && (
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+                {rest.map((col) => (
+                  <div
+                    key={col.key}
+                    className={twMerge("min-w-0", col.fullWidthOnCard && "col-span-2")}
+                  >
+                    <dt className="mb-0.5 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                      {col.header}
+                    </dt>
+                    <dd className="text-sm text-gray-700 dark:text-gray-300">
+                      {col.cell(row)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
 
             {cardFooter && (
               <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3 dark:border-white/5">
