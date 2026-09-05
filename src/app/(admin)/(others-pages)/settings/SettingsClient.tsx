@@ -178,8 +178,11 @@ export default function SettingsClient() {
         toast.success("Datos de demo generados!");
         window.location.reload();
       }
-    } catch {
-      toast.error("Error simulando");
+    } catch (e: any) {
+      // El mensaje del servidor dice que fallo -permisos, tiempo agotado-.
+      // "Error simulando" a secas no dejaba nada con lo que empezar a buscar.
+      console.error(e);
+      toast.error(e?.message || "Error simulando");
     } finally {
       setSimulating(false);
     }

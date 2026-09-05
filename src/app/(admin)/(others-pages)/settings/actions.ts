@@ -278,84 +278,110 @@ export async function simulateDemoData() {
         services = await prisma.service.findMany({ where: { businessId: business.id } });
     }
     
-    // 3. Generate random sales and appointments for the last 14 days and next 2 days
+    // 3. Datos de los ultimos 14 dias y los 2 siguientes.
+    //
+    // Se arma TODO en memoria y se inserta en cinco `createMany`, en vez de
+    // un create por cita y otro por venta dentro del bucle. Antes eran del
+    // orden de 300 viajes a la base uno detras de otro: en local se notaba
+    // lento, y en una funcion de Vercel -que tiene limite de tiempo- no
+    // alcanzaba a terminar y se cortaba a la mitad.
     const now = new Date();
     const startDate = new Date();
     startDate.setDate(now.getDate() - 14);
-    
+    const hasta = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+
     const clientNames = ['Laura G.', 'Carmen S.', 'Andrea M.', 'Lucia T.', 'Valeria R.'];
     const paymentMethods = ['CASH', 'CARD', 'TRANSFER'];
-    
-    for (let d = new Date(startDate); d <= new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000); d.setDate(d.getDate() + 1)) {
-        // Create 2 to 5 appointments per day
+
+    const citas: any[] = [];
+    const serviciosDeCita: any[] = [];
+    const ventas: any[] = [];
+    const partidas: any[] = [];
+    const pagos: any[] = [];
+
+    for (let d = new Date(startDate); d <= hasta; d.setDate(d.getDate() + 1)) {
         const numApps = Math.floor(Math.random() * 4) + 2;
+
         for (let i = 0; i < numApps; i++) {
             const emp = employees[Math.floor(Math.random() * employees.length)];
             const serv = services[Math.floor(Math.random() * services.length)];
             const guestName = clientNames[Math.floor(Math.random() * clientNames.length)];
-            const hour = Math.floor(Math.random() * 8) + 10; // 10 to 17
-            
+            const hour = Math.floor(Math.random() * 8) + 10; // de 10 a 17
+
             const start = new Date(d);
             start.setHours(hour, 0, 0, 0);
             const end = new Date(start.getTime() + serv.duration * 60000);
-            
             const isPast = start < now;
-            
-            const app = await prisma.appointment.create({
-                data: {
+
+            // Los ids se generan aqui para poder enlazar cita, servicio, venta
+            // y pago sin tener que esperar a que la base devuelva cada uno.
+            const citaId = crypto.randomUUID();
+
+            citas.push({
+                id: citaId,
+                businessId: business.id,
+                employeeId: emp.id,
+                title: serv.name,
+                start,
+                end,
+                guestName,
+                guestPhone: '5550000000',
+                status: isPast ? 'COMPLETED' : 'PENDING',
+                totalAmount: serv.price,
+            });
+
+            // El ticket de una cita son sus AppointmentService, no el `title`.
+            // Sin esta fila la cita se ve con nombre en la agenda pero vacia
+            // al abrirla, en $0, y no se puede cobrar.
+            serviciosDeCita.push({
+                id: crypto.randomUUID(),
+                appointmentId: citaId,
+                serviceId: serv.id,
+                price: serv.price,
+            });
+
+            if (isPast) {
+                const ventaId = crypto.randomUUID();
+                const method = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
+
+                ventas.push({
+                    id: ventaId,
                     businessId: business.id,
                     employeeId: emp.id,
-                    title: serv.name,
-                    start,
-                    end,
-                    guestName,
-                    guestPhone: '5550000000',
-                    status: isPast ? 'COMPLETED' : 'PENDING',
-                    totalAmount: serv.price,
-                    // El ticket de una cita son sus AppointmentService, no el
-                    // `title`. Sin esta parte la cita se veia con nombre en la
-                    // agenda pero vacia al abrirla, en $0, y no se podia
-                    // cobrar: "agrega al menos un servicio".
-                    services: {
-                        create: [{ serviceId: serv.id, price: serv.price }],
-                    },
-                }
-            });
-            
-            if (isPast) {
-                // Create Sale
-                const method = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
-                await prisma.sale.create({
-                    data: {
-                        businessId: business.id,
-                        employeeId: emp.id,
-                        appointmentId: app.id,
-                        subtotal: serv.price,
-                        total: serv.price,
-                        status: 'COMPLETED',
-                        createdAt: start,
-                        updatedAt: start,
-                        items: {
-                            create: {
-                                description: serv.name,
-                                quantity: 1,
-                                price: serv.price,
-                                serviceId: serv.id
-                            }
-                        },
-                        payments: {
-                            create: {
-                                businessId: business.id,
-                                method: method as any,
-                                amount: serv.price,
-                                status: 'COMPLETED'
-                            }
-                        }
-                    }
+                    appointmentId: citaId,
+                    subtotal: serv.price,
+                    total: serv.price,
+                    status: 'COMPLETED',
+                    createdAt: start,
+                    updatedAt: start,
+                });
+                partidas.push({
+                    id: crypto.randomUUID(),
+                    saleId: ventaId,
+                    description: serv.name,
+                    quantity: 1,
+                    price: serv.price,
+                    serviceId: serv.id,
+                });
+                pagos.push({
+                    id: crypto.randomUUID(),
+                    saleId: ventaId,
+                    businessId: business.id,
+                    method: method as any,
+                    amount: serv.price,
+                    status: 'COMPLETED',
                 });
             }
         }
     }
-    
+
+    // El orden respeta las llaves foraneas: primero las citas, luego lo que
+    // cuelga de ellas.
+    await prisma.appointment.createMany({ data: citas });
+    await prisma.appointmentService.createMany({ data: serviciosDeCita });
+    await prisma.sale.createMany({ data: ventas });
+    await prisma.saleItem.createMany({ data: partidas });
+    await prisma.payment.createMany({ data: pagos });
+
     return { ok: true };
 }
