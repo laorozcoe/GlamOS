@@ -78,6 +78,8 @@ model PaymentTerminal {
 
   business    Business @relation(fields: [businessId], references: [id])
   payments    Payment[]
+
+  @@index([businessId, active])
 }
 
 //////////////////////
@@ -147,6 +149,8 @@ model Employee {
   workScheduleEndWeekday   String? @db.VarChar(5)
   workScheduleStartSaturday String? @db.VarChar(5)
   workScheduleEndSaturday   String? @db.VarChar(5)
+
+  @@index([businessId, active])
 }
 
 //////////////////////
@@ -189,6 +193,8 @@ model ServiceCategory {
 
   business Business  @relation(fields: [businessId], references: [id])
   services Service[]
+
+  @@index([businessId, active])
 }
 
 //////////////////////
@@ -205,6 +211,8 @@ model ProductCategory {
 
   business Business  @relation(fields: [businessId], references: [id])
   products Product[]
+
+  @@index([businessId, active])
 }
 
 //////////////////////
@@ -228,6 +236,8 @@ model Product {
   business      Business        @relation(fields: [businessId], references: [id])
   category      ProductCategory @relation(fields: [categoryId], references: [id])
   saleItems     SaleItem[]
+
+  @@index([businessId, active])
 }
 
 //////////////////////
@@ -255,6 +265,8 @@ model Service {
   saleItems           SaleItem[]
   serviceRequests     AppointmentServiceRequest[]
   promotionServices   PromotionService[]
+
+  @@index([businessId, active])
 }
 
 //////////////////////
@@ -319,6 +331,9 @@ model Appointment {
   client   Client?              @relation(fields: [clientId], references: [id])
   services AppointmentService[]
   serviceRequests AppointmentServiceRequest[]
+
+  @@index([businessId, start])
+  @@index([employeeId, start])
 }
 
 //////////////////////
@@ -446,6 +461,9 @@ model Payment {
   business Business @relation(fields: [businessId], references: [id])
   terminalId String?
   terminal   PaymentTerminal? @relation(fields: [terminalId], references: [id])
+
+  @@index([businessId, createdAt])
+  @@index([saleId])
 }
 
 enum PaymentMethod {
@@ -538,6 +556,10 @@ model Sale {
 
   items    SaleItem[]
   payments Payment[]
+
+  @@index([businessId, createdAt])
+  @@index([employeeId, createdAt])
+  @@index([mpPaymentId])
 }
 
 
@@ -635,6 +657,8 @@ model Promotion {
 
   business  Business          @relation(fields: [businessId], references: [id])
   services  PromotionService[]
+
+  @@index([businessId, active])
 }
 
 model PromotionService {
@@ -663,6 +687,8 @@ model CashClose {
   notes String?
 
   business Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, closingDate])
 }
 
 model Session {
