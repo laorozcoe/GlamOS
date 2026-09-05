@@ -117,7 +117,7 @@ export default function ServicesAdmin() {
 
     const deleteService = async () => {
         console.log("Eliminando servicio:", editingService);
-        deleteServicePrisma(editingService.id, bussiness.id);
+        await deleteServicePrisma(editingService.id, bussiness.id);
         // Aquí iría tu llamada a la Server Action o API
         const servicesData = await getServicesPrisma(bussiness.id, activeCategory.id);
         setServices(servicesData);
@@ -130,7 +130,7 @@ export default function ServicesAdmin() {
 
     const deleteCategory = async () => {
         console.log("Eliminando categoría:", editingCategory);
-        deleteServiceCategoryPrisma(editingCategory.id, bussiness.id);
+        await deleteServiceCategoryPrisma(editingCategory.id, bussiness.id);
         // Aquí iría tu llamada a la Server Action o API
         fetchServiceCategories();
         setEditingCategory(null);
@@ -245,11 +245,11 @@ export default function ServicesAdmin() {
                 isOpen={isCatModalOpen}
                 onClose={() => { setIsCatModalOpen(false); setEditingCategory(null) }}
                 title={editingCategory?.id ? "Editar Categoría" : "Nueva Categoría"}
-                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
+                size="md"
             >
 
-                <div className=" dark:bg-gray-900 rounded-xl shadow-xl w-full overflow-hidden">
-                    <div className="flex justify-between items-center px-4 pb-4 sm:pb-8 border-b border-gray-200 dark:border-gray-800">
+                <div className="w-full">
+                    <div className="flex items-center justify-between border-b border-gray-200 px-5 pb-4 pr-16 pt-5 dark:border-gray-800 sm:px-6 sm:pb-5 sm:pr-20 sm:pt-6">
                         <Label className="font-semibold text-lg sm:text-xl">{editingCategory?.id ? "Editar Categoría" : "Nueva Categoría"}</Label>
                     </div>
                     <div className="p-5 space-y-4">
@@ -274,11 +274,11 @@ export default function ServicesAdmin() {
                 isOpen={isServiceModalOpen}
                 onClose={() => { setIsServiceModalOpen(false); setEditingService(null) }}
                 title={editingService?.id ? "Editar Servicio" : "Nuevo Servicio"}
-                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
+                size="md"
             >
 
-                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full overflow-hidden">
-                    <div className="flex justify-between items-center px-4 pb-4 sm:pb-8 border-b border-gray-200 dark:border-gray-800">
+                <div className="w-full">
+                    <div className="flex items-center justify-between border-b border-gray-200 px-5 pb-4 pr-16 pt-5 dark:border-gray-800 sm:px-6 sm:pb-5 sm:pr-20 sm:pt-6">
                         <Label className="font-semibold text-lg sm:text-xl">{editingService?.id ? "Editar Servicio" : "Nuevo Servicio"}</Label>
                     </div>
                     <div className="p-5 space-y-4">
@@ -360,7 +360,7 @@ export default function ServicesAdmin() {
                 </div>
             </Modal>
             <Modal
-                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
+                size="md"
                 isOpen={openDeleteCategory} onClose={() => setOpenDeleteCategory(false)}
             >
                 {/* HEADER */}
@@ -376,7 +376,7 @@ export default function ServicesAdmin() {
                 <div className="p-4 border-t border-gray-200 shadow-sm safe-area-pb">
 
                     <div className="flex gap-2">
-                        <Button onClick={deleteService} className="flex-1 py-3 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-700">
+                        <Button onClick={deleteCategory} className="flex-1 py-3 bg-brand-500 text-white rounded-xl text-sm font-bold hover:bg-brand-700">
                             Eliminar
                         </Button>
 
@@ -384,7 +384,7 @@ export default function ServicesAdmin() {
                 </div>
             </Modal >
             <Modal
-                className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
+                size="md"
                 isOpen={openDeleteService} onClose={() => setOpenDeleteService(false)}
             >
                 {/* HEADER */}

@@ -236,7 +236,7 @@ export default function CustomerTable({ customers, employees }: CustomerTablePro
             )}
 
             <Modal
-                className="flex max-w-md items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+                size="md"
                 isOpen={openDeleteCustomer} onClose={() => setOpenDeleteCustomer(false)}
             >
                 <div className="flex flex-none items-center justify-between border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-900">

@@ -30,10 +30,10 @@ export default function CustomerModal({ isOpen, onClose, onSave, customerToEdit,
     return (
         <Modal
             isOpen={isOpen} onClose={onClose}
-            className="flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 max-w-md"
+            size="md"
         >
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full overflow-hidden">
-                <div className="flex justify-between items-center px-4 pb-4 sm:pb-8 border-b border-gray-200 dark:border-gray-800">
+            <div className="w-full">
+                <div className="flex items-center justify-between border-b border-gray-200 px-5 pb-4 pr-16 pt-5 dark:border-gray-800 sm:px-6 sm:pb-5 sm:pr-20 sm:pt-6">
                     <Label className="font-semibold text-lg sm:text-xl">
                         {customerToEdit ? 'Editar Cliente' : 'Nuevo Cliente'}
                     </Label>
