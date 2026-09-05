@@ -142,6 +142,6 @@ export async function upsertManyAttendances(records: any[], dateStr: string) {
     });
   }
 
-  revalidatePath("/attendance");
+  revalidatePath("/payroll/asistencia");
   return { success: true };
 }

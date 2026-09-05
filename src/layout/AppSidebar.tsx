@@ -18,7 +18,7 @@ import {
   UserCircleIcon,
 } from "../icons/index";
 import { useBusiness } from "@/context/BusinessContext";
-import { Sparkles, BadgeDollarSign, ShieldCheck, Clock, Settings, Tag, Scissors, ShoppingBag, Gift } from 'lucide-react';
+import { Sparkles, BadgeDollarSign, ShieldCheck, Settings, Tag, Scissors, ShoppingBag, Users, Wallet } from 'lucide-react';
 import { useSession } from "@/lib/auth-client";
 
 type NavItem = {
@@ -56,28 +56,32 @@ const navItems: NavItem[] = [
     adminOnly: true,
   },
   {
-    icon: <BadgeDollarSign />,
-    name: "Nómina",
-    path: "/payroll",
+    // La nomina, la asistencia que la alimenta y los bonos que la componen
+    // eran tres entradas sueltas en niveles distintos del menu. Asistencia y
+    // Bonos son ahora pestanas dentro de Nomina.
+    name: "Personal",
+    icon: <Users />,
     adminOnly: true,
-  },
-  {
-    icon: <Gift />,
-    name: "Bonos",
-    path: "/payroll/bonos",
-    adminOnly: true,
-  },
-  {
-    icon: <Clock />,
-    name: "Asistencia",
-    path: "/attendance",
-    adminOnly: true,
-  },
-  {
-    icon: <ShieldCheck />,
-    name: "Permisos y Roles",
-    path: "/permissions",
-    adminOnly: true,
+    subItems: [
+      {
+        icon: <Wallet size={20} />,
+        name: "Nómina",
+        path: "/payroll",
+        adminOnly: true,
+      },
+      {
+        icon: <UserCircleIcon />,
+        name: "Empleados",
+        path: "/employees",
+        adminOnly: true,
+      },
+      {
+        icon: <ShieldCheck size={18} />,
+        name: "Permisos y Roles",
+        path: "/permissions",
+        adminOnly: true,
+      },
+    ],
   },
   {
     icon: <Settings />,
@@ -107,12 +111,6 @@ const navItems: NavItem[] = [
         name: "Clientes",
         path: "/customers",
         receptionOrAdminOnly: true,
-      },
-      {
-        icon: <UserCircleIcon />,
-        name: "Empleados/Staff",
-        path: "/employees",
-        adminOnly: true,
       },
       {
         icon: <Tag size={18} />,
@@ -300,13 +298,16 @@ const AppSidebar: React.FC = () => {
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const isActive = (path: string) => path === pathname;
+  // Coincide tambien con las rutas hijas: /payroll/asistencia y /payroll/bonos
+  // son pestanas de Nomina, y con igualdad exacta el menu se cerraba y no
+  // marcaba nada al entrar en ellas.
+  const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
   const getMatchedSubmenu = (): { type: "main" | "others"; index: number } | null => {
     for (const menuType of ["main", "others"] as const) {
       const items = menuType === "main" ? navItems : othersItems;
       for (let i = 0; i < items.length; i++) {
-        if (items[i].subItems?.some((sub) => sub.path === pathname)) {
+        if (items[i].subItems?.some((sub) => pathname === sub.path || pathname.startsWith(`${sub.path}/`))) {
           return { type: menuType, index: i };
         }
       }
