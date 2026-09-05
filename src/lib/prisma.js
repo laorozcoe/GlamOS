@@ -884,6 +884,88 @@ export const createSalePrisma = async (data) => {
 
     try {
         const result = await prisma.$transaction(async (tx) => {
+            // 0. La cita puede traer ya una venta ABIERTA de un anticipo.
+            //    Sale.appointmentId es unico, asi que crear otra fallaria; y
+            //    aunque no fallara, partiria el ticket en dos y el anticipo
+            //    no se descontaria de lo que se cobra hoy.
+            const ventaAbierta = appointmentId
+                ? await tx.sale.findFirst({
+                    where: { appointmentId, businessId, active: true },
+                    include: { payments: { where: { active: true, status: 'COMPLETED' } } },
+                })
+                : null;
+
+            if (ventaAbierta && ventaAbierta.status === 'COMPLETED') {
+                throw new Error('Esa cita ya estaba cobrada.');
+            }
+
+            if (ventaAbierta) {
+                // Se cierra la venta que abrio el anticipo: se reemplazan sus
+                // partidas por las de ahora -pudieron agregarse servicios- y
+                // se le suman los pagos de hoy, conservando el anticipo.
+                await tx.saleItem.deleteMany({ where: { saleId: ventaAbierta.id } });
+
+                const pagosNuevos = Array.isArray(payment) ? payment : [payment];
+
+                const cerrada = await tx.sale.update({
+                    where: { id: ventaAbierta.id },
+                    data: {
+                        clientId,
+                        employeeId,
+                        couponId: couponId || null,
+                        subtotal: totals.subtotal,
+                        discount: totals.discount,
+                        total: totals.total,
+                        status: 'COMPLETED',
+                        items: {
+                            create: items.map((item) => ({
+                                serviceId: item.serviceId || null,
+                                productId: item.productId || null,
+                                description: item.description,
+                                price: item.price,
+                                quantity: item.quantity || 1,
+                                couponCovered: item.couponCovered ?? false,
+                            })),
+                        },
+                        payments: {
+                            create: pagosNuevos.map((p) => ({
+                                businessId,
+                                amount: p.amount,
+                                method: p.method,
+                                amountReceived: p.received,
+                                changeReturned: p.change,
+                                status: 'COMPLETED',
+                                terminalId: p.terminalId || null,
+                            })),
+                        },
+                    },
+                    include: { items: true, payments: true },
+                });
+
+                // Los datos de la terminal viven en la venta, y este camino
+                // tambien puede cerrarse con tarjeta: sin esto se perderian
+                // solo en las citas que traian anticipo.
+                if (mpPaymentId || mpFee != null || mpNetReceived != null || mpTaxes != null || mpReleaseDate != null || promotionDiscount != null) {
+                    await tx.$executeRawUnsafe(
+                        `UPDATE "Sale" SET "mpPaymentId" = $1, "mpFee" = $2, "mpNetReceived" = $3, "mpTaxes" = $4, "mpReleaseDate" = $5, "promotionDiscount" = $6 WHERE id = $7`,
+                        mpPaymentId ?? null,
+                        mpFee ?? null,
+                        mpNetReceived ?? null,
+                        mpTaxes ?? null,
+                        mpReleaseDate ? new Date(mpReleaseDate) : null,
+                        promotionDiscount ?? null,
+                        cerrada.id
+                    );
+                }
+
+                await tx.appointment.update({
+                    where: { id: appointmentId, active: true },
+                    data: { status: 'COMPLETED', paymentStatus: 'PAID' },
+                });
+
+                return cerrada;
+            }
+
             // 1. Creamos la Venta principal
             const newSale = await tx.sale.create({
                 data: {
