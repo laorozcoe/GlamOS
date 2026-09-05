@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma2';
+import { assertBusinessId } from '@/lib/session';
 
 export async function GET(
     req: NextRequest,
@@ -40,17 +41,27 @@ export async function GET(
         return NextResponse.json({ error: 'businessId requerido' }, { status: 400 });
     }
 
+    // El businessId venia del query string sin validar contra la sesion.
+    let sessionBusinessId: string;
+    try {
+        sessionBusinessId = await assertBusinessId(businessId);
+    } catch {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
+
     const terminalId = searchParams.get('terminalId');
 
     const business = await prisma.business.findUnique({
-        where: { id: businessId },
+        where: { id: sessionBusinessId },
         select: { mpAccessToken: true },
     });
 
     let terminalToken: string | null = null;
     if (terminalId) {
-        const terminal = await prisma.paymentTerminal.findUnique({
-            where: { id: terminalId }
+        // findFirst acotado por negocio: con findUnique por id se podia usar el
+        // token de una terminal de otro salon.
+        const terminal = await prisma.paymentTerminal.findFirst({
+            where: { id: terminalId, businessId: sessionBusinessId }
         });
         terminalToken = terminal?.mpAccessToken || null;
     }

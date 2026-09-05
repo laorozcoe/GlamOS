@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma2';
+import { assertBusinessId } from '@/lib/session';
 
 // Modo simulación: probar el flujo de cobro sin terminal física ni llamadas a MercadoPago.
 // Apagado por defecto. Se activa con MP_SIMULATE=true en .env (NO usar en producción).
 const SIMULATE = process.env.MP_SIMULATE === 'true';
 
 export async function POST(req: NextRequest) {
-    const { amount, posId, businessId } = await req.json();
+    const { amount, posId, businessId: requestedBusinessId } = await req.json();
 
-    if (!amount || !posId || !businessId) {
+    if (!amount || !posId || !requestedBusinessId) {
         return NextResponse.json({ error: 'Faltan parámetros requeridos' }, { status: 400 });
+    }
+
+    // El businessId llegaba del body sin validar: cualquier usuario autenticado
+    // podia lanzar cobros contra la terminal de otro negocio.
+    let businessId: string;
+    try {
+        businessId = await assertBusinessId(requestedBusinessId);
+    } catch {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     // --- SIMULACIÓN: devolvemos un intent virtual con el monto codificado en el id ---
@@ -68,10 +78,17 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-    const { posId, businessId, intentId } = await req.json();
+    const { posId, businessId: requestedBusinessId, intentId } = await req.json();
 
-    if (!posId || !businessId) {
+    if (!posId || !requestedBusinessId) {
         return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 });
+    }
+
+    let businessId: string;
+    try {
+        businessId = await assertBusinessId(requestedBusinessId);
+    } catch {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     // --- SIMULACIÓN: cancelación sin tocar MercadoPago ---

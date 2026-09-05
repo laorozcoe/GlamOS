@@ -85,9 +85,13 @@ export async function POST(req: NextRequest) {
             }
         }
         
-        if (!anyValid && xSignature) {
-            // Si mandó firma y no cuadró con ninguno de los secretos, rechazamos
-            return NextResponse.json({ error: 'Firma inválida' }, { status: 401 });
+        // Antes la condición era `!anyValid && xSignature`, de modo que una
+        // petición SIN el header x-signature se colaba sin validar nada.
+        if (!anyValid) {
+            return NextResponse.json(
+                { error: xSignature ? 'Firma inválida' : 'Falta la firma x-signature' },
+                { status: 401 }
+            );
         }
     }
 

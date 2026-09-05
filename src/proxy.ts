@@ -3,7 +3,11 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 
 // 🌍 rutas públicas
-const publicRoutes = ["/api/auth", "/api/mp/webhook", "/not-found", "/error-404", "/schedule", "/seed", "testPrint"]
+// Solo lo que tiene que ser alcanzable sin sesion.
+// - /seed salio de aqui: monta funciones de bootstrap (crear negocio y
+//   usuarios) y estaba abierta a cualquiera.
+// - "testPrint" no llevaba "/" inicial, asi que nunca hacia match.
+const publicRoutes = ["/api/auth", "/api/mp/webhook", "/not-found", "/error-404"]
 
 // 🔐 rutas por rol
 const roleBasedRoutes = {
@@ -25,7 +29,6 @@ const roleBasedRoutes = {
 
 // 🏢 obtener slug del negocio desde subdominio
 function getBusinessSlug(req: NextRequest) {
-    debugger
     const host = req.headers.get("host") || ""
 
     // producción: empresa.tusalon.com
@@ -61,23 +64,30 @@ function isPublicFile(pathname: string) {
 function hasAccessToRoute(userRole: string, pathname: string): boolean {
     // Rutas accesibles para todos los roles autenticados
     const commonRoutes = ["/calendar", "/profile"];
-    
-    // Rutas que solo ADMIN y RECEPTION pueden ver (contienen datos financieros)
-    const restrictedRoutes = ["/"];
-    
-    // Si es una ruta restringida, verificar permisos
-    if (restrictedRoutes.some(route => pathname.startsWith(route))) {
-        return userRole === "ADMIN" || userRole === "RECEPTION";
-    }
-    
-    // Si es una ruta común, permitir acceso
+
     if (commonRoutes.some(route => pathname.startsWith(route))) {
         return true;
     }
-    
-    // Verificar si la ruta está en las rutas permitidas para el rol del usuario
+
+    // ADMIN y RECEPTION acceden a todo lo demas.
+    //
+    // Esto es lo que la app ya hacia: la version anterior comparaba contra
+    // `restrictedRoutes = ["/"]` con startsWith, y como TODA ruta empieza por
+    // "/", esa primera condicion siempre se cumplia y el mapa roleBasedRoutes
+    // de abajo nunca llegaba a evaluarse. Se deja el comportamiento igual pero
+    // escrito de forma explicita.
+    //
+    // TODO: definir la matriz de permisos real por rol. `roleBasedRoutes` se
+    // mantiene como referencia de la intencion original, pero hoy no se usa:
+    // varias paginas (coupons, promotions, products, reports, settings,
+    // cashClose, attendance) no aparecen en ninguna lista, asi que activarlo
+    // tal cual dejaria a RECEPTION sin acceso a media aplicacion.
+    if (userRole === "ADMIN" || userRole === "RECEPTION") {
+        return true;
+    }
+
     const allowedRoutes = roleBasedRoutes[userRole as keyof typeof roleBasedRoutes] || [];
-    
+
     return allowedRoutes.some(route => pathname.startsWith(route));
 }
 
