@@ -118,6 +118,7 @@ async function run(tx) {
   let membresiasRepuntadas = 0;
   let usuariosBorrados = 0;
   let cuentasDescartadas = 0;
+  let historialMovido = 0;
 
   for (const dup of duplicados) {
     // Sobrevive el más antiguo: es el que tiene más historia asociada.
@@ -130,22 +131,61 @@ async function run(tx) {
     log(`   ${dup.email}: ${dup.n} usuarios -> se conserva ${superviviente.id}`);
 
     for (const viejo of sobrantes) {
-      // Si ya existe una membresía del superviviente en ese salón, la del
-      // usuario viejo sobra: la unique (businessId,userId) no admite las dos.
-      const choques = await tx.$queryRawUnsafe(
-        `SELECT e2."id" FROM "Employee" e2
-          WHERE e2."userId" = $1
-            AND e2."businessId" IN (SELECT "businessId" FROM "Employee" WHERE "userId" = $2)`,
+      // Caso delicado: la misma persona duplicada DENTRO de un mismo salón.
+      // La unique (businessId, userId) no admite las dos membresías, pero
+      // borrar la sobrante a secas falla por clave foránea -de ella cuelgan
+      // ventas, citas y asistencias- y, si no fallara, se llevaría por delante
+      // ese historial. Se fusionan: la historia se mueve a la membresía que
+      // sobrevive y solo entonces se borra la vacía.
+      const colisiones = await tx.$queryRawUnsafe(
+        `SELECT viejo."id" AS origen, nuevo."id" AS destino
+           FROM "Employee" viejo
+           JOIN "Employee" nuevo
+             ON nuevo."businessId" = viejo."businessId" AND nuevo."userId" = $1
+          WHERE viejo."userId" = $2`,
         superviviente.id,
         viejo.id
       );
-      if (choques.length) {
-        log(`      ! ${viejo.id} ya tenía membresía en el mismo salón; se descarta la duplicada`);
-        await tx.$executeRawUnsafe(
-          `DELETE FROM "Employee" WHERE "userId" = $1 AND "businessId" IN
-             (SELECT "businessId" FROM "Employee" WHERE "userId" = $2)`,
-          viejo.id,
-          superviviente.id
+
+      for (const c of colisiones) {
+        // Las asistencias son únicas por (salón, membresía, día). Las del
+        // origen que choquen con una del destino se descartan; son el mismo
+        // día de la misma persona.
+        const descartadas = await tx.$executeRawUnsafe(
+          `DELETE FROM "Attendance" AS a
+            WHERE a."employeeId" = $1
+              AND EXISTS (
+                SELECT 1 FROM "Attendance" b
+                 WHERE b."employeeId" = $2
+                   AND b."businessId" = a."businessId"
+                   AND b."date" = a."date")`,
+          c.origen,
+          c.destino
+        );
+
+        let movidos = 0;
+        for (const [tabla, col] of [
+          ['Appointment', 'employeeId'],
+          ['Attendance', 'employeeId'],
+          ['Sale', 'employeeId'],
+          ['Review', 'employeeId'],
+          ['Client', 'employeeId'],
+          ['AppointmentServiceRequest', 'employeeRequesterId'],
+        ]) {
+          movidos += await tx.$executeRawUnsafe(
+            `UPDATE "${tabla}" SET "${col}" = $1 WHERE "${col}" = $2`,
+            c.destino,
+            c.origen
+          );
+        }
+
+        await tx.$executeRawUnsafe('DELETE FROM "Employee" WHERE "id" = $1', c.origen);
+        historialMovido += movidos;
+        log(
+          `      ! duplicado dentro del mismo salón: se fusionan las dos membresías ` +
+            `(${movidos} registros de historial movidos` +
+            (descartadas ? `, ${descartadas} asistencias repetidas descartadas` : '') +
+            `)`
         );
       }
 
@@ -171,6 +211,7 @@ async function run(tx) {
   }
   log(
     `5. ${duplicados.length} correos fusionados: ${membresiasRepuntadas} membresías repuntadas, ` +
+      `${historialMovido} registros de historial movidos, ` +
       `${usuariosBorrados} usuarios sobrantes borrados, ${cuentasDescartadas} contraseñas descartadas.`
   );
 
