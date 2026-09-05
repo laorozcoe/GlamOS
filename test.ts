@@ -17,4 +17,4 @@ async function main() {
     const salesWithClient = await prisma.sale.count({ where: { businessId, clientId: { not: null } } });
     console.log('Sales with client:', salesWithClient);
 }
-main().finally(() => prisma.());
+main().finally(() => prisma.$disconnect());

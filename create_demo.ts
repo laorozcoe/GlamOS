@@ -67,4 +67,4 @@ async function main() {
         }
     }
 }
-main().finally(() => prisma.());
+main().finally(() => prisma.$disconnect());

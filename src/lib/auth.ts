@@ -245,7 +245,7 @@ export const auth = betterAuth({
       }
 
       const belongsToBusiness = matches.some(
-        (u) => u.businessId === business.id
+        (u: { businessId: string }) => u.businessId === business.id
       );
 
       if (!belongsToBusiness) {

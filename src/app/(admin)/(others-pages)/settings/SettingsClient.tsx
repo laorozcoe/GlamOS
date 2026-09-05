@@ -7,6 +7,7 @@ import Button from "@/components/ui/button/Button";
 import { getBusinessSettings, updateBusinessSettings, savePaymentTerminals, updateThemeColors, listMpDevices, changeMpDeviceMode, simulateDemoData } from "./actions";
 import { Save, Plus, Trash2, CheckCircle2, ShieldCheck, Store, Clock, Palette, RefreshCw, Wifi, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
+import { useBusiness } from "@/context/BusinessContext";
 
 // ── Color palette ─────────────────────────────────────────────────────────────
 const COLOR_KEYS = [
@@ -78,6 +79,7 @@ const PRESETS: Record<string, ThemeColors> = {
 // ── End color palette ──────────────────────────────────────────────────────────
 
 export default function SettingsClient() {
+  const business = useBusiness();
   const [loading, setLoading] = useState(true);
   const [savingBase, setSavingBase] = useState(false);
   const [savingTerms, setSavingTerms] = useState(false);
