@@ -24,7 +24,8 @@ Database: PostgreSQL (Neon)
 - Single deployment, single database, multiple businesses
 - Every model has `businessId` FK (except auth tables)
 - `BusinessContext` provides current `businessId` throughout the React tree
-- The context is initialized in the root layout from a DB lookup (by cookie/session)
+- The context is initialized in the root layout via `getBusiness()`, which extracts the **subdomain** (`host.split(".")[0]`) and matches it against `Business.slug`.
+- To add a new tenant/site, simply create a `Business` record with the desired slug (e.g. "demo") and route the subdomain to the same Vercel project. No new deployment is needed.
 - **Never omit `businessId` in queries** — it is the tenant boundary
 
 ---

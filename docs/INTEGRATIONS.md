@@ -418,3 +418,11 @@ npm run start      # Start production server
 npm run lint       # ESLint check
 npx prisma studio  # Visual database editor
 ```
+---
+
+## Reports & Analytics
+
+- **Charts:** 
+eact-apexcharts for interactive, client-side charting (bar, pie).
+- **Excel Export:** xlsx library is used to generate proper .xlsx files with multiple sheets directly from the client.
+
