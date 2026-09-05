@@ -159,6 +159,11 @@ model Employee {
   /// puramente administrativas (un dueno que no atiende) van en false.
   bookable    Boolean  @default(true)
 
+  /// Si entra en la nomina: sueldo base, comisiones y bonos. Es independiente
+  /// de `bookable`: hay quien atiende sin sueldo base y quien cobra sin
+  /// aparecer en la agenda. Hasta la fase 6 los dos eran el mismo campo.
+  inPayroll   Boolean  @default(true)
+
   business     Business      @relation(fields: [businessId], references: [id])
   user         User          @relation(fields: [userId], references: [id])
   appointments Appointment[]
