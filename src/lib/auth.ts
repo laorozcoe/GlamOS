@@ -167,9 +167,7 @@ import { getBusiness } from "@/lib/getBusiness"
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
-
   }),
-  // AGREGA ESTO:
   baseURL: process.env.BETTER_AUTH_URL,
   emailAndPassword: {
     enabled: true,
@@ -195,48 +193,67 @@ export const auth = betterAuth({
       role: {
         type: "string",
         required: false,
+      },
+      // Necesario para que la sesion sepa a que negocio pertenece el usuario.
+      // input: false => el cliente no puede enviarlo al registrarse.
+      businessId: {
+        type: "string",
+        required: false,
+        input: false,
       }
     }
   },
   secret: process.env.BETTER_AUTH_SECRET,
   plugins: [nextCookies()],
-  hook: {
+  hooks: {
+    // Valida que el usuario que intenta entrar pertenezca al negocio del
+    // subdominio desde el que se esta haciendo el login.
+    //
+    // Sin esto, un usuario de "salonA" puede autenticarse en
+    // "salonB.dominio.com" y operar los datos de salonB, porque el negocio se
+    // resuelve por host (getBusiness) y no por la sesion.
+    //
+    // OJO: la key correcta es `hooks` (plural). El bloque anterior usaba
+    // `hook`, por lo que nunca llego a ejecutarse.
     before: createAuthMiddleware(async (ctx) => {
-      //TODO: REVISAR EL BUSSINESS VS EL BUSINESS ID DEL USUARIO
-      debugger
-      const bussiness = await getBusiness();
-      console.log(bussiness)
+      if (ctx.path !== "/sign-in/email") return;
 
-      // 1. Solo interceptamos la ruta exacta donde ocurre el login con correo
-      // if (ctx.path === "/sign-in/email") {
+      const email = ctx.body?.email;
+      if (!email) return;
 
-      // 2. Extraemos el correo del body y el ID del negocio de los Headers
-      // const email = ctx.body?.email;
-      // const requestedBusinessId = ctx.headers.get("x-business-id");
+      const business = await getBusiness();
+      if (!business) {
+        throw new APIError("UNAUTHORIZED", {
+          message: "No se pudo identificar el negocio de esta direccion.",
+        });
+      }
 
-      // if (!email || !requestedBusinessId) {
-      //   throw new APIError("BAD_REQUEST", {
-      //     message: "Faltan credenciales o el ID del local."
-      //   });
-      // }
+      // El schema tiene @@unique([businessId, email, username]), es decir el
+      // email NO es unico globalmente. Better Auth resuelve el login con un
+      // findFirst por email, asi que si el mismo correo existe en dos negocios
+      // el usuario autenticado seria ambiguo. Bloqueamos ese caso.
+      const matches = await prisma.user.findMany({
+        where: { email, active: true },
+        select: { businessId: true },
+      });
 
-      // 3. Buscamos al usuario en la base de datos
-      // const user = await prisma.user.findUnique({
-      //   where: { email },
-      //   select: { businessId: true } // Solo traemos lo que nos importa
-      // });
+      if (matches.length > 1) {
+        throw new APIError("UNAUTHORIZED", {
+          message:
+            "Este correo esta registrado en mas de un negocio. Contacta a soporte.",
+        });
+      }
 
-      // 4. Si el usuario existe, validamos que los IDs coincidan
-      // if (user && user.businessId !== requestedBusinessId) {
-      //   // Bloqueamos el login lanzando un error oficial de Better Auth
-      //   throw new APIError("UNAUTHORIZED", {
-      //     message: "Este usuario no tiene permisos para acceder a este local."
-      //   });
-      // }
+      const belongsToBusiness = matches.some(
+        (u) => u.businessId === business.id
+      );
 
-      // Si todo coincide (o si el usuario no existe), la función termina aquí.
-      // Better Auth tomará el control automáticamente y procederá a validar la contraseña.
-      // }
+      if (!belongsToBusiness) {
+        // Mensaje generico: no revelamos si el correo existe en otro negocio.
+        throw new APIError("UNAUTHORIZED", {
+          message: "Correo o contrasena incorrectos.",
+        });
+      }
     })
   }
 });
