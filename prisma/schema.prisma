@@ -45,6 +45,8 @@ model Business {
   openHour          Int      @default(9)
   closeHour         Int      @default(18)
   weekStartDay      Int      @default(1) // 0 = Domingo, 1 = Lunes, etc.
+  /// Minutos de gracia antes de que una entrada cuente como retardo.
+  lateToleranceMinutes Int   @default(10)
   themeColors       Json?    // CSS custom property overrides: { "--color-brand-500": "#66bb6a", ... }
 
   // 💳 Configuración Mercado Pago
@@ -398,6 +400,14 @@ model Attendance {
   checkInTime String?  @db.VarChar(5) // "09:15"
   checkOutTime String?  @db.VarChar(5) // "18:00"
   notes       String?
+
+  /// De donde salio la hora. SCHEDULE = quedo el horario precargado y nadie
+  /// la toco, MANUAL = alguien la escribio, CLOCK = la puso un checador.
+  /// Distinguir SCHEDULE del resto es lo que impide que el bono de
+  /// puntualidad de por buenos los dias que nadie capturo.
+  source      AttendanceSource @default(SCHEDULE)
+  /// Identificador que manda el checador: huella, tarjeta, numero de reloj.
+  sourceRef   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   active      Boolean  @default(true)
@@ -413,6 +423,12 @@ enum AttendanceStatus {
   ABSENT
   LATE
   EXCUSED
+}
+
+enum AttendanceSource {
+  SCHEDULE
+  MANUAL
+  CLOCK
 }
 
 //////////////////////
