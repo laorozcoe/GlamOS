@@ -164,6 +164,22 @@ import { nextCookies } from "better-auth/next-js";
 import { hashPassword, verifyPassword } from "@/lib/hashPassword"
 import { getBusiness } from "@/lib/getBusiness"
 
+/**
+ * Lee una lista de origenes separados por comas y la deja lista para comparar.
+ *
+ * Better Auth compara el Origin como cadena exacta, asi que una barra final o
+ * un espacio de mas -lo mas facil de colar al pegar una URL en el panel de
+ * Vercel- rechazan el login con "Invalid origin" sin decir por que. Aqui se
+ * quitan la barra final, los espacios y unas comillas si vinieran pegadas.
+ */
+function normalizarOrigenes(valor?: string): string[] {
+  if (!valor) return [];
+  return valor
+    .split(",")
+    .map((o) => o.trim().replace(/^["']|["']$/g, "").replace(/\/+$/, ""))
+    .filter(Boolean);
+}
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
@@ -189,8 +205,8 @@ export const auth = betterAuth({
     "https://brillartebloom.vercel.app",
     "https://evorasalon.vercel.app",
     "https://demo-glamos.vercel.app",
-    ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
-    ...(process.env.TRUSTED_ORIGINS?.split(",").map((o) => o.trim()).filter(Boolean) ?? []),
+    ...normalizarOrigenes(process.env.BETTER_AUTH_URL),
+    ...normalizarOrigenes(process.env.TRUSTED_ORIGINS),
   ],
   user: {
     additionalFields: {
