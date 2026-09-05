@@ -1,6 +1,11 @@
 import type { MetadataRoute } from 'next'
 import { getBusiness } from '@/lib/getBusiness'
 
+// El manifiesto depende del negocio, que se resuelve por el host con
+// headers(). No se puede generar en build: hay un manifiesto distinto por
+// subdominio.
+export const dynamic = 'force-dynamic'
+
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
     const bussiness = await getBusiness();
 

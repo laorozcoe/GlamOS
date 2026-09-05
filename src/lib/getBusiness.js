@@ -33,6 +33,16 @@ export async function getBusiness() {
         return business || await getBusinessPrisma(DEFAULT_SLUG);
 
     } catch (error) {
+        // Next senaliza con excepciones parte de su control de flujo:
+        // DYNAMIC_SERVER_USAGE (la ruta uso headers() y por tanto no puede
+        // renderizarse estaticamente), NEXT_REDIRECT, NEXT_NOT_FOUND. Todas
+        // llevan `digest` y TIENEN que propagarse: si se tragan aqui, Next no
+        // se entera y la ruta se renderiza sin negocio en vez de marcarse como
+        // dinamica.
+        if (error && typeof error.digest === "string") {
+            throw error;
+        }
+
         console.error("Error obteniendo business:", error);
         return null;
     }
