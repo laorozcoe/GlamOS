@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-    const slug = 'demo';
+    const slug = 'demo-glamos';
     const userEmail = 'laorozcoe@gmail.com';
     const userPass = '123456';
 

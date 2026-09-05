@@ -8,6 +8,7 @@ import { getBusinessSettings, updateBusinessSettings, savePaymentTerminals, upda
 import { Save, Plus, Trash2, CheckCircle2, ShieldCheck, Store, Clock, Palette, RefreshCw, Wifi, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useBusiness } from "@/context/BusinessContext";
+import { isDemoBusiness } from "@/lib/demo";
 
 // ── Color palette ─────────────────────────────────────────────────────────────
 const COLOR_KEYS = [
@@ -85,7 +86,7 @@ export default function SettingsClient() {
   const [savingTerms, setSavingTerms] = useState(false);
   const [savingColors, setSavingColors] = useState(false);
   const [simulating, setSimulating] = useState(false);
-  const isDemo = business?.slug === "demo";
+  const isDemo = isDemoBusiness(business);
 
   // Base Data Form
   const [formData, setFormData] = useState({

@@ -1,5 +1,6 @@
 import { headers } from "next/headers"
 import prisma from "@/lib/prisma2"
+import { DEMO_SLUG } from "@/lib/demo"
 
 // Vive aqui y no en @/lib/prisma porque ese archivo es "use server": alli
 // esta funcion seria un Server Action publico que devuelve el negocio
@@ -15,7 +16,7 @@ async function getBusinessPrisma(slug) {
 // Definelo en .env como DEV_BUSINESS_SLUG con el slug del negocio al que
 // pertenece tu usuario, o el guard de tenant de requireSession() rechazara la
 // sesion.
-const DEFAULT_SLUG = process.env.DEV_BUSINESS_SLUG || "demo";
+const DEFAULT_SLUG = process.env.DEV_BUSINESS_SLUG || DEMO_SLUG;
 
 export async function getBusiness() {
     try {

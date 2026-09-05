@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma2";
 import { requireBusiness, requireSession } from "@/lib/session";
+import { isDemoBusiness } from "@/lib/demo";
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 
 const SIMULATE = process.env.MP_SIMULATE === "true";
@@ -236,7 +237,7 @@ export async function savePaymentTerminals(terminals: any[]) {
 
 export async function simulateDemoData() {
     const business = await requireBusiness(["ADMIN", "RECEPTION"]);
-    if (!business || business.slug !== 'demo') {
+    if (!isDemoBusiness(business)) {
         return { error: 'Solo disponible en el sitio demo.' };
     }
     

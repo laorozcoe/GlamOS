@@ -178,7 +178,10 @@ export const auth = betterAuth({
   },
   trustedOrigins: [
     "https://brillartebloom.vercel.app",
-    "https://evorasalon.vercel.app"
+    "https://evorasalon.vercel.app",
+    // Verifica que este sea el host real del demo: si no coincide, Better Auth
+    // rechaza el login por origen no confiable.
+    "https://demo-glamos.vercel.app"
   ],
   user: {
     additionalFields: {
