@@ -156,12 +156,30 @@ export default function CalendarGrid() {
     return year === y && month === m && day === d;
   };
 
-  const getLineTop = () => {
+  // La rejilla dibuja una fila por hora, de startHour a endHour inclusive, y la
+  // última cubre su propia hora completa.
+  const minutosDeLaRejilla = (endHour - startHour + 1) * 60;
+
+  /**
+   * Posición de la línea de "ahora", o null si la hora actual queda fuera del
+   * horario dibujado.
+   *
+   * Antes solo se comprobaba el límite inferior (antes de abrir). Pasada la
+   * hora de cierre el valor seguía creciendo y la línea terminaba flotando
+   * debajo de la rejilla, en el hueco vacío.
+   */
+  const getLineTop = (): number | null => {
     const { hour: h, minute: m } = getMexTimeParts(currentTime);
-    const startInMinutes = (h - startHour) * 60 + m;
-    if (startInMinutes < 0) return -1000;
-    return (startInMinutes / 60) * HOUR_HEIGHT;
+    const minutosDesdeApertura = (h - startHour) * 60 + m;
+
+    if (minutosDesdeApertura < 0 || minutosDesdeApertura > minutosDeLaRejilla) {
+      return null;
+    }
+
+    return (minutosDesdeApertura / 60) * HOUR_HEIGHT;
   };
+
+  const lineTop = isToday() ? getLineTop() : null;
 
   const userInfo = logic.getUserInfo ? logic.getUserInfo() : null;
 
@@ -333,10 +351,10 @@ export default function CalendarGrid() {
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none pl-15 flex">
 
               {/* LÍNEA DE TIEMPO ACTUAL */}
-              {isToday() && getLineTop() >= 0 && (
+              {lineTop !== null && (
                 <div
                   className="absolute left-15 w-[calc(100%-60px)] z-50 flex items-center"
-                  style={{ top: `${getLineTop()}px` }}
+                  style={{ top: `${lineTop}px` }}
                 >
                   <div className="w-2 h-2 rounded-full bg-brand-500 absolute -left-1"></div>
                   <div className="w-full border-t border-brand-500 shadow-sm relative"></div>
