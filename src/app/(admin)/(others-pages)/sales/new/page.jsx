@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import Select from "@/components/form/Select";
 import InputField from '@/components/form/input/InputField';
+import DateField from "@/components/form/DateField";
 import { ServiceSelector } from "@/components/calendar/mobile/ServiceSelector";
 // Ya no necesitamos el ServiceModal aparte, lo integraremos en el flujo
 import Button from "@/components/ui/button/Button";
@@ -101,19 +102,10 @@ export default function BlankPage() {
                     <Calendar size={18} /> Fecha y Hora
                 </h4>
                 <div className="grid grid-cols-1 gap-4">
-                    <div>
-                        <label className="text-sm font-medium mb-1 block">Día</label>
-                        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
-                    </div>
+                    <DateField label="Día" value={date} onChange={setDate} />
                     <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="text-sm font-medium mb-1 block">Inicio</label>
-                            <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
-                        </div>
-                        <div>
-                            <label className="text-sm font-medium mb-1 block">Fin</label>
-                            <input type="time" value={timeEnd} onChange={e => setTimeEnd(e.target.value)} className="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-sm" />
-                        </div>
+                        <DateField type="time" label="Inicio" value={time} onChange={setTime} />
+                        <DateField type="time" label="Fin" value={timeEnd} onChange={setTimeEnd} />
                     </div>
                 </div>
             </div>

@@ -15,7 +15,7 @@ import { Users, Banknote, CreditCard, Clock } from 'lucide-react'
 import ComponentCard from "@/components/common/ComponentCard"
 import { useBusiness } from "@/context/BusinessContext";
 import Button from "@/components/ui/button/Button";
-import DatePicker from "@/components/form/date-picker";
+import DateField from "@/components/form/DateField";
 import { Modal } from "@/components/ui/modal";
 import Switch from "@/components/form/switch/Switch";
 import { toast } from "react-toastify";
@@ -162,7 +162,7 @@ export default function DailySummaryScreen() {
           <div className="flex gap-3 mb-6 justify-center w-full md:w-auto">
             <Button onClick={() => { handleUpdateDate(-1) }}>&lt;</Button>
             {/* <InputField type="date" value={logic.currentDate} onChange={(e) => logic.setCurrentDate(e.target.value)} /> */}
-            <DatePicker value={selectedDate} onChange={(date) => setSelectedDate(date)} />
+            <DateField value={selectedDate} onChange={(date) => setSelectedDate(date)} />
             <Button onClick={() => { handleUpdateDate(1) }}>&gt;</Button>
           </div>
         </div>

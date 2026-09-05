@@ -2,9 +2,70 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* --- Variantes de dispositivo ---------------------------------------------
+ *
+ * Los breakpoints de ancho no alcanzan para todos los casos:
+ *
+ * - Un iPad Pro 12.9" en vertical mide 1024px de ancho, exactamente lo mismo
+ *   que una laptop chica. Con solo el ancho es imposible distinguirlos, y por
+ *   eso una tablet vertical termina recibiendo el layout de escritorio.
+ * - Que el usuario este tocando con el dedo no tiene nada que ver con el
+ *   ancho: una tablet de 1024px necesita areas de toque grandes igual que un
+ *   celular de 375px.
+ *
+ * Estas dos variantes cubren esos casos. Se combinan con los breakpoints
+ * normales: `lg:grid-cols-3 tablet-portrait:grid-cols-1`.
+ */
+
+/* Pantalla tactil (sin mouse). Para agrandar areas de toque, ocultar tooltips
+ * de hover y dar mas aire, sin importar el ancho de pantalla. */
+@custom-variant touch (@media (hover: none) and (pointer: coarse));
+
+/* Puntero fino (mouse/trackpad). El complemento de `touch`. */
+@custom-variant fine (@media (hover: hover) and (pointer: fine));
+
+/* Tablet en vertical: iPad mini 768, Air 820, Pro 11" 834, Pro 12.9" 1024.
+ * Cubre la franja completa combinando ancho + orientacion. */
+@custom-variant tablet-portrait (@media (min-width: 768px) and (max-width: 1180px) and (orientation: portrait));
+
 @layer base {
   input, textarea, select {
     font-size: 16px !important;
+  }
+}
+
+@layer components {
+  /* Inputs de fecha y hora
+   *
+   * Por defecto, en escritorio, un <input type="date"> solo abre el
+   * calendario si se hace click en el iconito de la derecha; al hacer click
+   * en el texto solo se enfoca un segmento. Esto extiende el boton nativo
+   * para que cubra todo el campo, de modo que un toque en cualquier parte
+   * abra el selector. Chrome, Edge y Safari.
+   *
+   * Firefox no expone ese pseudo-elemento: ahi lo resuelve showPicker() desde
+   * el componente InputField.
+   */
+  .field-datetime {
+    position: relative;
+  }
+
+  .field-datetime::-webkit-calendar-picker-indicator {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  /* Safari en iOS centra y encoge el contenido de estos campos si se les
+   * aplica appearance:none. Se fuerza el alto minimo y la alineacion. */
+  .field-datetime::-webkit-date-and-time-value {
+    text-align: left;
+    min-height: 1.5rem;
   }
 }
 

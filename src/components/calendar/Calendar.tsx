@@ -6,7 +6,7 @@ import { BookingModal } from "@/components/calendar/BookingModal";
 import { PaymentModal } from "@/components/calendar/PaymentModal";
 import { SaleDetailsModal } from "@/components/calendar/SaleDetailsModal";
 import { MultiCheckoutModal } from "@/components/calendar/MultiCheckoutModal";
-import DatePicker from "@/components/form/date-picker"
+import DateField from "@/components/form/DateField";
 import { ExtraServiceModal } from "@/components/calendar/ExtraServiceModal";
 import { useCalendarLogic } from "@/components/calendar/useCalendar";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
@@ -264,7 +264,7 @@ export default function CalendarGrid() {
           <div className="flex justify-center gap-2 w-full md:w-auto">
             <Button onClick={() => { logic.handleUpdateDate(-1) }}>&lt;</Button>
             {/* <InputField type="date" value={logic.currentDate} onChange={(e) => logic.setCurrentDate(e.target.value)} /> */}
-            <DatePicker value={logic.currentDate} onChange={(date) => logic.setCurrentDate(date)} />
+            <DateField value={logic.currentDate} onChange={(date) => logic.setCurrentDate(date)} />
             <Button onClick={() => { logic.handleUpdateDate(1) }}>&gt;</Button>
 
             {/* Botón de Cobro Múltiple */}

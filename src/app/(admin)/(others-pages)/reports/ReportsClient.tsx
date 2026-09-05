@@ -6,6 +6,7 @@ import {
   Download, Loader2, TrendingUp, AlertTriangle, Clock
 } from 'lucide-react';
 import { utils, writeFile } from 'xlsx';
+import DateField from "@/components/form/DateField";
 import { 
   getFinancialMetrics, getClientMetrics, getEmployeeMetrics, getOperationMetrics 
 } from './actions';
@@ -82,18 +83,20 @@ export default function ReportsClient() {
         {/* Filtro de Fechas */}
         <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <CalendarIcon className="w-5 h-5 text-gray-400 ml-2" />
-          <input 
-            type="date" 
-            value={startDate} 
-            onChange={e => setStartDate(e.target.value)}
-            className="bg-transparent text-sm font-medium outline-none text-gray-700 dark:text-gray-200"
+          <DateField
+            variant="bare"
+            value={startDate}
+            onChange={setStartDate}
+            containerClassName="w-auto"
+            className="text-sm font-medium"
           />
           <span className="text-gray-300 dark:text-gray-600">-</span>
-          <input 
-            type="date" 
-            value={endDate} 
-            onChange={e => setEndDate(e.target.value)}
-            className="bg-transparent text-sm font-medium outline-none text-gray-700 dark:text-gray-200 mr-2"
+          <DateField
+            variant="bare"
+            value={endDate}
+            onChange={setEndDate}
+            containerClassName="w-auto mr-2"
+            className="text-sm font-medium"
           />
         </div>
       </div>

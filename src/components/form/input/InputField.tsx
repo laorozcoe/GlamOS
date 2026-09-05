@@ -18,6 +18,29 @@ interface InputProps {
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
+/** Tipos que abren un selector nativo del sistema. */
+const DATE_LIKE = ["date", "time", "datetime-local", "month", "week"];
+
+/**
+ * Abre el selector nativo al tocar el campo.
+ *
+ * En Chrome, Edge y Safari esto ya lo resuelve el CSS de `.field-datetime`
+ * (globals.css), que estira el boton nativo para cubrir todo el input.
+ * Firefox no expone ese pseudo-elemento, y ahi entra showPicker().
+ *
+ * showPicker() exige un gesto del usuario y lanza si el navegador no lo
+ * soporta o el campo esta deshabilitado, por eso va dentro de un try.
+ */
+function openNativePicker(e: React.MouseEvent<HTMLInputElement>) {
+  const el = e.currentTarget as HTMLInputElement & { showPicker?: () => void };
+  if (el.disabled || el.readOnly || typeof el.showPicker !== "function") return;
+  try {
+    el.showPicker();
+  } catch {
+    /* Sin gesto de usuario o navegador sin soporte: se deja el comportamiento por defecto. */
+  }
+}
+
 const Input: FC<InputProps> = ({
   type = "text",
   id,
@@ -35,8 +58,14 @@ const Input: FC<InputProps> = ({
   hint,
   onKeyDown,
 }) => {
-  // Determine input styles based on state (disabled, success, error)
-  let inputClasses = `text-base h-11 w-full rounded-lg border appearance-none px-4 py-2.5 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 ${className}`;
+  const isDateLike = DATE_LIKE.includes(type);
+
+  // `appearance-none` se omite en fecha/hora: en Safari iOS colapsa el campo.
+  const base = isDateLike
+    ? "field-datetime text-base h-11 w-full min-w-0 rounded-lg border px-4 py-2.5 shadow-theme-xs focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+    : "text-base h-11 w-full rounded-lg border appearance-none px-4 py-2.5 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
+
+  let inputClasses = `${base} ${className}`;
 
   // Add styles for the different states
   if (disabled) {
@@ -63,6 +92,7 @@ const Input: FC<InputProps> = ({
         step={step}
         disabled={disabled}
         onKeyDown={onKeyDown}
+        onClick={isDateLike ? openNativePicker : undefined}
         className={inputClasses}
       />
 

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useBusiness } from "@/context/BusinessContext";
 import { getServicesPrisma } from "@/lib/prisma";
+import DateField from "@/components/form/DateField";
 import {
   createPromotion,
   updatePromotion,
@@ -417,28 +418,16 @@ export default function PromotionsClient({ initialPromotions }: { initialPromoti
 
             {/* Dates */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Fecha inicio
-                </label>
-                <input
-                  type="date"
-                  value={form.startDate}
-                  onChange={(e) => setF("startDate", e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-400"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Fecha fin
-                </label>
-                <input
-                  type="date"
-                  value={form.endDate}
-                  onChange={(e) => setF("endDate", e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-400"
-                />
-              </div>
+              <DateField
+                label="Fecha inicio"
+                value={form.startDate}
+                onChange={(v) => setF("startDate", v)}
+              />
+              <DateField
+                label="Fecha fin"
+                value={form.endDate}
+                onChange={(v) => setF("endDate", v)}
+              />
             </div>
 
             {/* Services */}
