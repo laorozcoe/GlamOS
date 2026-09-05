@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma2";
-import { getBusiness } from "@/lib/getBusiness";
+import { requireBusiness, requireSession } from "@/lib/session";
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 
 const SIMULATE = process.env.MP_SIMULATE === "true";
@@ -12,7 +12,7 @@ const SIM_DEVICES = [
 ];
 
 async function getMpToken() {
-  const ctx = await getBusiness();
+  const ctx = await requireBusiness();
   if (!ctx) throw new Error("No business found");
   const biz = await prisma.business.findUnique({
     where: { id: ctx.id },
@@ -23,6 +23,8 @@ async function getMpToken() {
 
 // Lista las terminales registradas en la cuenta de MercadoPago del negocio.
 export async function listMpDevices(customToken?: string): Promise<{ devices?: any[]; error?: string }> {
+  await requireSession(["ADMIN", "RECEPTION"]);
+
   if (SIMULATE) return { devices: SIM_DEVICES };
 
   const token = customToken || (await getMpToken());
@@ -44,6 +46,8 @@ export async function changeMpDeviceMode(
   operating_mode: "PDV" | "STANDALONE",
   customToken?: string
 ): Promise<{ operating_mode?: string; error?: string; isManualRequired?: boolean }> {
+  await requireSession();
+
   if (SIMULATE) return { operating_mode };
 
   const token = customToken || (await getMpToken());
@@ -114,7 +118,7 @@ export async function checkTerminalsStatus(terminals: any[]): Promise<Record<str
 }
 
 export async function getBusinessSettings() {
-  const businessCtx = await getBusiness();
+  const businessCtx = await requireBusiness();
   if (!businessCtx) throw new Error("No business found");
 
   const business = await prisma.business.findUnique({
@@ -136,7 +140,7 @@ export async function getBusinessSettings() {
 }
 
 export async function updateThemeColors(themeColors: Record<string, string>) {
-  const businessCtx = await getBusiness();
+  const businessCtx = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!businessCtx) throw new Error("No business found");
 
   await prisma.$executeRawUnsafe(
@@ -149,7 +153,7 @@ export async function updateThemeColors(themeColors: Record<string, string>) {
 }
 
 export async function updateBusinessSettings(data: any) {
-  const businessCtx = await getBusiness();
+  const businessCtx = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!businessCtx) throw new Error("No business found");
 
   const { name, phone, email, address, mpAccessToken, mpStoreId, mpWebhookSecret, mpAccounts, openHour, closeHour, weekStartDay } = data;
@@ -177,7 +181,7 @@ export async function updateBusinessSettings(data: any) {
 
 export async function getActiveTerminals() {
   noStore();
-  const businessCtx = await getBusiness();
+  const businessCtx = await requireBusiness();
   if (!businessCtx) throw new Error("No business found");
 
   return prisma.paymentTerminal.findMany({
@@ -187,7 +191,7 @@ export async function getActiveTerminals() {
 }
 
 export async function savePaymentTerminals(terminals: any[]) {
-  const businessCtx = await getBusiness();
+  const businessCtx = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!businessCtx) throw new Error("No business found");
 
   // Soft delete all active terminals not in the payload
@@ -231,7 +235,7 @@ export async function savePaymentTerminals(terminals: any[]) {
 }
 
 export async function simulateDemoData() {
-    const business = await getBusiness();
+    const business = await requireBusiness(["ADMIN", "RECEPTION"]);
     if (!business || business.slug !== 'demo') {
         return { error: 'Solo disponible en el sitio demo.' };
     }

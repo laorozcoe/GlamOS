@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma2";
-import { getBusiness } from "@/lib/getBusiness";
+import { requireBusiness } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import type { Coupon } from "@prisma/client";
 
@@ -63,7 +63,7 @@ async function getCouponKind(couponId: string): Promise<CouponKind> {
 // ─── List / fetch ─────────────────────────────────────────────────────────────
 
 export async function getCoupons(): Promise<AugmentedCoupon[]> {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const coupons = await prisma.coupon.findMany({
@@ -101,7 +101,7 @@ function buildCouponPayload(data: any) {
 // ─── Create / Update / Delete ─────────────────────────────────────────────────
 
 export async function createCoupon(data: any) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const code = String(data.code).toUpperCase().trim();
@@ -123,7 +123,7 @@ export async function createCoupon(data: any) {
 }
 
 export async function updateCoupon(id: string, data: any) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const couponKind: CouponKind = data.couponKind === "FOLIADO" ? "FOLIADO" : "GENERIC";
@@ -140,7 +140,7 @@ export async function updateCoupon(id: string, data: any) {
 }
 
 export async function deleteCoupon(id: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   await prisma.coupon.update({
@@ -193,7 +193,7 @@ function calcDiscount(
  *             El código genérico es rechazado con mensaje claro.
  */
 export async function validateCouponV2(code: string, subtotal: number, cartItems?: CartItem[]) {
-  const business = await getBusiness();
+  const business = await requireBusiness();
   if (!business) return { valid: false as const, error: "Error de sesión" };
 
   const trimmed = code.trim();
@@ -311,7 +311,7 @@ function validateFoliadoCoupon(
 // ─── Validation legacy (mantener para compatibilidad) ─────────────────────────
 
 export async function validateCoupon(code: string, subtotal: number, cartItems?: CartItem[]) {
-  const business = await getBusiness();
+  const business = await requireBusiness();
   if (!business) return { valid: false as const, error: "Error de sesión" };
 
   const trimmed = code.trim();
@@ -432,7 +432,7 @@ async function validateCouponByToken(tokenId: string, subtotal: number, business
  * Los cupones FOLIADOS NO aparecen aquí — deben ingresarse por folio o QR.
  */
 export async function getActiveCoupons() {
-  const business = await getBusiness();
+  const business = await requireBusiness();
   if (!business) throw new Error("No business found");
 
   const now = new Date();
@@ -457,7 +457,7 @@ export async function getActiveCoupons() {
 // ─── Services for coupon form ─────────────────────────────────────────────────
 
 export async function getServicesForCoupons() {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   return prisma.service.findMany({
@@ -474,7 +474,7 @@ export async function getServicesForCoupons() {
  * Un token generado pero no canjeado sigue consumiendo un slot ("folio quemado").
  */
 export async function generateFoliadoTokens(couponId: string, count: number) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const coupon = await prisma.coupon.findFirst({
@@ -509,7 +509,7 @@ export async function generateCouponTokens(couponId: string, count: number) {
 }
 
 export async function getCouponTokens(couponId: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const coupon = await prisma.coupon.findFirst({
@@ -528,7 +528,7 @@ export async function getCouponTokens(couponId: string) {
  * El slot se descuenta inmediatamente aunque no sea canjeado (folio quemado si no se usa).
  */
 export async function generateFoliadoSingleToken(couponId: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const coupon = await prisma.coupon.findFirst({
@@ -559,7 +559,7 @@ export async function generateAndGetSingleToken(couponId: string) {
  * compartir 1 folio extra (ej: alguien llama por teléfono después de imprimir el lote).
  */
 export async function extendCouponAndShareToken(couponId: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const coupon = await prisma.coupon.findFirst({
@@ -581,7 +581,7 @@ export async function extendCouponAndShareToken(couponId: string) {
 // ─── Sales history ────────────────────────────────────────────────────────────
 
 export async function getCouponSales(couponId: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const coupon = await prisma.coupon.findFirst({

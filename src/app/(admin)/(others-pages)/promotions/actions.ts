@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma2";
-import { getBusiness } from "@/lib/getBusiness";
+import { assertBusinessId, requireBusiness } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { ActivePromotion } from "@/lib/applyPromotions";
 
@@ -55,12 +55,16 @@ async function fetchPromotionsWithServices(businessId: string): Promise<Promotio
 }
 
 export async function getPromotions(): Promise<PromotionRow[]> {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business?.id) return [];
   return fetchPromotionsWithServices(business.id);
 }
 
 export async function getActivePromotions(businessId: string): Promise<ActivePromotion[]> {
+  // El businessId llega del cliente: se valida contra el de la sesion y se usa
+  // siempre el de la sesion.
+  businessId = await assertBusinessId(businessId);
+
   const now = new Date();
   const rows = (await prisma.$queryRawUnsafe(
     `SELECT p.id, p.name, p.type, p."discountType", p."discountValue",
@@ -115,7 +119,7 @@ interface CreatePromotionData {
 }
 
 export async function createPromotion(data: CreatePromotionData) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business?.id) throw new Error("No business context");
 
   const id = crypto.randomUUID();
@@ -155,7 +159,7 @@ interface UpdatePromotionData extends CreatePromotionData {
 }
 
 export async function updatePromotion(data: UpdatePromotionData) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business?.id) throw new Error("No business context");
 
   await prisma.$executeRawUnsafe(
@@ -195,7 +199,7 @@ export async function updatePromotion(data: UpdatePromotionData) {
 }
 
 export async function deletePromotion(id: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business?.id) throw new Error("No business context");
 
   await prisma.$executeRawUnsafe(

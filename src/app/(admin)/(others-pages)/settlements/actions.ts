@@ -1,12 +1,12 @@
 "use server";
 
 import prisma from "@/lib/prisma2";
-import { getBusiness } from "@/lib/getBusiness";
+import { requireBusiness } from "@/lib/session";
 
 const SIMULATE = process.env.MP_SIMULATE === "true";
 
 async function getMpToken() {
-  const ctx = await getBusiness();
+  const ctx = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!ctx) throw new Error("No business found");
   const biz = await prisma.business.findUnique({
     where: { id: ctx.id },
@@ -18,7 +18,7 @@ async function getMpToken() {
 // ── Resumen confiable desde NUESTRA base de datos (cobros con terminal) ──
 // Suma lo que realmente capturamos por venta: cobrado, comisión y NETO real.
 export async function getCardNetSummary(beginISO: string, endISO: string) {
-  const ctx = await getBusiness();
+  const ctx = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!ctx) throw new Error("No business found");
 
   const rows = await prisma.$queryRawUnsafe(

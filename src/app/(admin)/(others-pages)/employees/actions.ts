@@ -1,12 +1,12 @@
 "use server";
 
 import prisma from "@/lib/prisma2";
-import { getBusiness } from "@/lib/getBusiness";
+import { requireBusiness } from "@/lib/session";
 import { hashPassword } from "@/lib/hashPassword";
 import { revalidatePath } from "next/cache";
 
 export async function getEmployees() {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const users = await prisma.user.findMany({
@@ -24,7 +24,7 @@ export async function getEmployees() {
 }
 
 export async function createEmployee(data: any) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const { name, lastName, username, email, password, role, commission, baseSalary, phone, hasPayroll, workScheduleStartWeekday, workScheduleEndWeekday, workScheduleStartSaturday, workScheduleEndSaturday } = data;
@@ -78,7 +78,7 @@ export async function createEmployee(data: any) {
 }
 
 export async function updateEmployee(userId: string, data: any) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const { name, lastName, email, phone, role, commission, baseSalary, password, hasPayroll, workScheduleStartWeekday, workScheduleEndWeekday, workScheduleStartSaturday, workScheduleEndSaturday } = data;
@@ -96,8 +96,15 @@ export async function updateEmployee(userId: string, data: any) {
     updateData.password = hashed;
     
     // Actualizamos también la cuenta de Better Auth para sincronizar la contraseña
+    // El filtro por businessId es obligatorio: sin el, un admin de un negocio
+    // podria resetear la contrasena de un usuario de otro negocio (el
+    // prisma.user.update de abajo si esta acotado, pero se ejecuta despues).
     await prisma.account.updateMany({
-      where: { userId: userId, providerId: "credential" },
+      where: {
+        userId: userId,
+        providerId: "credential",
+        user: { businessId: business.id },
+      },
       data: { password: hashed },
     });
   }
@@ -167,7 +174,7 @@ export async function updateEmployee(userId: string, data: any) {
 }
 
 export async function deleteEmployee(userId: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   await prisma.user.update({

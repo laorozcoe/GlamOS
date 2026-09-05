@@ -3,9 +3,9 @@
 
 import prisma from "@/lib/prisma2";
 
-import { getBusiness } from "@/lib/getBusiness";
+import { requireBusiness } from "@/lib/session";
 export async function getFinancialMetrics(startDate: Date, endDate: Date) {
-    const business = await getBusiness();
+    const business = await requireBusiness(["ADMIN", "RECEPTION"]);
     if (!business) return null;
     const businessId = business.id;
 
@@ -69,7 +69,7 @@ export async function getFinancialMetrics(startDate: Date, endDate: Date) {
 }
 
 export async function getClientMetrics(startDate: Date, endDate: Date) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) return null;
   const businessId = business.id;
 
@@ -168,7 +168,7 @@ export async function getClientMetrics(startDate: Date, endDate: Date) {
 }
 
 export async function getEmployeeMetrics(startDate: Date, endDate: Date) {
-    const business = await getBusiness();
+    const business = await requireBusiness(["ADMIN", "RECEPTION"]);
     if (!business) return null;
     const businessId = business.id;
 
@@ -216,7 +216,7 @@ export async function getEmployeeMetrics(startDate: Date, endDate: Date) {
 }
 
 export async function getOperationMetrics(startDate: Date, endDate: Date) {
-    const business = await getBusiness();
+    const business = await requireBusiness(["ADMIN", "RECEPTION"]);
     if (!business) return null;
     const businessId = business.id;
 

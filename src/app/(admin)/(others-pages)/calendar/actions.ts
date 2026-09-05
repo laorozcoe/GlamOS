@@ -1,10 +1,10 @@
 "use server";
 import prisma from "@/lib/prisma2";
-import { getBusiness } from "@/lib/getBusiness";
+import { requireBusiness } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 
 export async function requestAppointmentModification(payload: any) {
-  const business = await getBusiness();
+  const business = await requireBusiness();
   if (!business) throw new Error("No business found");
 
   const { appointmentId, serviceId, action, employeeRequesterId, appointmentServiceId } = payload;
@@ -25,7 +25,7 @@ export async function requestAppointmentModification(payload: any) {
 }
 
 export async function getPendingRequests(appointmentId?: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness();
   if (!business) throw new Error("No business found");
 
   const filter: any = { status: "PENDING", appointment: { businessId: business.id } };
@@ -46,7 +46,7 @@ export async function getPendingRequests(appointmentId?: string) {
 }
 
 export async function resolveModificationRequest(requestId: string, approved: boolean, price?: number) {
-  const business = await getBusiness();
+  const business = await requireBusiness();
   if (!business) throw new Error("No business found");
 
   const request = await prisma.appointmentServiceRequest.findUnique({

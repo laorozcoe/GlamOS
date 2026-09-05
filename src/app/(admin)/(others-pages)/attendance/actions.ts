@@ -1,11 +1,11 @@
 "use server";
 
 import prisma from "@/lib/prisma2";
-import { getBusiness } from "@/lib/getBusiness";
+import { requireBusiness } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 
 export async function getAttendanceByDate(dateStr: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness();
   if (!business) throw new Error("No business found");
 
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -78,7 +78,7 @@ export async function getAttendanceByDate(dateStr: string) {
 }
 
 export async function upsertManyAttendances(records: any[], dateStr: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness();
   if (!business) throw new Error("No business found");
 
   const [year, month, day] = dateStr.split("-").map(Number);

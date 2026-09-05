@@ -1,10 +1,10 @@
 "use server";
 
 import prisma from "@/lib/prisma2";
-import { getBusiness } from "@/lib/getBusiness";
+import { requireBusiness } from "@/lib/session";
 
 export async function getPayrollData(startDateISO: string, endDateISO: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const startDate = new Date(startDateISO);

@@ -1,10 +1,10 @@
 "use server";
 import prisma from "@/lib/prisma2";
-import { getBusiness } from "@/lib/getBusiness";
+import { requireBusiness } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 
 export async function getEmployeesWithPermissions() {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   const employees = await prisma.employee.findMany({
@@ -25,7 +25,7 @@ export async function updateEmployeePermissions(
   employeeId: string,
   data: { canCreateAppointments?: boolean; canViewClientData?: boolean }
 ) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("No business found");
 
   await prisma.employee.update({

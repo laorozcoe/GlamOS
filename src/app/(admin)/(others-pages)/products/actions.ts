@@ -1,11 +1,11 @@
 "use server";
 
 import prisma from "@/lib/prisma2";
-import { getBusiness } from "@/lib/getBusiness";
+import { requireBusiness } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 
 export async function getProducts() {
-  const business = await getBusiness();
+  const business = await requireBusiness();
   if (!business) throw new Error("Business not found");
 
   const products = await prisma.product.findMany({
@@ -23,7 +23,7 @@ export async function getProducts() {
 }
 
 export async function createProductCategory(name: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("Business not found");
 
   const lastCategory = await prisma.productCategory.findFirst({
@@ -46,7 +46,7 @@ export async function createProductCategory(name: string) {
 }
 
 export async function deleteProductCategory(id: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("Business not found");
 
   await prisma.productCategory.update({
@@ -59,7 +59,7 @@ export async function deleteProductCategory(id: string) {
 }
 
 export async function createProduct(data: { name: string; categoryId: string; description?: string; price: number; variablePrice?: boolean; stock?: number; barcode?: string }) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("Business not found");
 
   const product = await prisma.product.create({
@@ -80,7 +80,7 @@ export async function createProduct(data: { name: string; categoryId: string; de
 }
 
 export async function updateProduct(id: string, data: { name: string; categoryId: string; description?: string; price: number; variablePrice?: boolean; stock?: number; barcode?: string }) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("Business not found");
 
   const product = await prisma.product.update({
@@ -101,7 +101,7 @@ export async function updateProduct(id: string, data: { name: string; categoryId
 }
 
 export async function deleteProduct(id: string) {
-  const business = await getBusiness();
+  const business = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!business) throw new Error("Business not found");
 
   await prisma.product.update({
