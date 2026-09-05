@@ -83,7 +83,8 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
             <Modal
                 isOpen={isOpen}
                 onClose={onClose}
-                className="max-w-3xl sm:max-w-7xl h-[95svh] md:h-[85svh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col p-0"
+                className="max-w-3xl sm:max-w-7xl sm:h-[85svh] bg-white dark:bg-gray-900 shadow-2xl overflow-hidden flex flex-col p-0"
+                mobileVariant="fullscreen"
                 showCloseButton={true}
             >
                 {/* --- HEADER --- */}
@@ -289,7 +290,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
             </Modal>
 
             {/* Sub-Modal: Selector de Catálogo */}
-            <Modal isOpen={isServiceBrowserOpen} onClose={() => setIsServiceBrowserOpen(false)} className="max-w-lg sm:max-w-7xl h-[90svh] p-0 overflow-hidden flex flex-col rounded-2xl bg-white dark:bg-gray-900" showCloseButton={true}>
+            <Modal isOpen={isServiceBrowserOpen} onClose={() => setIsServiceBrowserOpen(false)} className="max-w-lg sm:max-w-7xl sm:h-[90svh] p-0 overflow-hidden flex flex-col bg-white dark:bg-gray-900" mobileVariant="fullscreen" showCloseButton={true}>
                 <div className="p-5 border-b border-gray-100 dark:border-gray-800 text-center">
                     <Label className="font-bold text-lg dark:text-white">Catálogo de Servicios</Label>
                     <p className="text-xs text-gray-500 mt-1">Busca y añade servicios al ticket</p>

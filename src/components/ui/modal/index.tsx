@@ -3,6 +3,7 @@ import React, { useRef, useEffect } from "react";
 import { twMerge } from "tailwind-merge";
 
 type ModalSize = "sm" | "md" | "lg" | "xl" | "2xl" | "full";
+type MobileVariant = "sheet" | "fullscreen";
 
 interface ModalProps {
   isOpen: boolean;
@@ -16,6 +17,18 @@ interface ModalProps {
    * con `className="max-w-md"`, y había una docena de tamaños distintos.
    */
   size?: ModalSize;
+  /**
+   * Cómo se comporta en pantalla angosta:
+   *
+   * - `sheet` (por defecto): hoja inferior. Para confirmaciones y formularios
+   *   cortos, donde ver la pantalla de atrás ayuda a ubicarse.
+   * - `fullscreen`: ocupa toda la pantalla. Para flujos completos -crear una
+   *   cita, buscar productos-, donde la franja de arriba solo desperdicia
+   *   espacio en un celular.
+   *
+   * Desde `sm` los dos vuelven a ser la caja centrada de siempre.
+   */
+  mobileVariant?: MobileVariant;
 }
 
 const SIZES: Record<ModalSize, string> = {
@@ -38,9 +51,8 @@ let globalModalCount = 0;
  * y además evita el recorte que sufría la caja centrada cuando el contenido
  * era alto. A partir de `sm` vuelve a ser la caja centrada de siempre.
  *
- * El contenido tiene scroll propio y el panel está acotado a 92dvh, así que un
- * formulario largo scrollea dentro del modal y no empuja la página. Se usa dvh
- * y no vh porque en móvil la barra del navegador cambia de alto.
+ * El contenido tiene scroll propio y el panel está acotado a 92svh, así que un
+ * formulario largo scrollea dentro del modal y no empuja la página.
  *
  * `className` sigue ganando sobre `size` (via twMerge), de modo que las
  * pantallas que ya pasaban su propio `max-w-*` no cambian.
@@ -53,7 +65,9 @@ export const Modal: React.FC<ModalProps> = ({
   showCloseButton = true,
   isFullscreen = false,
   size = "lg",
+  mobileVariant = "sheet",
 }) => {
+  const esPantallaCompleta = mobileVariant === "fullscreen";
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -96,8 +110,14 @@ export const Modal: React.FC<ModalProps> = ({
     ? "w-full h-full"
     : twMerge(
         "relative flex w-full flex-col bg-white dark:bg-gray-900",
-        // Hoja inferior en angosto, caja centrada desde sm.
-        "max-h-[92dvh] rounded-t-3xl sm:w-11/12 sm:rounded-3xl",
+        // Se mide en `svh` y no en `dvh` ni `vh`: `svh` es el alto del viewport
+        // CON la barra del navegador visible, o sea el más pequeño. Con `dvh`
+        // el panel se redimensiona al aparecer y desaparecer esa barra, y con
+        // `vh` el último botón queda debajo del borde.
+        esPantallaCompleta
+          ? "h-svh max-h-svh rounded-none sm:h-auto sm:max-h-[92svh] sm:rounded-3xl"
+          : "max-h-[92svh] rounded-t-3xl sm:rounded-3xl",
+        "sm:w-11/12",
         SIZES[size]
       );
 
@@ -105,8 +125,13 @@ export const Modal: React.FC<ModalProps> = ({
     <div
       className={twMerge(
         "modal fixed inset-0 z-99999 flex justify-center overflow-hidden",
-        // items-end = pegado abajo (hoja); desde sm, centrado.
-        isFullscreen ? "items-center" : "items-end sm:items-center"
+        // items-end = pegado abajo (hoja); stretch = a toda la pantalla.
+        // Desde sm, los tres van centrados.
+        isFullscreen
+          ? "items-center"
+          : esPantallaCompleta
+            ? "items-stretch sm:items-center"
+            : "items-end sm:items-center"
       )}
     >
       {!isFullscreen && (
@@ -133,8 +158,10 @@ export const Modal: React.FC<ModalProps> = ({
             </svg>
           </button>
         )}
-        {/* El contenido scrollea dentro del panel, no la página. */}
-        <div className="flex h-full w-full flex-col overflow-y-auto overscroll-contain">
+        {/* El contenido scrollea dentro del panel, no la página. El padding
+            inferior deja libre la zona del indicador de inicio del iPhone, que
+            si no se come el último botón. */}
+        <div className="flex h-full w-full flex-col overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
           {children}
         </div>
       </div>
