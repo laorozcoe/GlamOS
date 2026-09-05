@@ -60,6 +60,8 @@ model Business {
   promotions        Promotion[]
   productCategories ProductCategory[]
   products          Product[]
+  bonusRules        BonusRule[]
+  bonusAwards       BonusAward[]
 }
 
 //////////////////////
@@ -165,6 +167,8 @@ model Employee {
   clients      Client[]
   serviceRequests AppointmentServiceRequest[]
   attendances  Attendance[]
+  bonusAwards  BonusAward[] @relation("BonusAwardEmployee")
+  bonusAwardsGranted BonusAward[] @relation("BonusAwardGrantedBy")
   
   workScheduleStartWeekday String? @db.VarChar(5) // "09:00"
   workScheduleEndWeekday   String? @db.VarChar(5)
@@ -781,4 +785,90 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+//////////////////////
+// 💰 BONOS DE NOMINA
+//////////////////////
+
+/// De donde sale el numero de un bono.
+enum BonusType {
+  /// Sin retardos ni faltas por encima de lo tolerado.
+  PUNCTUALITY
+  /// Cantidad de servicios realizados en el periodo.
+  SERVICES
+  /// Dinero vendido en el periodo.
+  REVENUE
+  /// Clientes distintos atendidos en el periodo.
+  CLIENTS
+  /// No se calcula: alguien decide si se otorga. Presentacion, atencion.
+  MANUAL
+}
+
+/// El catalogo de bonos de un salon. Se crea, edita y borra por salon; nunca
+/// se comparte entre salones.
+model BonusRule {
+  id          String    @id @default(uuid())
+  businessId  String
+  name        String
+  description String?
+  type        BonusType
+
+  /// Monto fijo en pesos. Los porcentajes y los escalones se pueden agregar
+  /// despues sin tocar los bonos ya creados.
+  amount      Float     @default(0)
+
+  /// La meta a alcanzar: servicios, pesos vendidos o clientes. Vacia en los
+  /// bonos de puntualidad y en los manuales.
+  goal        Float?
+
+  /// Cuantos retardos y faltas se toleran sin perder el bono de puntualidad.
+  /// Las faltas justificadas no cuentan.
+  maxLates    Int       @default(0)
+  maxAbsences Int       @default(0)
+
+  /// Apagar un bono en vez de borrarlo, para no alterar periodos ya pagados.
+  active      Boolean   @default(true)
+  sortOrder   Int       @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  business    Business     @relation(fields: [businessId], references: [id])
+  awards      BonusAward[]
+
+  @@index([businessId, active])
+}
+
+/// Lo que se decide a mano sobre un bono en un periodo: los manuales
+/// -presentacion, atencion- y las excepciones sobre los automaticos.
+model BonusAward {
+  id          String   @id @default(uuid())
+  businessId  String
+  employeeId  String
+  ruleId      String
+
+  /// El periodo al que pertenece, con el dia de corte del salon.
+  periodStart DateTime @db.Date
+  periodEnd   DateTime @db.Date
+
+  granted     Boolean  @default(true)
+  /// Monto distinto al del catalogo, para el caso excepcional.
+  amount      Float?
+  /// El porque. Es lo que se le ensena a la empleada cuando pregunta.
+  note        String?
+
+  grantedById String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business    Business  @relation(fields: [businessId], references: [id])
+  employee    Employee  @relation("BonusAwardEmployee", fields: [employeeId], references: [id])
+  rule        BonusRule @relation(fields: [ruleId], references: [id])
+  grantedBy   Employee? @relation("BonusAwardGrantedBy", fields: [grantedById], references: [id])
+
+  /// Un bono por persona por periodo.
+  @@unique([businessId, employeeId, ruleId, periodStart])
+  @@index([businessId, periodStart])
 }
