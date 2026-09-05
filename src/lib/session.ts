@@ -11,6 +11,9 @@ export type AppRole = "ADMIN" | "RECEPTION" | "EMPLOYEE";
 
 export type AuthContext = {
   userId: string;
+  /** Id de la membresía (fila de Employee) en este salón. */
+  employeeId: string;
+  /** Rol DENTRO de este salón. La misma persona puede tener otro en otro. */
   role: AppRole;
   business: Business;
 };
@@ -34,10 +37,16 @@ export class AuthorizationError extends Error {
  * (proxy.ts) solo protege la navegacion entre paginas, no las invocaciones de
  * acciones, asi que la validacion tiene que vivir aqui.
  *
- * Valida tres cosas:
+ * Valida cuatro cosas:
  *   1. Que exista una sesion.
  *   2. Que el negocio del host se pueda resolver.
- *   3. Que el usuario de la sesion pertenezca a ese negocio (anti cross-tenant).
+ *   3. Que el usuario tenga una MEMBRESIA activa en ese negocio.
+ *   4. Que el rol de esa membresia este entre los permitidos.
+ *
+ * La membresia se consulta contra la base y no se toma de la sesion: la
+ * sesion lleva una copia sellada al iniciarla, util para el middleware, pero
+ * aqui es donde se autoriza y un permiso revocado tiene que surtir efecto de
+ * inmediato. Es una lectura por el indice unico (businessId, userId).
  *
  * @param roles Si se pasa, el rol del usuario debe estar en la lista.
  */
@@ -53,55 +62,37 @@ export async function requireSession(roles?: AppRole[]): Promise<AuthContext> {
     throw new AuthorizationError("No se pudo identificar el negocio");
   }
 
-  // businessId viaja en la sesion (additionalFields en auth.ts). Se consulta a
-  // la base como respaldo por si la sesion se emitio antes de ese cambio.
-  let userBusinessId = (session.user as { businessId?: string }).businessId;
-  let role = (session.user as { role?: string }).role as AppRole | undefined;
+  const membership = await prisma.employee.findUnique({
+    where: {
+      businessId_userId: { businessId: business.id, userId: session.user.id },
+    },
+    select: { id: true, role: true, active: true, user: { select: { active: true } } },
+  });
 
-  if (!userBusinessId || !role) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { businessId: true, role: true, active: true },
-    });
-
-    if (!dbUser || !dbUser.active) {
-      throw new AuthorizationError("Usuario inactivo o inexistente");
-    }
-
-    userBusinessId = userBusinessId || dbUser.businessId;
-    role = role || (dbUser.role as AppRole);
-  }
-
-  if (userBusinessId !== business.id) {
-    // Fuera de produccion se dice exactamente que no coincidio. En local el
-    // motivo casi siempre es el mismo: el negocio sale del host
-    // (DEV_BUSINESS_SLUG en localhost), no de quien inicio sesion, asi que una
-    // sesion vieja de otro negocio choca contra el guard.
+  if (!membership || !membership.active || !membership.user.active) {
     if (process.env.NODE_ENV !== "production") {
       throw new AuthorizationError(
-        `No autorizado para este negocio. El host resolvio a "${business.slug}" ` +
-          `(${business.id}) pero el usuario de la sesion pertenece a ${userBusinessId}. ` +
-          `Revisa DEV_BUSINESS_SLUG en .env y vuelve a iniciar sesion.`
+        `El usuario de la sesion no tiene una membresia activa en "${business.slug}". ` +
+          `En local el salon sale de DEV_BUSINESS_SLUG: revisalo en .env y vuelve a iniciar sesion.`
       );
     }
-
     throw new AuthorizationError("No autorizado para este negocio");
   }
 
-  const effectiveRole: AppRole = role ?? "EMPLOYEE";
+  const role = membership.role as AppRole;
 
-  if (roles && !roles.includes(effectiveRole)) {
+  if (roles && !roles.includes(role)) {
     throw new AuthorizationError("No tienes permisos para esta operacion");
   }
 
-  return { userId: session.user.id, role: effectiveRole, business };
+  return { userId: session.user.id, employeeId: membership.id, role, business };
 }
 
 /**
  * Reemplazo directo de `getBusiness()` dentro de Server Actions.
  *
  * Devuelve el mismo objeto Business, pero solo despues de validar la sesion y
- * que el usuario pertenezca a ese negocio. Lanza en vez de devolver null.
+ * que el usuario tenga membresia en ese negocio. Lanza en vez de devolver null.
  */
 export async function requireBusiness(roles?: AppRole[]): Promise<Business> {
   const { business } = await requireSession(roles);

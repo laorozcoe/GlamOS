@@ -28,7 +28,6 @@ model Business {
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
 
-  users             User[]
   clients           Client[]
   employees         Employee[]
   services          Service[]
@@ -86,29 +85,34 @@ model PaymentTerminal {
 // 👤 USUARIOS
 //////////////////////
 
+/// La identidad de una persona, independiente del salon.
+///
+/// Ya no lleva businessId ni role: la pertenencia a un salon y el rol dentro
+/// de el viven en Employee (la membresia). Asi una misma persona entra con un
+/// solo correo a varios salones, con sueldo, horario y rol distintos en cada
+/// uno, y sin mezclar historiales.
 model User {
   id         String   @id @default(uuid())
-  businessId String
   name       String
   username   String
   lastName   String
-  email      String?
+  /// Unico en todo el sistema: es la credencial de acceso. Nullable porque
+  /// hay usuarios historicos sin correo; Postgres permite varios NULL en un
+  /// indice unico.
+  email      String?  @unique
   password   String
-  role       Role     @default(RECEPTION)
   active     Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  business Business  @relation(fields: [businessId], references: [id])
-  employee Employee?
+  /// Membresias: una fila por salon al que pertenece esta persona.
+  memberships Employee[]
 
   emailVerified Boolean   @default(false)
   image         String?
   phone         String?
   sessions      Session[]
   accounts      Account[]
-
-  @@unique([businessId, email, username])
 }
 
 enum Role {
@@ -121,10 +125,17 @@ enum Role {
 // 👥 EMPLEADOS
 //////////////////////
 
+/// La membresia de una persona en UN salon.
+///
+/// Una misma persona (User) puede tener varias filas aqui, una por salon, cada
+/// una con su propio rol, sueldo, comision y horario. Por eso todo el dinero y
+/// la agenda cuelgan de employeeId y no de userId: si alguien renuncia en un
+/// salon y entra en otro, su historial de ventas y nomina se queda con la
+/// membresia vieja y no se reescribe.
 model Employee {
   id          String   @id @default(uuid())
   businessId  String
-  userId      String   @unique
+  userId      String
   phone       String?
   countryCode String   @default("MX") @db.VarChar(2)
   bio         String?
@@ -135,6 +146,14 @@ model Employee {
   canViewClientData     Boolean @default(true)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
+
+  /// Rol DENTRO de este salon. Antes vivia en User, lo que impedia ser ADMIN
+  /// en un salon y EMPLOYEE en otro.
+  role        Role     @default(RECEPTION)
+
+  /// Si aparece en la agenda y en los selectores de personal. Las membresias
+  /// puramente administrativas (un dueno que no atiende) van en false.
+  bookable    Boolean  @default(true)
 
   business     Business      @relation(fields: [businessId], references: [id])
   user         User          @relation(fields: [userId], references: [id])
@@ -150,6 +169,8 @@ model Employee {
   workScheduleStartSaturday String? @db.VarChar(5)
   workScheduleEndSaturday   String? @db.VarChar(5)
 
+  // Una persona puede estar en varios salones, pero una sola vez en cada uno.
+  @@unique([businessId, userId])
   @@index([businessId, active])
 }
 
@@ -691,8 +712,15 @@ model CashClose {
   @@index([businessId, closingDate])
 }
 
+/// La sesion queda atada al salon en el que se inicio.
+///
+/// Guardar aqui businessId y role evita consultar la membresia en cada
+/// request del middleware, y hace explicito lo que ya ocurria: entrar por el
+/// subdominio de otro salon es una sesion distinta.
 model Session {
-  id        String   @id
+  id         String   @id
+  businessId String?
+  role       String?
   expiresAt DateTime
   token     String
   createdAt DateTime @default(now())

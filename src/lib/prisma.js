@@ -469,15 +469,12 @@ export async function createEmployeePrisma(businessId, userId, phone, bio, commi
     //     throw new Error("Commission o rating inválido");
     // }
 
-    const employee = await prisma.employee.create({
-        data: {
-            businessId,
-            userId,
-            phone,
-            bio,
-            commission,
-            rating
-        },
+    // Upsert porque (businessId, userId) es único: agregar dos veces a la
+    // misma persona al mismo salón actualiza su membresía en vez de fallar.
+    const employee = await prisma.employee.upsert({
+        where: { businessId_userId: { businessId, userId } },
+        create: { businessId, userId, phone, bio, commission, rating },
+        update: { phone, bio, commission, rating, active: true },
     })
 
     return employee
@@ -517,6 +514,9 @@ export async function getEmployeesPrisma(businessId) {
         where: {
             businessId,
             active: true,
+            // Solo el personal que se puede agendar. Las membresías puramente
+            // administrativas (un dueño que no atiende) quedan fuera.
+            bookable: true,
         },
         include: {
             user: {
@@ -573,15 +573,23 @@ export async function createUserPrisma(businessId, name, lastName, username, ema
     businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const passwordHash = await hashPassword(password)
 
+    // La identidad es global; la pertenencia al salón es la membresía.
     const user = await prisma.user.create({
         data: {
             email,
-            businessId,
             name,
             username,
             lastName,
             password: passwordHash,
-            role
+        },
+    })
+
+    await prisma.employee.create({
+        data: {
+            businessId,
+            userId: user.id,
+            role: role || "RECEPTION",
+            bookable: false,
         },
     })
 
@@ -594,8 +602,8 @@ export async function getUserPrisma(username, businessId) {
     const user = await prisma.user.findFirst({
         where: {
             username: username,
-            businessId: businessId,
-            active: true
+            active: true,
+            memberships: { some: { businessId, active: true } },
         },
     })
 
@@ -604,35 +612,41 @@ export async function getUserPrisma(username, businessId) {
 
 export async function updateUserPrisma(id, businessId, name, username, lastName, password, role) {
     businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
+    // La pertenencia al salón es la autorización: sin membresía no se toca a
+    // esa persona, aunque exista en el sistema.
+    const membership = await prisma.employee.findUnique({
+        where: { businessId_userId: { businessId, userId: id } },
+        select: { id: true },
+    })
+    if (!membership) throw new Error("Esa persona no pertenece a este salón")
+
     const user = await prisma.user.update({
-        where: {
-            id: id,
-            businessId: businessId,
-            active: true
-        },
+        where: { id, active: true },
         data: {
             name,
             lastName,
             username,
             password,
-            role
         },
     })
+
+    // El rol vive en la membresía de este salón.
+    if (role) {
+        await prisma.employee.update({ where: { id: membership.id }, data: { role } })
+    }
 
     return user
 }
 
 export async function deleteUserPrisma(id, businessId) {
     businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
-    const user = await prisma.user.delete({
-        where: {
-            id: id,
-            businessId: businessId,
-            active: true
-        },
+    // Se da de baja SOLO la membresía en este salón. Borrar la identidad
+    // global sacaría a la persona de los demás salones y arrastraría su
+    // historial.
+    return await prisma.employee.updateMany({
+        where: { businessId, userId: id },
+        data: { active: false },
     })
-
-    return user
 }
 
 //--------------------------------------------------------------------------------

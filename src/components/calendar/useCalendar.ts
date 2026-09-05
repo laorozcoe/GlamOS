@@ -152,7 +152,7 @@ export const useCalendarLogic = () => {
     // --- HANDLERS LÓGICOS ---
 
     const getUserInfo = () => {
-        const role = session?.user?.role || "EMPLOYEE";
+        const role = (session?.session as { role?: string } | undefined)?.role || "EMPLOYEE";
         const isAdmin = role === "ADMIN";
         const email = session?.user?.email;
         const currentEmployee = employees.find(e => e.user?.email === email);

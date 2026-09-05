@@ -59,7 +59,7 @@ export default function PermissionsClient({ employees }: PermissionsClientProps)
                   </div>
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="inline-flex items-center rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
-                      {emp.user.role}
+                      {emp.role}
                     </span>
                     {emp.active ? (
                       <span className="inline-flex items-center text-success-600 font-medium">
@@ -141,7 +141,7 @@ export default function PermissionsClient({ employees }: PermissionsClientProps)
                   </td>
                   <td className="whitespace-nowrap px-5 py-4 text-sm">
                     <span className="inline-flex rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
-                      {emp.user.role}
+                      {emp.role}
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-5 py-4 text-sm">

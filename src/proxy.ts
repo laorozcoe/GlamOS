@@ -124,7 +124,7 @@ export async function proxy(request: NextRequest) {
     // agregara ese campo- no se expulsa a nadie desde aquí: requireSession()
     // hace la comprobación contra la base y es la autoridad final.
     let session = rawSession;
-    const sessionBusinessId = (rawSession?.user as { businessId?: string } | undefined)?.businessId;
+    const sessionBusinessId = (rawSession?.session as { businessId?: string } | undefined)?.businessId;
 
     if (rawSession && sessionBusinessId) {
         const business = await getBusiness();
@@ -140,7 +140,7 @@ export async function proxy(request: NextRequest) {
 
     // CASO A: Usuario logueado intenta entrar a Login o Signup
     if (isAuthPage && session) {
-        const userRole = session.user.role || "EMPLOYEE";
+        const userRole = (session.session as { role?: string }).role || "EMPLOYEE";
         const redirectUrl = userRole === "EMPLOYEE" ? "/calendar" : "/";
         return NextResponse.redirect(new URL(redirectUrl, request.url));
     }
@@ -151,7 +151,7 @@ export async function proxy(request: NextRequest) {
 
     // CASO B: Verificar acceso por rol para usuarios autenticados
     if (session && !isAuthPage) {
-        const userRole = session.user.role || "EMPLOYEE";
+        const userRole = (session.session as { role?: string }).role || "EMPLOYEE";
         
         // Si el empleado intenta acceder a la raíz, redirigir a calendar
         if (userRole === "EMPLOYEE" && pathname === "/") {

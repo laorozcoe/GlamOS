@@ -72,7 +72,7 @@ export async function getPayrollData(startDateISO: string, endDateISO: string) {
     return {
       employeeId: employee.id,
       name: `${employee.user.name} ${employee.user.lastName}`,
-      role: employee.user.role,
+      role: employee.role,
       baseSalary: employee.baseSalary,
       commissionPercentage: employee.commission,
       totalSalesGenerated,

@@ -184,37 +184,30 @@ export const auth = betterAuth({
     additionalFields: {
       lastName: {
         type: "string",
-        required: true, // Ponlo en true si es obligatorio en tu form
+        required: true,
       },
       phone: {
         type: "string",
         required: false,
       },
-      role: {
-        type: "string",
-        required: false,
-      },
-      // Necesario para que la sesion sepa a que negocio pertenece el usuario.
-      // input: false => el cliente no puede enviarlo al registrarse.
-      businessId: {
-        type: "string",
-        required: false,
-        input: false,
-      }
+      // Ya no hay businessId ni role en User: la pertenencia a un salon y el
+      // rol dentro de el viven en Employee (la membresia).
+    }
+  },
+  session: {
+    additionalFields: {
+      // La sesion queda atada al salon en el que se inicio. Tenerlos aqui
+      // evita consultar la membresia en cada request del middleware.
+      businessId: { type: "string", required: false, input: false },
+      role: { type: "string", required: false, input: false },
     }
   },
   secret: process.env.BETTER_AUTH_SECRET,
   plugins: [nextCookies()],
   hooks: {
-    // Valida que el usuario que intenta entrar pertenezca al negocio del
-    // subdominio desde el que se esta haciendo el login.
-    //
-    // Sin esto, un usuario de "salonA" puede autenticarse en
-    // "salonB.dominio.com" y operar los datos de salonB, porque el negocio se
-    // resuelve por host (getBusiness) y no por la sesion.
-    //
-    // OJO: la key correcta es `hooks` (plural). El bloque anterior usaba
-    // `hook`, por lo que nunca llego a ejecutarse.
+    // Solo puede entrar quien tenga una membresia activa en el salon del
+    // subdominio. El correo ya es unico global, asi que la identidad no es
+    // ambigua; lo que se valida aqui es la pertenencia.
     before: createAuthMiddleware(async (ctx) => {
       if (ctx.path !== "/sign-in/email") return;
 
@@ -228,32 +221,46 @@ export const auth = betterAuth({
         });
       }
 
-      // El schema tiene @@unique([businessId, email, username]), es decir el
-      // email NO es unico globalmente. Better Auth resuelve el login con un
-      // findFirst por email, asi que si el mismo correo existe en dos negocios
-      // el usuario autenticado seria ambiguo. Bloqueamos ese caso.
-      const matches = await prisma.user.findMany({
-        where: { email, active: true },
-        select: { businessId: true },
+      const membership = await prisma.employee.findFirst({
+        where: {
+          active: true,
+          businessId: business.id,
+          user: { email, active: true },
+        },
+        select: { id: true },
       });
 
-      if (matches.length > 1) {
-        throw new APIError("UNAUTHORIZED", {
-          message:
-            "Este correo esta registrado en mas de un negocio. Contacta a soporte.",
-        });
-      }
-
-      const belongsToBusiness = matches.some(
-        (u: { businessId: string }) => u.businessId === business.id
-      );
-
-      if (!belongsToBusiness) {
-        // Mensaje generico: no revelamos si el correo existe en otro negocio.
+      if (!membership) {
+        // Mensaje generico: no revelamos si el correo existe en otro salon.
         throw new APIError("UNAUTHORIZED", {
           message: "Correo o contrasena incorrectos.",
         });
       }
     })
-  }
+  },
+  databaseHooks: {
+    session: {
+      create: {
+        // Se sella la sesion con el salon y el rol vigentes al iniciarla.
+        before: async (session) => {
+          const business = await getBusiness();
+          if (!business) return;
+
+          const membership = await prisma.employee.findFirst({
+            where: { userId: session.userId, businessId: business.id, active: true },
+            select: { role: true },
+          });
+          if (!membership) return;
+
+          return {
+            data: {
+              ...session,
+              businessId: business.id,
+              role: membership.role,
+            },
+          };
+        },
+      },
+    },
+  },
 });

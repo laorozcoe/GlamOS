@@ -10,7 +10,7 @@ export default function ApprovalWidget() {
     const { data: session } = useSession();
     const [requests, setRequests] = useState<any[]>([]);
 
-    const role = session?.user?.role || "EMPLOYEE";
+    const role = (session?.session as { role?: string } | undefined)?.role || "EMPLOYEE";
     const canApprove = role === "ADMIN" || role === "RECEPTION";
 
     const loadRequests = async () => {

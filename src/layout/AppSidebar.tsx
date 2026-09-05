@@ -132,7 +132,9 @@ const AppSidebar: React.FC = () => {
   const business = useBusiness();
   const { data: session } = useSession();
 
-  const role = session?.user?.role || "EMPLOYEE"; // default
+  // El rol es de la membresía en este salón y viaja en la sesión, no en el
+  // usuario: la misma persona puede ser ADMIN aquí y EMPLOYEE en otro salón.
+  const role = (session?.session as { role?: string } | undefined)?.role || "EMPLOYEE";
   const isAdmin = role === "ADMIN";
   const isReceptionOrAdmin = role === "RECEPTION" || role === "ADMIN";
 
