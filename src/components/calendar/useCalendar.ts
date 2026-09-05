@@ -20,7 +20,7 @@ export const useCalendarLogic = () => {
     const { isOpen, openModal, closeModal } = useModal();
     const calendarRef = useRef<FullCalendar>(null);
     const [showSaleDetails, setShowSaleDetails] = useState(false); // <--- NUEVO ESTADO
-    const { printTicket, device, connect } = usePrinter();
+    const { printTicket, printAppointmentTicket, device, connect } = usePrinter();
 
     // --- ESTADOS DE DATOS (CATÁLOGOS) ---
     const [employees, setEmployees] = useState<any[]>([]);
@@ -52,6 +52,9 @@ export const useCalendarLogic = () => {
     // UI Helpers
     const [flashCategory, setFlashCategory] = useState<string | null>(null);
     const [showPayModal, setShowPayModal] = useState(false);
+    // Cita recien guardada sobre la que se va a preguntar el anticipo. null
+    // cuando el salon no pide anticipos o cuando ya se resolvio.
+    const [citaParaAnticipo, setCitaParaAnticipo] = useState<string | null>(null);
     const [saleForModal, setSaleForModal] = useState<any>(null);
 
     const [showMultiCheckout, setShowMultiCheckout] = useState(false);
@@ -460,6 +463,10 @@ export const useCalendarLogic = () => {
             services: appointments
         };
 
+        // El id hace falta para poder registrar el anticipo sobre la cita que
+        // se acaba de guardar. Antes se descartaba el resultado del create.
+        let citaId: string | null = selectedEvent?.id ?? null;
+
         try {
             if (selectedEvent) {
                 // Actualizar
@@ -471,7 +478,8 @@ export const useCalendarLogic = () => {
                     toast.error("No tienes permisos para agendar.");
                     return;
                 }
-                await createAppointment(payload);
+                const nueva = await createAppointment(payload);
+                citaId = nueva?.id ?? null;
             }
             // Siempre asegurar cliente
             if (customer.name && customer.phone) {
@@ -487,6 +495,19 @@ export const useCalendarLogic = () => {
 
         closeModal();
         resetModalFields();
+
+        // Solo si el salon lo pide, y solo cuando la cita no esta ya pagada:
+        // preguntar por anticipo despues de cobrar no tiene sentido.
+        const pideAnticipo = business?.askDepositOnBooking;
+        if (pideAnticipo && citaId && selectedEvent?.paymentStatus !== "PAID") {
+            setCitaParaAnticipo(citaId);
+        }
+    };
+
+    /** Recargar la agenda tras registrar un anticipo. */
+    const recargarAgenda = async () => {
+        const newEvents = await getAppointmentsByDatePrisma(business?.id, currentDate);
+        setEvents(newEvents);
     };
 
     // Buscar cliente al escribir teléfono
@@ -916,5 +937,6 @@ export const useCalendarLogic = () => {
         handleReprintTicket,
         showMultiCheckout, setShowMultiCheckout, handleProceedToMultiPayment,
         saleForModal,
+        citaParaAnticipo, setCitaParaAnticipo, recargarAgenda, printAppointmentTicket,
     };
 };

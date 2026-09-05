@@ -230,6 +230,93 @@ export const usePrinter = () => {
     };
 
 
+    /**
+     * Comprobante de cita con anticipo.
+     *
+     * Un solo ticket con las dos cosas: arriba los datos de la cita -para que
+     * la clienta lo use de recordatorio- y abajo el anticipo y el saldo. Un
+     * corte de papel, un papel que dar.
+     */
+    const printAppointmentTicket = async (datos) => {
+        setIsPrinting(true);
+        setPrinterError('');
+
+        try {
+            let currentDevice = device;
+            if (!currentDevice || !currentDevice.opened) {
+                const devices = navigator.usb ? await navigator.usb.getDevices() : [];
+                for (const d of devices) {
+                    const success = await connectToDevice(d);
+                    if (success) { currentDevice = d; break; }
+                }
+            }
+
+            // Sin impresora no es un error: la cita y el anticipo ya se
+            // guardaron. Se sale en silencio.
+            if (!currentDevice) {
+                setStatus('offline');
+                setPrinterError('Sin impresora conectada');
+                return false;
+            }
+
+            const imgCanvas = rutaLogoTicket ? await processImageOnCanvas(rutaLogoTicket) : null;
+            const encoder = new EscPosEncoder({ width: 32, imageMode: 'raster', codepageMapping: 'xprinter' });
+
+            let printJob = encoder.initialize().codepage('cp850').raw([0x1B, 0x33, 20]);
+            if (imgCanvas) {
+                printJob = printJob.align('center').image(imgCanvas, imgCanvas.width, imgCanvas.height, 'atkinson');
+            }
+
+            printJob = printJob
+                .newline().align('center').bold(true)
+                .text(`${datos.businessName}\n`)
+                .text('COMPROBANTE DE CITA\n')
+                .bold(false)
+                .text('--------------------------------\n')
+                .align('left')
+                .text(`FOLIO: ${datos.folio}\n`)
+                .text(`FECHA: ${datos.fecha}\n`)
+                .text(`HORA:  ${datos.hora} a ${datos.horaFin}\n`)
+                .text(`ATIENDE: ${(datos.especialista || '').substring(0, 23)}\n`)
+                .text(`CLIENTE: ${(datos.cliente || '').substring(0, 23)}\n`)
+                .text('--------------------------------\n');
+
+            (datos.servicios || []).forEach((s) => {
+                printJob = printJob.text(generateLine(1, s.descripcion, s.precio));
+            });
+
+            printJob = printJob
+                .text('--------------------------------\n')
+                .align('right')
+                .text(`TOTAL: $${Number(datos.total).toFixed(2)}\n`)
+                .bold(true)
+                .text(`ANTICIPO: $${Number(datos.anticipado).toFixed(2)}\n`)
+                .bold(false)
+                .text(`SALDO: $${Number(datos.saldo).toFixed(2)}\n`)
+                .align('left')
+                .text(`PAGO: ${datos.metodo === 'CASH' ? 'EFECTIVO' : datos.metodo === 'CARD' ? 'TARJETA' : 'TRANSFERENCIA'}\n`)
+                .newline().align('center')
+                .text('Este comprobante no es un\n')
+                .text('    ticket de venta.     \n')
+                .newline().newline().newline()
+                .cut();
+
+            const result = printJob.encode();
+            const interfaceData = currentDevice.configuration.interfaces[0];
+            const endpoint = interfaceData.alternates[0].endpoints.find(e => e.direction === 'out');
+            await currentDevice.transferOut(endpoint.endpointNumber, result);
+            return true;
+
+        } catch (err) {
+            console.error("Error imprimiendo comprobante de cita:", err);
+            setPrinterError(err.message);
+            return false;
+        } finally {
+            setIsPrinting(false);
+        }
+    };
+
+
     // --- FUNCIÓN SOLO ABRIR CAJA ---
     const openDrawer = async () => {
         ; // Descomenta si necesitas depurar
@@ -285,5 +372,6 @@ export const usePrinter = () => {
     };
 
 
-    return { device, isPrinting, printerError, status, connect: requestPrinter, printTicket, openDrawer };
+    return { device, isPrinting, printerError, status, connect: requestPrinter, printTicket,
+        printAppointmentTicket, openDrawer };
 };

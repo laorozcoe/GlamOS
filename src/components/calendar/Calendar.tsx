@@ -5,6 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import { BookingModal } from "@/components/calendar/BookingModal";
 import { PaymentModal } from "@/components/calendar/PaymentModal";
 import { SaleDetailsModal } from "@/components/calendar/SaleDetailsModal";
+import DepositModal from "@/components/calendar/DepositModal";
 import { MultiCheckoutModal } from "@/components/calendar/MultiCheckoutModal";
 import DateField from "@/components/form/DateField";
 import { ExtraServiceModal } from "@/components/calendar/ExtraServiceModal";
@@ -278,16 +279,38 @@ export default function CalendarGrid() {
         {/* HEADER: Modificamos el layout para que incluya el Select */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
 
-          {/* Controles de Fecha */}
-          <div className="flex justify-center gap-2 w-full md:w-auto">
-            <Button onClick={() => { logic.handleUpdateDate(-1) }}>&lt;</Button>
-            {/* <InputField type="date" value={logic.currentDate} onChange={(e) => logic.setCurrentDate(e.target.value)} /> */}
-            <DateField value={logic.currentDate} onChange={(date) => logic.setCurrentDate(date)} />
-            <Button onClick={() => { logic.handleUpdateDate(1) }}>&gt;</Button>
+          {/* Controles de Fecha
+              La fila no se envuelve: las flechas y el boton de cobro se
+              quedan del tamano justo -shrink-0- y el campo de fecha absorbe
+              lo que sobre -flex-1 min-w-0-. Antes el campo pedia su ancho
+              natural y en un telefono angosto la fila se desbordaba. */}
+          <div className="flex w-full flex-nowrap items-center gap-2 md:w-auto">
+            <Button
+              onClick={() => { logic.handleUpdateDate(-1) }}
+              className="shrink-0 px-3.5 sm:px-5"
+              aria-label="Día anterior"
+            >&lt;</Button>
+
+            <DateField
+              value={logic.currentDate}
+              onChange={(date) => logic.setCurrentDate(date)}
+              containerClassName="min-w-0 flex-1 md:w-[190px] md:flex-none"
+            />
+
+            <Button
+              onClick={() => { logic.handleUpdateDate(1) }}
+              className="shrink-0 px-3.5 sm:px-5"
+              aria-label="Día siguiente"
+            >&gt;</Button>
 
             {/* Botón de Cobro Múltiple */}
             {userInfo?.role !== "EMPLOYEE" && (
-              <Button onClick={() => logic.setShowMultiCheckout(true)} variant="outline" className="ml-2 font-bold text-gray-700 bg-white shadow-sm border-gray-300">
+              <Button
+                onClick={() => logic.setShowMultiCheckout(true)}
+                variant="outline"
+                className="shrink-0 border-gray-300 bg-white px-3.5 font-bold text-gray-700 shadow-sm sm:px-5"
+                aria-label="Cobrar varias citas"
+              >
                 <Banknote color="green" />
               </Button>
             )}
@@ -453,6 +476,16 @@ export default function CalendarGrid() {
         onReprint={logic.handleReprintTicket}
         sale={logic.saleForModal}
         canViewClientData={userInfo?.canViewClientData ?? true}
+      />
+
+      {/* Anticipo al agendar: solo aparece si el salón lo pide */}
+      <DepositModal
+        isOpen={!!logic.citaParaAnticipo}
+        appointmentId={logic.citaParaAnticipo}
+        onClose={() => logic.setCitaParaAnticipo(null)}
+        onDone={logic.recargarAgenda}
+        onPrint={logic.printAppointmentTicket}
+        businessName={business?.name || ""}
       />
 
       <MultiCheckoutModal

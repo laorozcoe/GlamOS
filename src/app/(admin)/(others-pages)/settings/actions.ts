@@ -157,7 +157,7 @@ export async function updateBusinessSettings(data: any) {
   const businessCtx = await requireBusiness(["ADMIN", "RECEPTION"]);
   if (!businessCtx) throw new Error("No business found");
 
-  const { name, phone, email, address, mpAccessToken, mpStoreId, mpWebhookSecret, mpAccounts, openHour, closeHour, weekStartDay, lateToleranceMinutes } = data;
+  const { name, phone, email, address, mpAccessToken, mpStoreId, mpWebhookSecret, mpAccounts, openHour, closeHour, weekStartDay, lateToleranceMinutes, askDepositOnBooking } = data;
 
   const updated = await prisma.business.update({
     where: { id: businessCtx.id },
@@ -176,6 +176,7 @@ export async function updateBusinessSettings(data: any) {
       // Acotada entre 0 y 120: una tolerancia negativa marcaria retardo a
       // quien llega temprano, y dos horas ya no es tolerancia.
       lateToleranceMinutes: Math.min(120, Math.max(0, Number(lateToleranceMinutes) || 0)),
+      askDepositOnBooking: !!askDepositOnBooking,
     }
   });
 

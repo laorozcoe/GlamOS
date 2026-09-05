@@ -101,7 +101,8 @@ export default function SettingsClient() {
     openHour: 9,
     closeHour: 18,
     weekStartDay: 1,
-    lateToleranceMinutes: 10
+    lateToleranceMinutes: 10,
+    askDepositOnBooking: false
   });
   const [businessId, setBusinessId] = useState("");
 
@@ -138,7 +139,8 @@ export default function SettingsClient() {
           openHour: data.openHour ?? 9,
           closeHour: data.closeHour ?? 18,
           weekStartDay: data.weekStartDay ?? 1,
-          lateToleranceMinutes: data.lateToleranceMinutes ?? 10
+          lateToleranceMinutes: data.lateToleranceMinutes ?? 10,
+          askDepositOnBooking: data.askDepositOnBooking ?? false
         });
         setBusinessId(data.id || "");
         setTerminals(data.terminals || []);
@@ -492,6 +494,23 @@ export default function SettingsClient() {
                     className="h-10 text-sm"
                   />
                   <p className="text-[11px] text-gray-400 mt-3 leading-tight">Minutos de gracia sobre la hora programada. Pasados estos minutos, la asistencia del día se marca como retardo.</p>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <label className="flex min-h-11 cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={formData.askDepositOnBooking}
+                      onChange={(e) => setFormData((prev: any) => ({ ...prev, askDepositOnBooking: e.target.checked }))}
+                      className="mt-0.5 size-4 rounded text-brand-500 focus:ring-brand-500"
+                    />
+                    <span>
+                      <span className="block text-xs font-medium text-gray-700 dark:text-gray-300">Pedir anticipo al agendar</span>
+                      <span className="mt-0.5 block text-[11px] text-gray-400">
+                        Al guardar una cita se pregunta si hubo anticipo. Se puede omitir en cada cita.
+                      </span>
+                    </span>
+                  </label>
                 </div>
               </div>
             </div>
