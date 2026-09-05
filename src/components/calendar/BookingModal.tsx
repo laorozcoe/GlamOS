@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import Select from "@/components/form/Select";
 import InputField from '@/components/form/input/InputField';
-import { ServiceSelector } from "@/components/calendar/mobile/ServiceSelector";
+import { ServiceSelector } from "@/components/calendar/ServiceSelector";
 import { ProductBrowserModal } from "@/components/calendar/ProductBrowserModal";
 import Button from "../ui/button/Button";
 import { Trash, User, Calendar, Sparkles, Receipt, ChevronRight, ChevronLeft, SquarePlus, Search, Check, X, Tag } from 'lucide-react';
@@ -83,7 +83,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
             <Modal
                 isOpen={isOpen}
                 onClose={onClose}
-                className="w-[95svw] max-w-3xl sm:max-w-7xl h-[95svh] md:h-[85svh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col p-0"
+                className="max-w-3xl sm:max-w-7xl h-[95svh] md:h-[85svh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col p-0"
                 showCloseButton={true}
             >
                 {/* --- HEADER --- */}
@@ -289,7 +289,7 @@ export const BookingModal: React.FC<BookingModalProps> = (props) => {
             </Modal>
 
             {/* Sub-Modal: Selector de Catálogo */}
-            <Modal isOpen={isServiceBrowserOpen} onClose={() => setIsServiceBrowserOpen(false)} className="w-[95svw] max-w-lg sm:max-w-7xl h-[90svh] p-0 overflow-hidden flex flex-col rounded-2xl bg-white dark:bg-gray-900" showCloseButton={true}>
+            <Modal isOpen={isServiceBrowserOpen} onClose={() => setIsServiceBrowserOpen(false)} className="max-w-lg sm:max-w-7xl h-[90svh] p-0 overflow-hidden flex flex-col rounded-2xl bg-white dark:bg-gray-900" showCloseButton={true}>
                 <div className="p-5 border-b border-gray-100 dark:border-gray-800 text-center">
                     <Label className="font-bold text-lg dark:text-white">Catálogo de Servicios</Label>
                     <p className="text-xs text-gray-500 mt-1">Busca y añade servicios al ticket</p>

@@ -73,7 +73,7 @@ export const MultiCheckoutModal: React.FC<MultiCheckoutModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            className="w-[95svw] max-w-2xl rounded-2xl shadow-2xl overflow-hidden p-0 bg-white dark:bg-gray-900"
+            className="max-w-2xl rounded-2xl shadow-2xl overflow-hidden p-0 bg-white dark:bg-gray-900"
             showCloseButton={true}
         >
             <div className="flex flex-col h-[85svh] md:h-[70svh]">

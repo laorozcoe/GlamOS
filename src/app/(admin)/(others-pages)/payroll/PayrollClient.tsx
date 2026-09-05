@@ -151,7 +151,7 @@ export default function PayrollClient() {
         isOpen={!!selectedEmployee}
         onClose={() => setSelectedEmployee(null)}
         showCloseButton={false}
-        className="w-[95svw] h-[95svh] max-w-3xl p-6"
+        className="h-[92svh] max-w-3xl p-6"
       >
         {selectedEmployee && (
           <div className="h-full flex flex-col">

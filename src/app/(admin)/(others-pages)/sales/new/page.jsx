@@ -6,7 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import Select from "@/components/form/Select";
 import InputField from '@/components/form/input/InputField';
 import DateField from "@/components/form/DateField";
-import { ServiceSelector } from "@/components/calendar/mobile/ServiceSelector";
+import { ServiceSelector } from "@/components/calendar/ServiceSelector";
 // Ya no necesitamos el ServiceModal aparte, lo integraremos en el flujo
 import Button from "@/components/ui/button/Button";
 import { Trash, User, Calendar, Sparkles, Receipt, ChevronRight, ChevronLeft } from 'lucide-react';

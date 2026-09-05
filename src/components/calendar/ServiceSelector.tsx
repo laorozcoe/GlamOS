@@ -1,4 +1,10 @@
-// components/booking/ServiceSelector.tsx
+/**
+ * Selector de servicios: categorías arriba y servicios con +/- debajo.
+ *
+ * Vivía en `calendar/mobile/` pero no tiene nada de específico de móvil: lo
+ * usan tanto BookingModal como la pantalla de venta rápida, en cualquier
+ * tamaño. La carpeta hacía creer que existía un árbol paralelo para celular.
+ */
 import React from 'react';
 import { Minus, Plus, Check } from 'lucide-react';
 import Label from '@/components/form/Label';

@@ -177,7 +177,7 @@ export default function SalesTable({ sales }: any) {
             <Modal
                 isOpen={isSaleDetailOpen}
                 onClose={() => setIsSaleDetailOpen(false)}
-                className="w-[95svw] max-w-xl overflow-hidden p-0"
+                className="max-w-xl overflow-hidden p-0"
             >
                 <div className="border-b border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800">
                     <Label className="text-lg font-bold">Detalle de Venta</Label>

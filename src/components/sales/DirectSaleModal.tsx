@@ -129,7 +129,7 @@ export const DirectSaleModal = ({ isOpen, onClose }: { isOpen: boolean, onClose:
 
     return (
         <>
-            <Modal isOpen={isOpen} onClose={onClose} className="w-[95svw] max-w-5xl h-[85svh] p-0 flex flex-col bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden" showCloseButton={true}>
+            <Modal isOpen={isOpen} onClose={onClose} className="max-w-5xl h-[85svh] p-0 flex flex-col bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden" showCloseButton={true}>
                 <div className="p-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center z-10">
                     <div>
                         <h2 className="text-xl font-bold flex items-center gap-2">

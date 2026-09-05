@@ -426,10 +426,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             <Modal
                 isOpen={isOpen}
                 onClose={onClose}
-                className="w-[95svw] max-w-lg rounded-2xl shadow-2xl overflow-hidden p-0 bg-white dark:bg-gray-900"
+                // El ancho, el alto y el scroll los resuelve Modal: en celular
+                // es hoja inferior a todo lo ancho y desde sm es caja centrada.
+                // Antes `w-[95svw]` lo dejaba al 95% incluso en un iPhone, y el
+                // contenedor interno abría un segundo scroll.
+                className="max-w-lg overflow-hidden p-0 shadow-2xl"
+                size="lg"
                 showCloseButton={true}
             >
-                <div className="flex flex-col h-full max-h-[90svh] overflow-y-auto custom-scrollbar">
+                <div className="flex flex-col">
 
                     {/* ── Header Total ── */}
                     <div className="p-6 border-b border-gray-100 dark:border-gray-800 text-center bg-gray-50/50 dark:bg-gray-800/30">
@@ -790,7 +795,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                                                 <button
                                                                     key={t.id}
                                                                     onClick={() => setSelectedTerminalId(t.id)}
-                                                                    className={`w-[140px] p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all text-center relative ${
+                                                                    className={`min-h-11 flex-1 basis-[140px] max-w-[220px] p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all text-center relative ${
                                                                         isDisconnected
                                                                             ? 'border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-400 hover:bg-orange-100'
                                                                             : selectedTerminalId === t.id
