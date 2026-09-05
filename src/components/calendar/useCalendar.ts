@@ -572,9 +572,13 @@ export const useCalendarLogic = () => {
                 };
 
                 const saleResult = await createSalePrisma(salePayload);
-                if (!saleResult.success) throw new Error("Error procesando venta individual de cita.");
+                if (!saleResult.success || !saleResult.sale) {
+                    throw new Error("Error procesando venta individual de cita.");
+                }
 
-                combinedFolios.push(saleResult.sale.folio);
+                // folio es un entero autoincremental; la lista de folios se une
+                // luego con join(", ") para imprimirla.
+                combinedFolios.push(String(saleResult.sale.folio));
                 combinedItemsList = [...combinedItemsList, ...itemsList];
             }
 

@@ -253,12 +253,21 @@ export async function simulateDemoData() {
     
     let services = await prisma.service.findMany({ where: { businessId: business.id } });
     if (services.length === 0) {
+        // Service.categoryId es obligatorio. Antes se creaban sin categoría y el
+        // createMany fallaba, así que la simulación se caía justo después de
+        // haber borrado las ventas.
+        const categoria =
+            (await prisma.serviceCategory.findFirst({ where: { businessId: business.id } })) ??
+            (await prisma.serviceCategory.create({
+                data: { businessId: business.id, name: 'General', order: 1 },
+            }));
+
         await prisma.service.createMany({
             data: [
-                { name: 'Corte de Cabello', price: 200, duration: 30, businessId: business.id },
-                { name: 'Manicura', price: 300, duration: 45, businessId: business.id },
-                { name: 'Tinte', price: 800, duration: 120, businessId: business.id },
-                { name: 'Pedicura', price: 350, duration: 45, businessId: business.id }
+                { name: 'Corte de Cabello', price: 200, duration: 30, businessId: business.id, categoryId: categoria.id },
+                { name: 'Manicura', price: 300, duration: 45, businessId: business.id, categoryId: categoria.id },
+                { name: 'Tinte', price: 800, duration: 120, businessId: business.id, categoryId: categoria.id },
+                { name: 'Pedicura', price: 350, duration: 45, businessId: business.id, categoryId: categoria.id }
             ]
         });
         services = await prisma.service.findMany({ where: { businessId: business.id } });
@@ -319,7 +328,6 @@ export async function simulateDemoData() {
                                 description: serv.name,
                                 quantity: 1,
                                 price: serv.price,
-                                subtotal: serv.price,
                                 serviceId: serv.id
                             }
                         },
