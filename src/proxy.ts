@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { getBusiness } from "@/lib/getBusiness";
 
 // 🌍 rutas públicas
 // Solo lo que tiene que ser alcanzable sin sesion.
@@ -92,9 +93,6 @@ function hasAccessToRoute(userRole: string, pathname: string): boolean {
 }
 
 export async function proxy(request: NextRequest) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    })
     const { pathname } = request.nextUrl;
 
     // ✅ ignorar archivos públicos
@@ -107,9 +105,32 @@ export async function proxy(request: NextRequest) {
         pathname.startsWith(route)
     )
 
-    // ✅ ignorar archivos públicos
     if (isPublicRoute) {
         return NextResponse.next()
+    }
+
+    const rawSession = await auth.api.getSession({
+        headers: await headers()
+    })
+
+    // El negocio se resuelve por el host, no por la sesión. Una sesión válida
+    // de OTRO negocio (una cookie vieja, o alguien que cambia de subdominio)
+    // pasaba este middleware y reventaba después, dentro de cada Server Action,
+    // con un AuthorizationError en pantalla. Aquí se trata como "no ha
+    // iniciado sesión en este negocio" y se manda a /signin, que es lo que
+    // realmente ocurre.
+    //
+    // Si la sesión no trae businessId -por ejemplo una emitida antes de que se
+    // agregara ese campo- no se expulsa a nadie desde aquí: requireSession()
+    // hace la comprobación contra la base y es la autoridad final.
+    let session = rawSession;
+    const sessionBusinessId = (rawSession?.user as { businessId?: string } | undefined)?.businessId;
+
+    if (rawSession && sessionBusinessId) {
+        const business = await getBusiness();
+        if (!business || business.id !== sessionBusinessId) {
+            session = null;
+        }
     }
 
     // THIS IS NOT SECURE!

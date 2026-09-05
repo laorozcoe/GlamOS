@@ -10,7 +10,12 @@ async function getBusinessPrisma(slug) {
     })
 }
 
-const DEFAULT_SLUG = process.env.DEV_BUSINESS_SLUG || "testsalon";
+// Negocio que se usa cuando el host no identifica ninguno: en desarrollo
+// (localhost) o si el subdominio no corresponde a un negocio existente.
+// Definelo en .env como DEV_BUSINESS_SLUG con el slug del negocio al que
+// pertenece tu usuario, o el guard de tenant de requireSession() rechazara la
+// sesion.
+const DEFAULT_SLUG = process.env.DEV_BUSINESS_SLUG || "demo";
 
 export async function getBusiness() {
     try {
@@ -18,10 +23,17 @@ export async function getBusiness() {
 
         const host = h.get("host") || "";
 
-        let slug = host.split(".")[0];
+        // El host trae el puerto en desarrollo ("localhost:3000"), asi que hay
+        // que quitarlo ANTES de sacar el subdominio. Sin esto el slug quedaba
+        // en "localhost:3000", la comparacion contra "localhost" de abajo
+        // fallaba, y se hacia una consulta de mas a la base buscando un
+        // negocio con ese slug antes de caer al fallback.
+        const hostname = host.split(":")[0];
 
-        if (!host || host.includes("localhost")) {
-            slug = h.get("x-business-slug") || slug;
+        let slug = hostname.split(".")[0];
+
+        if (!hostname || hostname.includes("localhost")) {
+            slug = h.get("x-business-slug") || DEFAULT_SLUG;
         }
 
         if (!slug || slug === "www" || slug === "localhost" || slug === "") {

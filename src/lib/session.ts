@@ -73,6 +73,18 @@ export async function requireSession(roles?: AppRole[]): Promise<AuthContext> {
   }
 
   if (userBusinessId !== business.id) {
+    // Fuera de produccion se dice exactamente que no coincidio. En local el
+    // motivo casi siempre es el mismo: el negocio sale del host
+    // (DEV_BUSINESS_SLUG en localhost), no de quien inicio sesion, asi que una
+    // sesion vieja de otro negocio choca contra el guard.
+    if (process.env.NODE_ENV !== "production") {
+      throw new AuthorizationError(
+        `No autorizado para este negocio. El host resolvio a "${business.slug}" ` +
+          `(${business.id}) pero el usuario de la sesion pertenece a ${userBusinessId}. ` +
+          `Revisa DEV_BUSINESS_SLUG en .env y vuelve a iniciar sesion.`
+      );
+    }
+
     throw new AuthorizationError("No autorizado para este negocio");
   }
 
