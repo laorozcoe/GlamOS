@@ -11,6 +11,7 @@ import Moddal from "@/components/customers/Modal";
 import { Modal } from "@/components/ui/modal";
 import { createClientPrisma, updateClientPrisma, deleteClientPrisma } from "@/lib/prisma";
 import { useBusiness } from "@/context/BusinessContext";
+import type { Employee as PrismaEmployee } from "@prisma/client";
 
 // Definimos la interfaz basada en tu esquema de Prisma
 interface Client {
@@ -23,24 +24,24 @@ interface Client {
     employee?: { user?: { name?: string } } | null;
 }
 
-export interface EmployeeUser {
+/**
+ * Una membresía con los datos de la persona.
+ *
+ * Se deriva del modelo de Prisma en vez de escribirse a mano. La versión
+ * anterior mentía sobre la base: declaraba `phone`, `bio` y `email` como
+ * obligatorios cuando las tres columnas admiten null, y `createdAt` como
+ * string cuando es Date. Nadie lo notó mientras el cliente de Prisma llegaba
+ * como `any`; en cuanto se tipó, saltó.
+ */
+export type EmployeeUser = {
     name: string;
     lastName: string;
-    email: string; // Puede venir vacía según tu JSON
-}
+    email: string | null;
+};
 
-export interface Employee {
-    id: string;
-    businessId: string;
-    userId: string;
-    phone: string;
-    bio: string;
-    commission: number;
-    rating: number;
-    active: boolean;
-    createdAt: string; // Viene como ISO String. Si usas 'new Date()' cámbialo a Date
+export type Employee = PrismaEmployee & {
     user: EmployeeUser;
-}
+};
 
 interface CustomerTableProps {
     customers: Client[];
