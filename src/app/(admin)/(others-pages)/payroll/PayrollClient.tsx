@@ -8,10 +8,16 @@ import DataTable, { type Column } from "@/components/ui/table/DataTable";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
-import { ChevronLeft, ChevronRight, Pencil, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, RotateCcw, Lock, LockOpen } from "lucide-react";
 import { toast } from "react-toastify";
 import { useSession } from "@/lib/auth-client";
-import { getPayrollData, setBonusAward, clearBonusAward } from "./actions";
+import {
+  getPayrollData,
+  setBonusAward,
+  clearBonusAward,
+  cerrarNominaAction,
+  reabrirNominaAction,
+} from "./actions";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(amount);
@@ -148,6 +154,11 @@ export default function PayrollClient() {
   const [notaBono, setNotaBono] = useState<string>("");
   const [guardandoBono, setGuardandoBono] = useState(false);
 
+  // Cerrar o reabrir la semana. Las dos piden confirmacion: son las dos
+  // operaciones de la pantalla que cambian que numeros manda.
+  const [confirmacion, setConfirmacion] = useState<"cerrar" | "reabrir" | null>(null);
+  const [cerrando, setCerrando] = useState(false);
+
   // Recepcion puede LEER la nomina pero no otorgar bonos. Sin esto veria un
   // lapiz que solo lleva a un error de permisos.
   const { data: sesion } = useSession();
@@ -178,6 +189,7 @@ export default function PayrollClient() {
 
   const filas: Fila[] = data?.payrollData ?? [];
   const totalNomina = filas.reduce((acc, f) => acc + f.totalPay, 0);
+  const cerrada: boolean = !!data?.cerrada;
   // Derivado, no copiado: al recargar tras otorgar un bono, el detalle abierto
   // se actualiza solo en vez de quedarse con los numeros viejos.
   const seleccionado = filas.find((f) => f.employeeId === seleccionadoId) ?? null;
@@ -211,6 +223,34 @@ export default function PayrollClient() {
       toast.error(e?.message || "No se pudo guardar el bono.");
     } finally {
       setGuardandoBono(false);
+    }
+  };
+
+  const cerrarSemana = async () => {
+    setCerrando(true);
+    try {
+      await cerrarNominaAction(new Date(fechaRef).toISOString());
+      setConfirmacion(null);
+      await cargar(fechaRef);
+      toast.success("Nómina cerrada.");
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo cerrar la nómina.");
+    } finally {
+      setCerrando(false);
+    }
+  };
+
+  const reabrirSemana = async () => {
+    setCerrando(true);
+    try {
+      await reabrirNominaAction(new Date(fechaRef).toISOString());
+      setConfirmacion(null);
+      await cargar(fechaRef);
+      toast.success("Nómina reabierta.");
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo reabrir la nómina.");
+    } finally {
+      setCerrando(false);
     }
   };
 
@@ -322,9 +362,40 @@ export default function PayrollClient() {
             <span className="mr-1 hidden sm:inline">Siguiente</span>
             <ChevronRight className="size-4" />
           </Button>
+          {puedeOtorgar && !cerrada && filas.length > 0 && (
+            <Button onClick={() => setConfirmacion("cerrar")} className="h-11">
+              <Lock className="mr-2 size-4" /> Cerrar nómina
+            </Button>
+          )}
         </div>
       }
     >
+      {cerrada && (
+        <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-white/5">
+          <div className="flex items-start gap-2.5">
+            <Lock className="mt-0.5 size-4 shrink-0 text-gray-500" />
+            <div>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">Semana cerrada</p>
+              <p className="text-xs text-gray-500">
+                Estos son los montos que se pagaron
+                {data.cerradaPor ? `, según los cerró ${data.cerradaPor}` : ""}
+                {data.cerradaEl
+                  ? ` el ${new Date(data.cerradaEl).toLocaleDateString("es-MX", {
+                      day: "numeric",
+                      month: "long",
+                    })}`
+                  : ""}
+                . Ya no se recalculan.
+              </p>
+            </div>
+          </div>
+          {puedeOtorgar && (
+            <Button variant="outline" onClick={() => setConfirmacion("reabrir")} className="shrink-0">
+              <LockOpen className="mr-2 size-4" /> Reabrir
+            </Button>
+          )}
+        </div>
+      )}
       <DataTable
         columns={columnas}
         rows={filas}
@@ -398,7 +469,7 @@ export default function PayrollClient() {
                   <ListaDeBonos
                     bonos={seleccionado.bonos}
                     detallado
-                    onEditar={puedeOtorgar ? abrirBono : undefined}
+                    onEditar={puedeOtorgar && !cerrada ? abrirBono : undefined}
                   />
                 </div>
               )}
@@ -558,6 +629,53 @@ export default function PayrollClient() {
               </div>
             </div>
           </div>
+        )}
+      </Modal>
+
+      {/* Cerrar o reabrir la semana */}
+      <Modal isOpen={!!confirmacion} onClose={() => setConfirmacion(null)} size="sm" className="p-6">
+        {confirmacion === "cerrar" ? (
+          <>
+            <Label className="mb-2 block text-lg font-bold">¿Cerrar esta semana?</Label>
+            <p className="mb-2 text-sm text-gray-500">
+              Se guardan {formatCurrency(totalNomina)} repartidos entre {filas.length} personas, tal como
+              se ven ahora.
+            </p>
+            <p className="mb-6 text-sm text-gray-500">
+              Después de cerrar, la semana deja de recalcularse: si más adelante cancelas o corriges una
+              venta de estos días, lo que ya pagaste no se mueve. Tampoco se podrán cambiar bonos sin
+              reabrirla.
+            </p>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setConfirmacion(null)}>
+                Cancelar
+              </Button>
+              <Button className="flex-1" onClick={cerrarSemana} disabled={cerrando}>
+                {cerrando ? "Cerrando..." : "Cerrar nómina"}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <Label className="mb-2 block text-lg font-bold">¿Reabrir esta semana?</Label>
+            <p className="mb-6 text-sm text-gray-500">
+              Se borra lo guardado y la nómina vuelve a calcularse con los datos de hoy. Si alguna venta
+              de esos días cambió desde que la cerraste, los montos van a salir distintos a los que
+              pagaste.
+            </p>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setConfirmacion(null)}>
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1 bg-amber-600 text-white hover:bg-amber-700"
+                onClick={reabrirSemana}
+                disabled={cerrando}
+              >
+                {cerrando ? "Reabriendo..." : "Reabrir"}
+              </Button>
+            </div>
+          </>
         )}
       </Modal>
     </PageShell>

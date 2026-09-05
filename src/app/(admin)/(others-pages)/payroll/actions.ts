@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma2";
 import { requireBusiness, requireSession } from "@/lib/session";
-import { calcularNomina } from "@/lib/nomina";
+import { calcularNomina, cerrarNomina, reabrirNomina } from "@/lib/nomina";
 import { rangoSemana } from "@/lib/periodo";
 import { revalidatePath } from "next/cache";
 
@@ -74,6 +74,8 @@ export async function setBonusAward(datos: DatosOtorgamiento) {
     throw new Error("Para cambiar un bono que el sistema ya calculó, escribe el motivo.");
   }
 
+  await asegurarPeriodoAbierto(businessId, datos.referenceDateISO);
+
   const { inicio, fin } = await periodoDe(businessId, datos.referenceDateISO);
   const monto =
     datos.amount === null || datos.amount === undefined || Number.isNaN(Number(datos.amount))
@@ -117,6 +119,8 @@ export async function clearBonusAward(employeeId: string, ruleId: string, refere
   const ctx = await requireSession(["ADMIN"]);
   const businessId = ctx.business.id;
 
+  await asegurarPeriodoAbierto(businessId, referenceDateISO);
+
   const { inicio } = await periodoDe(businessId, referenceDateISO);
 
   await prisma.bonusAward.deleteMany({
@@ -125,4 +129,37 @@ export async function clearBonusAward(employeeId: string, ruleId: string, refere
 
   revalidatePath("/payroll");
   return { ok: true };
+}
+
+/**
+ * Cierra la semana: guarda lo pagado y deja de recalcularlo.
+ *
+ * Solo ADMIN, y el dia de referencia se convierte en periodo aqui con el dia
+ * de corte del salon: cerrar es la operacion mas dificil de deshacer de toda
+ * la nomina y no puede depender de un rango que llegue del formulario.
+ */
+export async function cerrarNominaAction(referenceDateISO: string) {
+  const ctx = await requireSession(["ADMIN"]);
+  return cerrarNomina(ctx.business.id, new Date(referenceDateISO), ctx.employeeId);
+}
+
+/** Reabre la semana. Lo guardado se borra y la nomina vuelve a calcularse. */
+export async function reabrirNominaAction(referenceDateISO: string) {
+  const ctx = await requireSession(["ADMIN"]);
+  return reabrirNomina(ctx.business.id, new Date(referenceDateISO));
+}
+
+/**
+ * Bloquea otorgar bonos sobre una semana ya cerrada. Se comprueba en las dos
+ * acciones que escriben bonos, no solo en la pantalla.
+ */
+async function asegurarPeriodoAbierto(businessId: string, referenceDateISO: string) {
+  const { inicio } = await periodoDe(businessId, referenceDateISO);
+  const cerrado = await prisma.payrollPeriod.findUnique({
+    where: { businessId_periodStart: { businessId, periodStart: inicio } },
+    select: { id: true },
+  });
+  if (cerrado) {
+    throw new Error("Esa semana ya está cerrada. Reábrela si necesitas cambiar un bono.");
+  }
 }

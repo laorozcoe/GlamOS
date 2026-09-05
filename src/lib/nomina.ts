@@ -222,6 +222,16 @@ export async function calcularNomina(businessId: string, fechaReferencia: Date) 
 
   const { inicio, fin } = rangoSemana(fechaReferencia, negocio?.weekStartDay ?? 1);
 
+  // Un periodo cerrado ya no se calcula: se lee. Es la unica forma de que
+  // editar una venta vieja no mueva un pago que ya se hizo.
+  const cierre = await prisma.payrollPeriod.findUnique({
+    where: { businessId_periodStart: { businessId, periodStart: inicio } },
+    include: {
+      closedBy: { include: { user: true } },
+      lines: { include: { bonuses: true } },
+    },
+  });
+
   const [empleados, ventas, reglas, otorgamientos, asistencia] = await Promise.all([
     prisma.employee.findMany({
       // `inPayroll` y no `bookable`: quien atiende no necesariamente cobra
@@ -344,9 +354,138 @@ export async function calcularNomina(businessId: string, fechaReferencia: Date) 
     };
   });
 
+  if (cierre) {
+    // Los tickets se siguen leyendo en vivo -son historia, no cambian el
+    // pago-, pero los montos y los bonos salen de lo guardado.
+    const congelada = cierre.lines.map((linea) => {
+      const vivo = nomina.find((n) => n.employeeId === linea.employeeId);
+      return {
+        employeeId: linea.employeeId,
+        name: linea.employeeName,
+        role: linea.role,
+        baseSalary: linea.baseSalary,
+        commissionPercentage: linea.commissionPercentage,
+        totalSalesGenerated: linea.salesBase,
+        productosVendidos: vivo?.productosVendidos ?? 0,
+        vendidoTotal: vivo?.vendidoTotal ?? 0,
+        commissionPay: linea.commissionPay,
+        metricas: vivo?.metricas ?? {
+          servicios: 0, clientes: 0, vendido: 0,
+          retardos: 0, faltas: 0, justificadas: 0, capturados: 0, esperados: 0,
+        },
+        bonos: linea.bonuses.map((b) => ({
+          ruleId: b.ruleId ?? b.id,
+          nombre: b.name,
+          tipo: b.manual ? "MANUAL" : "",
+          monto: b.amount,
+          montoCatalogo: b.amount,
+          ganado: b.granted,
+          calculado: null,
+          motivo: b.reason ?? "",
+          manual: b.manual,
+          ajustado: false,
+          decidido: true,
+          nota: b.reason ?? null,
+        })),
+        bonosTotal: linea.bonusTotal,
+        totalPay: linea.totalPay,
+        sales: vivo?.sales ?? [],
+      };
+    });
+
+    return {
+      startDate: inicio.toISOString(),
+      endDate: fin.toISOString(),
+      payrollData: congelada,
+      cerrada: true,
+      cerradaEl: cierre.closedAt.toISOString(),
+      cerradaPor: cierre.closedBy
+        ? `${cierre.closedBy.user.name} ${cierre.closedBy.user.lastName}`
+        : null,
+    };
+  }
+
   return {
     startDate: inicio.toISOString(),
     endDate: fin.toISOString(),
     payrollData: nomina,
+    cerrada: false,
+    cerradaEl: null,
+    cerradaPor: null,
   };
+}
+
+/**
+ * Congela el periodo: guarda lo que se pago y deja de recalcularlo.
+ *
+ * Los nombres y porcentajes se copian, no se refieren: subirle el sueldo a
+ * alguien la semana que entra no puede reescribir lo que ya cobro.
+ */
+export async function cerrarNomina(
+  businessId: string,
+  fechaReferencia: Date,
+  cerradoPorEmployeeId: string
+) {
+  const datos = await calcularNomina(businessId, fechaReferencia);
+  if (datos.cerrada) throw new Error("Esa semana ya está cerrada.");
+
+  const inicio = new Date(datos.startDate);
+  const fin = new Date(datos.endDate);
+  const total = datos.payrollData.reduce((acc: number, f: any) => acc + f.totalPay, 0);
+
+  // Todo en una transaccion: un cierre a medias -periodo sin renglones- seria
+  // peor que no haberlo cerrado.
+  await prisma.$transaction(async (tx) => {
+    const periodo = await tx.payrollPeriod.create({
+      data: {
+        businessId,
+        periodStart: inicio,
+        periodEnd: fin,
+        closedById: cerradoPorEmployeeId,
+        total,
+      },
+    });
+
+    for (const fila of datos.payrollData as any[]) {
+      await tx.payrollLine.create({
+        data: {
+          periodId: periodo.id,
+          employeeId: fila.employeeId,
+          employeeName: fila.name,
+          role: String(fila.role),
+          baseSalary: fila.baseSalary,
+          commissionPercentage: fila.commissionPercentage,
+          salesBase: fila.totalSalesGenerated,
+          commissionPay: fila.commissionPay,
+          bonusTotal: fila.bonosTotal,
+          totalPay: fila.totalPay,
+          bonuses: {
+            create: fila.bonos.map((b: any) => ({
+              ruleId: b.ruleId,
+              name: b.nombre,
+              amount: b.monto,
+              granted: b.ganado,
+              reason: b.motivo,
+              manual: b.manual,
+            })),
+          },
+        },
+      });
+    }
+  });
+
+  return { ok: true, total };
+}
+
+/** Reabre el periodo: se borra lo guardado y vuelve a calcularse. */
+export async function reabrirNomina(businessId: string, fechaReferencia: Date) {
+  const negocio = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { weekStartDay: true },
+  });
+  const { inicio } = rangoSemana(fechaReferencia, negocio?.weekStartDay ?? 1);
+
+  // Los renglones y sus bonos se van en cascada con el periodo.
+  await prisma.payrollPeriod.deleteMany({ where: { businessId, periodStart: inicio } });
+  return { ok: true };
 }
