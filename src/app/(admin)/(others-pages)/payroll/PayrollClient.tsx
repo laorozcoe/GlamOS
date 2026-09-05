@@ -20,6 +20,64 @@ const formatTimeObj = (dateString: string) => {
   return d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
 };
 
+type Bono = {
+  ruleId: string;
+  nombre: string;
+  tipo: string;
+  monto: number;
+  ganado: boolean;
+  motivo: string;
+  manual: boolean;
+  ajustado: boolean;
+};
+
+/**
+ * Los bonos del periodo, ganados y NO ganados.
+ *
+ * Los que no se ganaron se muestran igual, con el motivo: saber por que no se
+ * pago es la mitad de para lo que sirve la pantalla, y es lo que se le
+ * responde a la empleada cuando pregunta.
+ */
+function ListaDeBonos({ bonos, detallado = false }: { bonos: Bono[]; detallado?: boolean }) {
+  return (
+    <div className="space-y-2 border-t border-gray-100 pt-3 dark:border-white/5">
+      {bonos.map((b) => (
+        <div key={b.ruleId} className="flex items-start justify-between gap-3 text-sm">
+          <div className="min-w-0">
+            <span className={b.ganado ? "text-gray-700 dark:text-gray-300" : "text-gray-400"}>
+              {b.nombre}
+            </span>
+            {b.ajustado && (
+              <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                ajustado
+              </span>
+            )}
+            {(detallado || !b.ganado) && (
+              <div className="mt-0.5 text-xs text-gray-400">{b.motivo}</div>
+            )}
+          </div>
+          <span
+            className={`shrink-0 font-semibold tabular-nums ${
+              b.ganado ? "text-success-600 dark:text-success-400" : "text-gray-300 line-through dark:text-gray-600"
+            }`}
+          >
+            {b.ganado ? "+" : ""}{formatCurrency(b.monto)}
+          </span>
+        </div>
+      ))}
+
+      {detallado && (
+        <div className="flex items-center justify-between border-t border-gray-100 pt-2 text-sm dark:border-white/5">
+          <span className="font-medium text-gray-700 dark:text-gray-300">Total en bonos</span>
+          <span className="font-bold tabular-nums text-gray-900 dark:text-white">
+            {formatCurrency(bonos.reduce((acc, b) => acc + (b.ganado ? b.monto : 0), 0))}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PayrollClient() {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [data, setData] = useState<any>(null);
@@ -31,17 +89,9 @@ export default function PayrollClient() {
   const fetchPayroll = useCallback(async (dateToFetch: Date) => {
     setLoading(true);
     try {
-      const d = new Date(dateToFetch);
-
-      const startDate = new Date(d);
-      startDate.setDate(d.getDate() - d.getDay());
-      startDate.setHours(0, 0, 0, 0);
-
-      const endDate = new Date(startDate);
-      endDate.setDate(startDate.getDate() + 6);
-      endDate.setHours(23, 59, 59, 999);
-
-      const res = await getPayrollData(startDate.toISOString(), endDate.toISOString());
+      // Solo se manda el dia de referencia: el corte de la semana lo resuelve
+      // el servidor con el dia que el salon eligio en Configuracion.
+      const res = await getPayrollData(new Date(dateToFetch).toISOString());
       setData(res);
     } catch (err) {
       console.error(err);
@@ -132,6 +182,8 @@ export default function PayrollClient() {
                     <span className="font-semibold text-brand-600 dark:text-brand-400">+{formatCurrency(emp.commissionPay)}</span>
                   </div>
 
+                  {emp.bonos?.length > 0 && <ListaDeBonos bonos={emp.bonos} />}
+
                   <div className="pt-3 mt-3 border-t border-gray-100 dark:border-white/5 flex justify-between items-center">
                     <span className="font-medium text-gray-800 dark:text-white/90">Total a Pagar:</span>
                     <span className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(emp.totalPay)}</span>
@@ -187,6 +239,15 @@ export default function PayrollClient() {
               </div>
             </div>
 
+            {selectedEmployee.bonos?.length > 0 && (
+              <div className="mb-6">
+                <h4 className="mb-3 border-b border-gray-200 pb-2 font-semibold text-gray-700 dark:border-white/5 dark:text-gray-300">
+                  Bonos del periodo
+                </h4>
+                <ListaDeBonos bonos={selectedEmployee.bonos} detallado />
+              </div>
+            )}
+
             <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3 border-b border-gray-200 pb-2 dark:border-white/5">
               Ticket / Servicios Realizados
             </h4>
@@ -207,7 +268,7 @@ export default function PayrollClient() {
                         </div>
                         <div className="text-right">
                           <span className="font-bold text-gray-900 dark:text-white block">{formatCurrency(sale.total)}</span>
-                          <span className="text-xs text-success-600 font-medium">+ {formatCurrency(sale.total * (selectedEmployee.commissionPercentage / 100))} (Com.)</span>
+                          <span className="text-xs text-success-600 font-medium">+ {formatCurrency(sale.comision)} (Com.)</span>
                         </div>
                       </div>
                       <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">

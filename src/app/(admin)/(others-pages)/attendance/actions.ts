@@ -3,20 +3,9 @@
 import prisma from "@/lib/prisma2";
 import { requireBusiness } from "@/lib/session";
 import { revalidatePath } from "next/cache";
-import { esRetardo } from "@/lib/asistencia";
-import { aTextoFecha, deTextoFecha, rangoSemana } from "@/lib/periodo";
-
-/** El horario que le toca a un empleado ese dia de la semana. */
-function horarioDelDia(emp: { workScheduleStartWeekday: string | null; workScheduleEndWeekday: string | null; workScheduleStartSaturday: string | null; workScheduleEndSaturday: string | null }, diaSemana: number) {
-  if (diaSemana === 6) {
-    return { entrada: emp.workScheduleStartSaturday || "", salida: emp.workScheduleEndSaturday || "" };
-  }
-  if (diaSemana > 0 && diaSemana < 6) {
-    return { entrada: emp.workScheduleStartWeekday || "", salida: emp.workScheduleEndWeekday || "" };
-  }
-  // Domingo: sin horario cargado.
-  return { entrada: "", salida: "" };
-}
+import { esRetardo, horarioDelDia } from "@/lib/asistencia";
+import { deTextoFecha, rangoSemana } from "@/lib/periodo";
+import { resumenAsistencia } from "@/lib/nomina";
 
 export async function getAttendanceByDate(dateStr: string) {
   const business = await requireBusiness();
@@ -42,7 +31,8 @@ export async function getAttendanceByDate(dateStr: string) {
 
   // Resumen de la semana que contiene el dia consultado, con el dia de corte
   // del salon. Es lo que despues va a leer el bono de puntualidad.
-  const resumen = await resumenDeSemana(business.id, selectedDate, negocio?.weekStartDay ?? 1);
+  const { inicio, fin } = rangoSemana(selectedDate, negocio?.weekStartDay ?? 1);
+  const resumen = await resumenAsistencia(business.id, inicio, fin);
 
   const records = employees.map((emp) => {
     const entry = attendances.find((a) => a.employeeId === emp.id);
@@ -85,69 +75,6 @@ export async function getAttendanceByDate(dateStr: string) {
   });
 
   return { toleranceMinutes: tolerancia, records };
-}
-
-/**
- * Retardos, faltas y dias capturados de cada empleado en la semana.
- *
- * `esperados` cuenta los dias de la semana que ya pasaron y en los que el
- * empleado tenia horario. `capturados` cuenta los que ademas tienen una hora
- * que alguien confirmo -source distinto de SCHEDULE- o una falta marcada. La
- * diferencia entre los dos es lo que el bono de puntualidad NO va a dar por
- * bueno: un dia que nadie toco no prueba que la persona llego a tiempo.
- */
-async function resumenDeSemana(businessId: string, fecha: Date, diaDeCorte: number) {
-  const { inicio, fin } = rangoSemana(fecha, diaDeCorte);
-
-  const [negocio, empleados, registros] = await Promise.all([
-    prisma.business.findUnique({ where: { id: businessId }, select: { lateToleranceMinutes: true } }),
-    prisma.employee.findMany({
-      where: { businessId, active: true },
-      select: {
-        id: true,
-        workScheduleStartWeekday: true, workScheduleEndWeekday: true,
-        workScheduleStartSaturday: true, workScheduleEndSaturday: true,
-      },
-    }),
-    prisma.attendance.findMany({
-      where: { businessId, date: { gte: inicio, lte: fin } },
-    }),
-  ]);
-
-  const tolerancia = negocio?.lateToleranceMinutes ?? 10;
-  const hoy = new Date();
-  hoy.setHours(23, 59, 59, 999);
-
-  const resumen = new Map<string, { retardos: number; faltas: number; justificadas: number; capturados: number; esperados: number }>();
-
-  for (const emp of empleados) {
-    let retardos = 0, faltas = 0, justificadas = 0, capturados = 0, esperados = 0;
-
-    for (let i = 0; i < 7; i++) {
-      const dia = new Date(inicio);
-      dia.setDate(inicio.getDate() + i);
-      if (dia > hoy) break; // los dias que no han llegado no se cuentan
-
-      const { entrada } = horarioDelDia(emp, dia.getDay());
-      if (!entrada) continue; // ese dia no trabaja
-      esperados++;
-
-      const reg = registros.find(
-        (r) => r.employeeId === emp.id && aTextoFecha(new Date(r.date)) === aTextoFecha(dia)
-      );
-      if (!reg) continue;
-
-      if (reg.status === "ABSENT") { faltas++; capturados++; continue; }
-      if (reg.status === "EXCUSED") { justificadas++; capturados++; continue; }
-
-      if (reg.source !== "SCHEDULE") capturados++;
-      if (esRetardo(reg.checkInTime, entrada, tolerancia)) retardos++;
-    }
-
-    resumen.set(emp.id, { retardos, faltas, justificadas, capturados, esperados });
-  }
-
-  return resumen;
 }
 
 export async function upsertManyAttendances(records: any[], dateStr: string) {
