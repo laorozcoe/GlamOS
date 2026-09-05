@@ -68,6 +68,12 @@ export const Modal: React.FC<ModalProps> = ({
   mobileVariant = "sheet",
 }) => {
   const esPantallaCompleta = mobileVariant === "fullscreen";
+  // Muchas pantallas ya resolvian el ancho a mano con un `max-w-*` sin prefijo
+  // en `className`. twMerge NO puede deduplicar eso contra el `sm:max-w-*` de
+  // SIZES -son variantes distintas-, asi que los dos sobrevivian y desde `sm`
+  // ganaba el de SIZES, dejando en `lg` a modales declarados `max-w-5xl`.
+  // Si la pantalla trae su propio ancho, `size` no aporta nada.
+  const traeAnchoPropio = /(?:^|[\s:])max-w-/.test(className ?? "");
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -118,7 +124,7 @@ export const Modal: React.FC<ModalProps> = ({
           ? "h-svh max-h-svh rounded-none sm:h-auto sm:max-h-[92svh] sm:rounded-3xl"
           : "max-h-[92svh] rounded-t-3xl sm:rounded-3xl",
         "sm:w-11/12",
-        SIZES[size]
+        traeAnchoPropio ? "" : SIZES[size]
       );
 
   return (
