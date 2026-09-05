@@ -62,6 +62,7 @@ model Business {
   products          Product[]
   bonusRules        BonusRule[]
   bonusAwards       BonusAward[]
+  payrollPeriods    PayrollPeriod[]
 }
 
 //////////////////////
@@ -174,6 +175,8 @@ model Employee {
   attendances  Attendance[]
   bonusAwards  BonusAward[] @relation("BonusAwardEmployee")
   bonusAwardsGranted BonusAward[] @relation("BonusAwardGrantedBy")
+  payrollLines PayrollLine[]
+  payrollPeriodsClosed PayrollPeriod[] @relation("PayrollClosedBy")
   
   workScheduleStartWeekday String? @db.VarChar(5) // "09:00"
   workScheduleEndWeekday   String? @db.VarChar(5)
@@ -876,4 +879,72 @@ model BonusAward {
   /// Un bono por persona por periodo.
   @@unique([businessId, employeeId, ruleId, periodStart])
   @@index([businessId, periodStart])
+}
+
+//////////////////////
+// 🔒 NOMINA CERRADA
+//////////////////////
+
+/// Una semana de nomina ya pagada.
+///
+/// Mientras un periodo no esta aqui, la nomina se recalcula cada vez que se
+/// abre: si despues se cancela o edita una venta vieja, lo que ya se pago
+/// cambia solo y no queda registro. Cerrar guarda el detalle tal como se
+/// pago, y a partir de entonces la pantalla muestra lo guardado.
+model PayrollPeriod {
+  id          String   @id @default(uuid())
+  businessId  String
+  periodStart DateTime @db.Date
+  periodEnd   DateTime @db.Date
+  closedAt    DateTime @default(now())
+  closedById  String?
+  /// Lo que sumo la nomina completa al cerrarla.
+  total       Float    @default(0)
+
+  business    Business      @relation(fields: [businessId], references: [id])
+  closedBy    Employee?     @relation("PayrollClosedBy", fields: [closedById], references: [id])
+  lines       PayrollLine[]
+
+  @@unique([businessId, periodStart])
+  @@index([businessId, periodStart])
+}
+
+/// Lo que se le pago a una persona en un periodo cerrado. Los nombres y
+/// porcentajes van copiados, no referidos: cambiar el sueldo de alguien no
+/// puede reescribir lo que ya se le pago.
+model PayrollLine {
+  id                   String @id @default(uuid())
+  periodId             String
+  employeeId           String
+  employeeName         String
+  role                 String
+  baseSalary           Float
+  commissionPercentage Float
+  /// La venta en servicios sobre la que se calculo la comision.
+  salesBase            Float
+  commissionPay        Float
+  bonusTotal           Float
+  totalPay             Float
+
+  period   PayrollPeriod      @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  employee Employee           @relation(fields: [employeeId], references: [id])
+  bonuses  PayrollLineBonus[]
+
+  @@index([periodId])
+}
+
+/// Cada bono como quedo al cerrar, ganado o no, con su motivo.
+model PayrollLineBonus {
+  id      String  @id @default(uuid())
+  lineId  String
+  ruleId  String?
+  name    String
+  amount  Float
+  granted Boolean
+  reason  String?
+  manual  Boolean @default(false)
+
+  line PayrollLine @relation(fields: [lineId], references: [id], onDelete: Cascade)
+
+  @@index([lineId])
 }
