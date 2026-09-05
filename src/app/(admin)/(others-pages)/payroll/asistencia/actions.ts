@@ -3,7 +3,8 @@
 import prisma from "@/lib/prisma2";
 import { requireBusiness } from "@/lib/session";
 import { revalidatePath } from "next/cache";
-import { esRetardo, horarioDelDia } from "@/lib/asistencia";
+import { esRetardo } from "@/lib/asistencia";
+import { horarioDelDia } from "@/lib/horario";
 import { deTextoFecha, rangoSemana } from "@/lib/periodo";
 import { resumenAsistencia } from "@/lib/nomina";
 
@@ -36,7 +37,10 @@ export async function getAttendanceByDate(dateStr: string) {
 
   const records = employees.map((emp) => {
     const entry = attendances.find((a) => a.employeeId === emp.id);
-    const { entrada: expectedIn, salida: expectedOut } = horarioDelDia(emp, jsDay);
+    const { entrada: expectedIn, salida: expectedOut, trabaja } = horarioDelDia(emp, jsDay);
+    // Dia de descanso de esta persona. No se le pide captura y no cuenta como
+    // falta, pero si se puede registrar: a veces se trabaja en el dia libre.
+    const descanso = !trabaja;
     const semana = resumen.get(emp.id) ?? { retardos: 0, faltas: 0, justificadas: 0, capturados: 0, esperados: 0 };
 
     if (entry) {
@@ -48,6 +52,7 @@ export async function getAttendanceByDate(dateStr: string) {
         expectedOut,
         isAbsent: entry.status === "ABSENT",
         isExcused: entry.status === "EXCUSED",
+        descanso,
         semana,
       };
     }
@@ -70,6 +75,7 @@ export async function getAttendanceByDate(dateStr: string) {
       expectedOut,
       isAbsent: false,
       isExcused: false,
+      descanso,
       semana,
     };
   });
@@ -97,6 +103,7 @@ export async function upsertManyAttendances(records: any[], dateStr: string) {
     where: { businessId: business.id, active: true },
     select: {
       id: true,
+      workSchedule: true,
       workScheduleStartWeekday: true, workScheduleEndWeekday: true,
       workScheduleStartSaturday: true, workScheduleEndSaturday: true,
     },
@@ -107,7 +114,11 @@ export async function upsertManyAttendances(records: any[], dateStr: string) {
 
     const emp = empleados.find((e) => e.id === employeeId);
     if (!emp) continue;
-    const { entrada: programada } = horarioDelDia(emp, jsDay);
+    const { entrada: programada, trabaja } = horarioDelDia(emp, jsDay);
+
+    // Dia de descanso sin nada capturado: no se guarda registro. Crear filas
+    // vacias de los dias libres ensuciaria el conteo de la semana.
+    if (!trabaja && !isAbsent && !isExcused && !checkInTime && !checkOutTime) continue;
 
     // PRESENT o LATE lo decide la hora, no quien captura.
     let finalStatus: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED" = "PRESENT";

@@ -43,23 +43,3 @@ export function minutosDeRetardo(
   if (!esRetardo(horaEntrada, horaProgramada, toleranciaMinutos)) return 0;
   return (aMinutos(horaEntrada) as number) - (aMinutos(horaProgramada) as number);
 }
-
-/** El horario que le toca a un empleado ese dia de la semana (0 = domingo). */
-export function horarioDelDia(
-  emp: {
-    workScheduleStartWeekday: string | null;
-    workScheduleEndWeekday: string | null;
-    workScheduleStartSaturday: string | null;
-    workScheduleEndSaturday: string | null;
-  },
-  diaSemana: number
-): { entrada: string; salida: string } {
-  if (diaSemana === 6) {
-    return { entrada: emp.workScheduleStartSaturday || "", salida: emp.workScheduleEndSaturday || "" };
-  }
-  if (diaSemana > 0 && diaSemana < 6) {
-    return { entrada: emp.workScheduleStartWeekday || "", salida: emp.workScheduleEndWeekday || "" };
-  }
-  // Domingo: sin horario cargado.
-  return { entrada: "", salida: "" };
-}

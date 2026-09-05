@@ -1,7 +1,8 @@
 import "server-only";
 
 import prisma from "@/lib/prisma2";
-import { esRetardo, horarioDelDia } from "@/lib/asistencia";
+import { esRetardo } from "@/lib/asistencia";
+import { horarioDelDia } from "@/lib/horario";
 import { aTextoFecha, rangoSemana } from "@/lib/periodo";
 
 /**
@@ -61,6 +62,9 @@ export async function resumenAsistencia(businessId: string, inicio: Date, fin: D
       where: { businessId, active: true },
       select: {
         id: true,
+        workSchedule: true,
+        // Las cuatro viejas siguen aqui como respaldo: horarioDelDia las usa
+        // mientras haya membresias sin workSchedule.
         workScheduleStartWeekday: true, workScheduleEndWeekday: true,
         workScheduleStartSaturday: true, workScheduleEndSaturday: true,
       },

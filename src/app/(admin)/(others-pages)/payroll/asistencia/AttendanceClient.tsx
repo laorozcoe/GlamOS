@@ -26,6 +26,8 @@ type AttendanceRecord = {
   expectedOut: string;
   isAbsent: boolean;
   isExcused: boolean;
+  /// Dia libre de esta persona. No se le pide captura ni cuenta como falta.
+  descanso: boolean;
   /// De donde salio la hora. SCHEDULE = quedo el horario y nadie lo confirmo.
   source: string;
   semana: {
@@ -163,11 +165,22 @@ export default function AttendanceClient() {
               </span>
             )}
             {rec.employeeName}
+            {rec.descanso && (
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold uppercase text-gray-500 dark:bg-white/10 dark:text-gray-400">
+                Descanso
+              </span>
+            )}
           </div>
           <div className="mt-1 text-xs font-normal text-gray-500">
-            Prog.{" "}
-            <span className="font-medium text-brand-600">{rec.expectedIn || "-"}</span> a{" "}
-            <span className="font-medium text-brand-600">{rec.expectedOut || "-"}</span>
+            {rec.descanso ? (
+              "Hoy no le toca trabajar"
+            ) : (
+              <>
+                Prog.{" "}
+                <span className="font-medium text-brand-600">{rec.expectedIn || "-"}</span> a{" "}
+                <span className="font-medium text-brand-600">{rec.expectedOut || "-"}</span>
+              </>
+            )}
           </div>
           <ResumenSemana semana={rec.semana} />
         </div>
@@ -298,7 +311,11 @@ export default function AttendanceClient() {
         loading={loading && records.length === 0}
         empty="No hay empleados activos registrados para mostrar."
         rowClassName={(rec) =>
-          rec.hasRecord ? "bg-brand-50/30 dark:bg-brand-900/10" : ""
+          rec.descanso && !rec.hasRecord
+            ? "opacity-60"
+            : rec.hasRecord
+              ? "bg-brand-50/30 dark:bg-brand-900/10"
+              : ""
         }
       />
     </PageShell>

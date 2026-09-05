@@ -5,6 +5,8 @@ import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
+import HorarioSemanal from "@/components/form/HorarioSemanal";
+import { horarioVacio, normalizarHorario, type Horario } from "@/lib/horario";
 import Select from "@/components/form/Select";
 import Switch from "@/components/form/switch/Switch"; // ADDED SWITCH
 import { createEmployee, updateEmployee, deleteEmployee } from "./actions";
@@ -32,10 +34,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
     baseSalary: 0,
     hasPayroll: false,
     bookable: true,
-    workScheduleStartWeekday: "",
-    workScheduleEndWeekday: "",
-    workScheduleStartSaturday: "",
-    workScheduleEndSaturday: "",
+    workSchedule: horarioVacio() as Horario,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,10 +59,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
       baseSalary: 0,
       hasPayroll: false,
       bookable: true,
-      workScheduleStartWeekday: "",
-      workScheduleEndWeekday: "",
-      workScheduleStartSaturday: "",
-      workScheduleEndSaturday: "",
+      workSchedule: horarioVacio(),
     });
     setIsOpen(true);
   };
@@ -84,10 +80,9 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
        // sigue vigente en el salon.
       hasPayroll: !!user.inPayroll,
       bookable: !!user.bookable,
-      workScheduleStartWeekday: user.employee?.workScheduleStartWeekday || "",
-      workScheduleEndWeekday: user.employee?.workScheduleEndWeekday || "",
-      workScheduleStartSaturday: user.employee?.workScheduleStartSaturday || "",
-      workScheduleEndSaturday: user.employee?.workScheduleEndSaturday || "",
+      // Si la persona todavia no tiene horario nuevo, se arma con las cuatro
+      // columnas viejas para no llegar a la pantalla en blanco.
+      workSchedule: normalizarHorario(user.employee?.workSchedule, user.employee),
     });
     setIsOpen(true);
   };
@@ -411,62 +406,15 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
 
           {/* Horario Section */}
           <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5">
-            <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-4">Horario de Trabajo (Cálculo de Sueldo)</h4>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 dark:bg-white/2 p-4 rounded-xl">
-                  <Label className="font-bold text-sm mb-3 block">Lunes a Viernes</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs">Entrada</Label>
-                      <Input
-                        type="time"
-                        name="workScheduleStartWeekday"
-                        value={formData.workScheduleStartWeekday}
-                        onChange={handleChange}
-                        className="w-full text-sm p-2"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Salida</Label>
-                      <Input
-                        type="time"
-                        name="workScheduleEndWeekday"
-                        value={formData.workScheduleEndWeekday}
-                        onChange={handleChange}
-                        className="w-full text-sm p-2"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 dark:bg-white/2 p-4 rounded-xl">
-                  <Label className="font-bold text-sm mb-3 block">Sábados</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs">Entrada</Label>
-                      <Input
-                        type="time"
-                        name="workScheduleStartSaturday"
-                        value={formData.workScheduleStartSaturday}
-                        onChange={handleChange}
-                        className="w-full text-sm p-2"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Salida</Label>
-                      <Input
-                        type="time"
-                        name="workScheduleEndSaturday"
-                        value={formData.workScheduleEndSaturday}
-                        onChange={handleChange}
-                        className="w-full text-sm p-2"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <h4 className="font-semibold text-gray-700 dark:text-gray-300">Horario de trabajo</h4>
+            <p className="mb-4 text-xs text-gray-500">
+              Un horario por día. Los días en descanso no cuentan como falta y no se les pide
+              captura en Asistencia.
+            </p>
+            <HorarioSemanal
+              value={formData.workSchedule}
+              onChange={(h) => setFormData((prev) => ({ ...prev, workSchedule: h }))}
+            />
           </div>
 
           <div className="mt-6 flex justify-center sm:justify-end gap-3 pt-4 border-t border-gray-100 dark:border-white/5">

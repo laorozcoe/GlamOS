@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma2";
 import { requireBusiness } from "@/lib/session";
+import { normalizarHorario } from "@/lib/horario";
 import { hashPassword } from "@/lib/hashPassword";
 import { revalidatePath } from "next/cache";
 
@@ -54,7 +55,7 @@ export async function createEmployee(data: any) {
 
   const {
     name, lastName, username, email, password, role, commission, baseSalary, phone, hasPayroll, bookable,
-    workScheduleStartWeekday, workScheduleEndWeekday, workScheduleStartSaturday, workScheduleEndSaturday,
+    workSchedule,
   } = data;
 
   // ¿La persona ya existe en el sistema? Puede venir de otro salón: en ese
@@ -97,10 +98,10 @@ export async function createEmployee(data: any) {
     phone,
     commission: Number(commission) || 0,
     baseSalary: Number(baseSalary) || 0,
-    workScheduleStartWeekday,
-    workScheduleEndWeekday,
-    workScheduleStartSaturday,
-    workScheduleEndSaturday,
+    // Se normaliza en el servidor: el formulario es un endpoint publico y en
+    // estas columnas ya habia quedado basura como "0", que la pantalla de
+    // asistencia mostraba como "0 a. m.".
+    workSchedule: normalizarHorario(workSchedule),
     role: role || "RECEPTION",
     inPayroll: !!hasPayroll,
     bookable: !!bookable,
@@ -130,7 +131,7 @@ export async function updateEmployee(userId: string, data: any) {
 
   const {
     name, lastName, email, phone, role, commission, baseSalary, password, hasPayroll, bookable,
-    workScheduleStartWeekday, workScheduleEndWeekday, workScheduleStartSaturday, workScheduleEndSaturday,
+    workSchedule,
   } = data;
 
   if (password && password.trim() !== "") {
@@ -163,10 +164,7 @@ export async function updateEmployee(userId: string, data: any) {
       phone,
       commission: Number(commission) || 0,
       baseSalary: Number(baseSalary) || 0,
-      workScheduleStartWeekday,
-      workScheduleEndWeekday,
-      workScheduleStartSaturday,
-      workScheduleEndSaturday,
+      workSchedule: normalizarHorario(workSchedule),
       inPayroll: !!hasPayroll,
       bookable: !!bookable,
       active: true,
