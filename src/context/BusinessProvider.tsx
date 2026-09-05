@@ -2,13 +2,13 @@
 
 import { BusinessContext } from "@/context/BusinessContext"
 // 👇 CAMBIO AQUÍ: Agrega 'type'
-import type { Business } from "@prisma/client"
+import type { PublicBusiness } from "@/lib/publicBusiness"
 
 export default function BusinessProvider({
     business,
     children,
 }: {
-    business: Business | null
+    business: PublicBusiness | null
     children: React.ReactNode
 }) {
     return (

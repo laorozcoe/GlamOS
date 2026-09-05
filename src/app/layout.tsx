@@ -6,6 +6,7 @@ import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { getBusiness } from "@/lib/getBusiness";
 import BusinessProvider from "@/context/BusinessProvider";
+import { toPublicBusiness } from "@/lib/publicBusiness";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -46,6 +47,10 @@ export default async function RootLayout({
   const business = await getBusiness();
   const themeVars = buildThemeVars(business?.themeColors);
 
+  // Sin esto, los tokens de MercadoPago del negocio viajan al cliente dentro
+  // del payload RSC de todas las paginas, /signin incluida.
+  const publicBusiness = toPublicBusiness(business);
+
   return (
     <html lang="es" style={themeVars as React.CSSProperties}>
       <link rel="apple-touch-icon" sizes="180x180" href={`/${business?.slug}/apple-touch-icon.png`} />
@@ -54,7 +59,7 @@ export default async function RootLayout({
       <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"></meta>
       <meta name="apple-mobile-web-app-capable" content="yes" />
       <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-      <BusinessProvider business={business}>
+      <BusinessProvider business={publicBusiness}>
         <body className={`${outfit.className} dark:bg-gray-900 overscroll-none`}>
           <ToastContainer style={{ zIndex: 999999 }} />
           <ThemeProvider>
