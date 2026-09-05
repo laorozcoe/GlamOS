@@ -846,6 +846,10 @@ export async function deletePaymentPrisma(businessId, id) {
 //--------------------------------------------------------------------------------
 
 export const createSalePrisma = async (data) => {
+    // Se declara con `export const`, por lo que quedo fuera del barrido de
+    // guardas sobre `export async function`. El businessId venia dentro del
+    // payload del cliente: se fuerza el de la sesion.
+    data = { ...data, businessId: await assertBusinessId(data?.businessId) };
     const {
         businessId,
         clientId,
