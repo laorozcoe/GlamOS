@@ -30,7 +30,8 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
     role: "RECEPTION",
     commission: 0,
     baseSalary: 0,
-    hasPayroll: false, // NEW STATE
+    hasPayroll: false,
+    bookable: true,
     workScheduleStartWeekday: "",
     workScheduleEndWeekday: "",
     workScheduleStartSaturday: "",
@@ -58,6 +59,7 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
       commission: 0,
       baseSalary: 0,
       hasPayroll: false,
+      bookable: true,
       workScheduleStartWeekday: "",
       workScheduleEndWeekday: "",
       workScheduleStartSaturday: "",
@@ -77,7 +79,11 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
       role: user.role || "RECEPTION",
       commission: user.employee?.commission || 0,
       baseSalary: user.employee?.baseSalary || 0,
-      hasPayroll: !!(user.employee && user.employee.active),
+      // Los dos campos que hasta ahora eran uno solo. Antes esto leia
+       // `user.employee.active`, que es una tercera cosa: si la membresia
+       // sigue vigente en el salon.
+      hasPayroll: !!user.inPayroll,
+      bookable: !!user.bookable,
       workScheduleStartWeekday: user.employee?.workScheduleStartWeekday || "",
       workScheduleEndWeekday: user.employee?.workScheduleEndWeekday || "",
       workScheduleStartSaturday: user.employee?.workScheduleStartSaturday || "",
@@ -341,10 +347,25 @@ export default function EmployeeClient({ users }: EmployeeClientProps) {
           </div>
 
           <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5">
+            {/* Dos cosas distintas que hasta la fase 6 eran el mismo campo:
+                se puede atender sin sueldo base, y se puede cobrar sin
+                aparecer en la agenda. */}
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h4 className="font-semibold text-gray-700 dark:text-gray-300">Incluir en Nómina Semanal</h4>
-                <p className="text-xs text-gray-500">Habilita esta opción si este usuario ganará sueldo base o comisiones.</p>
+              <div className="pr-4">
+                <h4 className="font-semibold text-gray-700 dark:text-gray-300">Aparece en la agenda</h4>
+                <p className="text-xs text-gray-500">Se puede agendar con esta persona y sale en los selectores de personal.</p>
+              </div>
+              <Switch
+                label={formData.bookable ? "Sí" : "No"}
+                defaultChecked={formData.bookable}
+                onChange={(checked) => setFormData((prev) => ({ ...prev, bookable: checked }))}
+              />
+            </div>
+
+            <div className="flex items-center justify-between mb-4">
+              <div className="pr-4">
+                <h4 className="font-semibold text-gray-700 dark:text-gray-300">Entra a la nómina</h4>
+                <p className="text-xs text-gray-500">Aparece en la nómina de cada periodo con sueldo base, comisiones y bonos.</p>
               </div>
               <Switch
                 label={formData.hasPayroll ? "Sí" : "No"}

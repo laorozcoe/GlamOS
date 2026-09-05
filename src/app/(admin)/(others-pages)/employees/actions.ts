@@ -23,10 +23,14 @@ function toUserShape(membership: any) {
     ...user,
     role: employee.role,
     phone: employee.phone ?? user.phone,
+    /// Entra a nómina. Es lo que decide si se le ven sueldo y comisiones.
+    inPayroll: employee.inPayroll,
+    /// Aparece en la agenda. Antes los dos eran el mismo campo.
+    bookable: employee.bookable,
     // `employee` presente = tiene nómina. Antes eso se representaba con la
     // ausencia de la fila; ahora todas las membresías existen y lo distingue
-    // `bookable`.
-    employee: employee.bookable ? employee : null,
+    // `inPayroll`.
+    employee: employee.inPayroll ? employee : null,
   };
 }
 
@@ -49,7 +53,7 @@ export async function createEmployee(data: any) {
   const business = await requireBusiness(["ADMIN", "RECEPTION"]);
 
   const {
-    name, lastName, username, email, password, role, commission, baseSalary, phone, hasPayroll,
+    name, lastName, username, email, password, role, commission, baseSalary, phone, hasPayroll, bookable,
     workScheduleStartWeekday, workScheduleEndWeekday, workScheduleStartSaturday, workScheduleEndSaturday,
   } = data;
 
@@ -98,7 +102,8 @@ export async function createEmployee(data: any) {
     workScheduleStartSaturday,
     workScheduleEndSaturday,
     role: role || "RECEPTION",
-    bookable: !!hasPayroll,
+    inPayroll: !!hasPayroll,
+    bookable: !!bookable,
     active: true,
   };
 
@@ -124,7 +129,7 @@ export async function updateEmployee(userId: string, data: any) {
   if (!membership) throw new Error("Esa persona no pertenece a este salón");
 
   const {
-    name, lastName, email, phone, role, commission, baseSalary, password, hasPayroll,
+    name, lastName, email, phone, role, commission, baseSalary, password, hasPayroll, bookable,
     workScheduleStartWeekday, workScheduleEndWeekday, workScheduleStartSaturday, workScheduleEndSaturday,
   } = data;
 
@@ -162,7 +167,8 @@ export async function updateEmployee(userId: string, data: any) {
       workScheduleEndWeekday,
       workScheduleStartSaturday,
       workScheduleEndSaturday,
-      bookable: !!hasPayroll,
+      inPayroll: !!hasPayroll,
+      bookable: !!bookable,
       active: true,
     },
   });

@@ -224,7 +224,9 @@ export async function calcularNomina(businessId: string, fechaReferencia: Date) 
 
   const [empleados, ventas, reglas, otorgamientos, asistencia] = await Promise.all([
     prisma.employee.findMany({
-      where: { businessId, active: true, user: { active: true } },
+      // `inPayroll` y no `bookable`: quien atiende no necesariamente cobra
+      // aqui, y quien cobra no necesariamente atiende.
+      where: { businessId, active: true, inPayroll: true, user: { active: true } },
       include: { user: true },
     }),
     prisma.sale.findMany({
