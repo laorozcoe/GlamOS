@@ -5,8 +5,13 @@ import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import PageShell from "@/components/layout/PageShell";
 import DataTable, { type Column } from "@/components/ui/table/DataTable";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getPayrollData } from "./actions";
+import Label from "@/components/form/Label";
+import Input from "@/components/form/input/InputField";
+import TextArea from "@/components/form/input/TextArea";
+import { ChevronLeft, ChevronRight, Pencil, RotateCcw } from "lucide-react";
+import { toast } from "react-toastify";
+import { useSession } from "@/lib/auth-client";
+import { getPayrollData, setBonusAward, clearBonusAward } from "./actions";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(amount);
@@ -22,10 +27,15 @@ type Bono = {
   nombre: string;
   tipo: string;
   monto: number;
+  montoCatalogo: number;
   ganado: boolean;
+  /** Lo que dijo el calculo antes de cualquier ajuste. null en los manuales. */
+  calculado: boolean | null;
   motivo: string;
   manual: boolean;
   ajustado: boolean;
+  /** Ya hay una decision manual guardada para este bono en este periodo. */
+  decidido: boolean;
 };
 
 type Fila = {
@@ -55,7 +65,15 @@ const colorDeRol = (role: string) => {
  * pago es la mitad de para lo que sirve la pantalla, y es lo que se le
  * responde a la empleada cuando pregunta.
  */
-function ListaDeBonos({ bonos, detallado = false }: { bonos: Bono[]; detallado?: boolean }) {
+function ListaDeBonos({
+  bonos,
+  detallado = false,
+  onEditar,
+}: {
+  bonos: Bono[];
+  detallado?: boolean;
+  onEditar?: (b: Bono) => void;
+}) {
   if (!bonos?.length) return null;
 
   return (
@@ -66,6 +84,11 @@ function ListaDeBonos({ bonos, detallado = false }: { bonos: Bono[]; detallado?:
             <span className={b.ganado ? "text-gray-700 dark:text-gray-300" : "text-gray-400"}>
               {b.nombre}
             </span>
+            {b.manual && (
+              <span className="ml-1.5 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-gray-500 dark:bg-white/10 dark:text-gray-400">
+                a criterio
+              </span>
+            )}
             {b.ajustado && (
               <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                 ajustado
@@ -75,16 +98,28 @@ function ListaDeBonos({ bonos, detallado = false }: { bonos: Bono[]; detallado?:
               <div className="mt-0.5 text-xs text-gray-400">{b.motivo}</div>
             )}
           </div>
-          <span
-            className={`shrink-0 font-semibold tabular-nums ${
-              b.ganado
-                ? "text-success-600 dark:text-success-400"
-                : "text-gray-300 line-through dark:text-gray-600"
-            }`}
-          >
-            {b.ganado ? "+" : ""}
-            {formatCurrency(b.monto)}
-          </span>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <span
+              className={`font-semibold tabular-nums ${
+                b.ganado
+                  ? "text-success-600 dark:text-success-400"
+                  : "text-gray-300 line-through dark:text-gray-600"
+              }`}
+            >
+              {b.ganado ? "+" : ""}
+              {formatCurrency(b.monto)}
+            </span>
+            {onEditar && (
+              <button
+                onClick={() => onEditar(b)}
+                aria-label={`Cambiar ${b.nombre}`}
+                className="flex size-9 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/5 dark:hover:text-white"
+              >
+                <Pencil className="size-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       ))}
 
@@ -104,7 +139,19 @@ export default function PayrollClient() {
   const [fechaRef, setFechaRef] = useState<Date>(() => new Date());
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [seleccionado, setSeleccionado] = useState<Fila | null>(null);
+  const [seleccionadoId, setSeleccionadoId] = useState<string | null>(null);
+
+  // El bono que se esta otorgando o ajustando, y su formulario.
+  const [bonoEnEdicion, setBonoEnEdicion] = useState<Bono | null>(null);
+  const [otorgar, setOtorgar] = useState(true);
+  const [montoBono, setMontoBono] = useState<string>("");
+  const [notaBono, setNotaBono] = useState<string>("");
+  const [guardandoBono, setGuardandoBono] = useState(false);
+
+  // Recepcion puede LEER la nomina pero no otorgar bonos. Sin esto veria un
+  // lapiz que solo lleva a un error de permisos.
+  const { data: sesion } = useSession();
+  const puedeOtorgar = (sesion?.session as any)?.role === "ADMIN";
 
   const cargar = useCallback(async (fecha: Date) => {
     setLoading(true);
@@ -131,6 +178,56 @@ export default function PayrollClient() {
 
   const filas: Fila[] = data?.payrollData ?? [];
   const totalNomina = filas.reduce((acc, f) => acc + f.totalPay, 0);
+  // Derivado, no copiado: al recargar tras otorgar un bono, el detalle abierto
+  // se actualiza solo en vez de quedarse con los numeros viejos.
+  const seleccionado = filas.find((f) => f.employeeId === seleccionadoId) ?? null;
+
+  const abrirBono = (bono: Bono) => {
+    setBonoEnEdicion(bono);
+    setOtorgar(bono.ganado);
+    setMontoBono(String(bono.monto ?? bono.montoCatalogo ?? 0));
+    setNotaBono("");
+  };
+
+  const guardarBono = async () => {
+    if (!bonoEnEdicion || !seleccionadoId) return;
+    setGuardandoBono(true);
+    try {
+      const monto = Number(montoBono);
+      await setBonusAward({
+        employeeId: seleccionadoId,
+        ruleId: bonoEnEdicion.ruleId,
+        referenceDateISO: new Date(fechaRef).toISOString(),
+        granted: otorgar,
+        // Si coincide con el catalogo no se guarda monto: asi el bono sigue
+        // los cambios del catalogo en vez de quedar congelado.
+        amount: monto === bonoEnEdicion.montoCatalogo ? null : monto,
+        note: notaBono,
+      });
+      setBonoEnEdicion(null);
+      await cargar(fechaRef);
+      toast.success(otorgar ? "Bono otorgado." : "Bono retirado.");
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo guardar el bono.");
+    } finally {
+      setGuardandoBono(false);
+    }
+  };
+
+  const quitarAjuste = async () => {
+    if (!bonoEnEdicion || !seleccionadoId) return;
+    setGuardandoBono(true);
+    try {
+      await clearBonusAward(seleccionadoId, bonoEnEdicion.ruleId, new Date(fechaRef).toISOString());
+      setBonoEnEdicion(null);
+      await cargar(fechaRef);
+      toast.success("Se quitó la decisión manual.");
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo quitar el ajuste.");
+    } finally {
+      setGuardandoBono(false);
+    }
+  };
 
   const columnas: Column<Fila>[] = [
     {
@@ -174,6 +271,9 @@ export default function PayrollClient() {
       align: "right",
       cell: (f) => {
         const ganados = f.bonos.filter((b) => b.ganado).length;
+        // Los manuales sin decidir son trabajo pendiente: hay que verlos sin
+        // abrir a cada persona.
+        const porDecidir = f.bonos.filter((b) => b.manual && !b.decidido).length;
         if (f.bonos.length === 0) {
           return <span className="text-xs text-gray-400">sin bonos</span>;
         }
@@ -183,6 +283,11 @@ export default function PayrollClient() {
             <div className="text-xs text-gray-400">
               {ganados} de {f.bonos.length}
             </div>
+            {porDecidir > 0 && (
+              <div className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                {porDecidir} por decidir
+              </div>
+            )}
           </div>
         );
       },
@@ -224,11 +329,11 @@ export default function PayrollClient() {
         columns={columnas}
         rows={filas}
         rowKey={(f) => f.employeeId}
-        onRowClick={(f) => setSeleccionado(f)}
+        onRowClick={(f) => setSeleccionadoId(f.employeeId)}
         loading={loading && filas.length === 0}
         empty="No hay empleados activos registrados para el negocio."
         cardFooter={(f) => (
-          <Button variant="outline" className="w-full" onClick={() => setSeleccionado(f)}>
+          <Button variant="outline" className="w-full" onClick={() => setSeleccionadoId(f.employeeId)}>
             Ver detalle
           </Button>
         )}
@@ -236,7 +341,7 @@ export default function PayrollClient() {
 
       <Modal
         isOpen={!!seleccionado}
-        onClose={() => setSeleccionado(null)}
+        onClose={() => setSeleccionadoId(null)}
         className="max-w-3xl sm:h-[85svh] p-0 flex flex-col"
         mobileVariant="fullscreen"
       >
@@ -290,7 +395,11 @@ export default function PayrollClient() {
                   <h4 className="mb-3 border-b border-gray-200 pb-2 font-semibold text-gray-700 dark:border-white/5 dark:text-gray-300">
                     Bonos del periodo
                   </h4>
-                  <ListaDeBonos bonos={seleccionado.bonos} detallado />
+                  <ListaDeBonos
+                    bonos={seleccionado.bonos}
+                    detallado
+                    onEditar={puedeOtorgar ? abrirBono : undefined}
+                  />
                 </div>
               )}
 
@@ -341,9 +450,112 @@ export default function PayrollClient() {
             </div>
 
             <div className="border-t border-gray-200 p-4 dark:border-white/5">
-              <Button variant="outline" className="w-full" onClick={() => setSeleccionado(null)}>
+              <Button variant="outline" className="w-full" onClick={() => setSeleccionadoId(null)}>
                 Cerrar
               </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Otorgar un bono manual, o contradecir al calculo a sabiendas */}
+      <Modal isOpen={!!bonoEnEdicion} onClose={() => setBonoEnEdicion(null)} size="md" className="p-0">
+        {bonoEnEdicion && (
+          <div className="w-full">
+            <div className="border-b border-gray-200 px-5 pb-4 pr-16 pt-5 dark:border-gray-800 sm:px-6 sm:pr-20 sm:pt-6">
+              <Label className="text-lg font-semibold">{bonoEnEdicion.nombre}</Label>
+              <p className="mt-0.5 text-sm text-gray-500">
+                {seleccionado?.name} · {formatDateObj(data.startDate)} al {formatDateObj(data.endDate)}
+              </p>
+            </div>
+
+            <div className="space-y-4 p-5 sm:p-6">
+              {/* Lo que dijo el calculo, para que quien decide sepa que esta
+                  contradiciendo y no lo haga sin querer. */}
+              {bonoEnEdicion.calculado !== null && (
+                <div className="rounded-lg bg-gray-50 p-3 text-sm dark:bg-white/5">
+                  <span className="text-gray-500">El cálculo dice: </span>
+                  <span className={bonoEnEdicion.calculado ? "font-medium text-success-600" : "font-medium text-gray-700 dark:text-gray-300"}>
+                    {bonoEnEdicion.calculado ? "se gana" : "no se gana"}
+                  </span>
+                  <div className="mt-0.5 text-xs text-gray-400">{bonoEnEdicion.motivo}</div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setOtorgar(true)}
+                  className={`min-h-11 flex-1 rounded-lg border px-4 text-sm font-semibold transition-colors ${
+                    otorgar
+                      ? "border-success-500 bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-400"
+                      : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5"
+                  }`}
+                >
+                  Otorgar
+                </button>
+                <button
+                  onClick={() => setOtorgar(false)}
+                  className={`min-h-11 flex-1 rounded-lg border px-4 text-sm font-semibold transition-colors ${
+                    !otorgar
+                      ? "border-red-400 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                      : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5"
+                  }`}
+                >
+                  No otorgar
+                </button>
+              </div>
+
+              {otorgar && (
+                <div>
+                  <Label className="mb-1 block text-sm font-medium">Monto</Label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={montoBono}
+                      onChange={(e) => setMontoBono(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-400">
+                    El catálogo dice {formatCurrency(bonoEnEdicion.montoCatalogo)}. Cámbialo solo por excepción.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <Label className="mb-1 block text-sm font-medium">
+                  Motivo {bonoEnEdicion.manual ? "(opcional)" : "(obligatorio)"}
+                </Label>
+                <TextArea
+                  rows={2}
+                  placeholder={
+                    bonoEnEdicion.manual
+                      ? "Presentación impecable toda la semana."
+                      : "Por qué se cambia lo que calculó el sistema."
+                  }
+                  value={notaBono}
+                  onChange={(e) => setNotaBono(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  Es lo que se lee después, cuando alguien pregunta por qué esta semana pagó distinto.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap justify-end gap-3 pt-2">
+                {bonoEnEdicion.decidido ? (
+                  <Button variant="outline" onClick={quitarAjuste} disabled={guardandoBono}>
+                    <RotateCcw className="mr-2 size-4" /> Quitar decisión
+                  </Button>
+                ) : null}
+                <Button variant="outline" onClick={() => setBonoEnEdicion(null)}>
+                  Cancelar
+                </Button>
+                <Button onClick={guardarBono} disabled={guardandoBono}>
+                  {guardandoBono ? "Guardando..." : "Guardar"}
+                </Button>
+              </div>
             </div>
           </div>
         )}

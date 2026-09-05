@@ -19,13 +19,23 @@ export type EstadoBono = {
   tipo: string;
   /** Lo que se paga si se gana. Puede venir ajustado por un otorgamiento manual. */
   monto: number;
+  /** El monto que dice el catalogo, para poder volver a el. */
+  montoCatalogo: number;
   ganado: boolean;
+  /**
+   * Lo que decia el calculo, antes de cualquier ajuste manual. `null` en los
+   * bonos manuales, que no se calculan. Sirve para exigir una nota solo
+   * cuando alguien contradice al sistema.
+   */
+  calculado: boolean | null;
   /** Por que se gano o por que no. Es lo que se le explica a la empleada. */
   motivo: string;
   /** Se decide a mano, no se calcula. */
   manual: boolean;
   /** Alguien lo forzo -a favor o en contra- de lo que decia el calculo. */
   ajustado: boolean;
+  /** Ya existe una decision manual guardada para este bono en este periodo. */
+  decidido: boolean;
   nota: string | null;
 };
 
@@ -296,7 +306,9 @@ export async function calcularNomina(businessId: string, fechaReferencia: Date) 
         nombre: regla.name,
         tipo: regla.type,
         monto: otorgado?.amount ?? regla.amount,
+        montoCatalogo: regla.amount,
         ganado,
+        calculado: manual ? null : calculado.ganado,
         motivo: otorgado?.note?.trim()
           ? otorgado.note.trim()
           : manual && !otorgado
@@ -304,6 +316,7 @@ export async function calcularNomina(businessId: string, fechaReferencia: Date) 
             : calculado.motivo,
         manual,
         ajustado,
+        decidido: !!otorgado,
         nota: otorgado?.note ?? null,
       };
     });
