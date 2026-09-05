@@ -73,7 +73,15 @@ async function run(tx) {
   );
   await tx.$executeRawUnsafe('ALTER TABLE "session" ADD COLUMN IF NOT EXISTS "businessId" TEXT');
   await tx.$executeRawUnsafe('ALTER TABLE "session" ADD COLUMN IF NOT EXISTS "role" TEXT');
-  log('2. Columnas nuevas agregadas.');
+
+  // El unique GLOBAL sobre Employee.userId tiene que caer aqui, antes de la
+  // fusion del paso 5: repuntar la membresia de un usuario sobrante al
+  // superviviente deja, por un instante, dos filas con el mismo userId. El
+  // unique definitivo, (businessId, userId), se crea al final.
+  await tx.$executeRawUnsafe('ALTER TABLE "Employee" DROP CONSTRAINT IF EXISTS "Employee_userId_key"');
+  await tx.$executeRawUnsafe('DROP INDEX IF EXISTS "Employee_userId_key"');
+
+  log('2. Columnas nuevas agregadas y unique global de userId retirado.');
 
   // ---------------------------------------------------------------- 3. rol
   const rolesCopiados = await tx.$executeRawUnsafe(`
@@ -223,8 +231,6 @@ async function run(tx) {
   await tx.$executeRawUnsafe('ALTER TABLE "User" DROP COLUMN IF EXISTS "role"');
   await tx.$executeRawUnsafe('CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User" ("email")');
 
-  await tx.$executeRawUnsafe('ALTER TABLE "Employee" DROP CONSTRAINT IF EXISTS "Employee_userId_key"');
-  await tx.$executeRawUnsafe('DROP INDEX IF EXISTS "Employee_userId_key"');
   await tx.$executeRawUnsafe(
     'CREATE UNIQUE INDEX IF NOT EXISTS "Employee_businessId_userId_key" ON "Employee" ("businessId","userId")'
   );
