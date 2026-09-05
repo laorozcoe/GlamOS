@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma2'
 import { hashPassword } from '@/lib/hashPassword'
 import { revalidatePath } from "next/cache";
 import { randomUUID } from 'crypto'; // Para generar los IDs de Account
+import { assertBusinessId, requireSession } from '@/lib/session';
 // import { auth } from "@/lib/auth"; // Tu configuración de Auth.js
 
 //--------------------------------------------------------------------------------
@@ -11,6 +12,7 @@ import { randomUUID } from 'crypto'; // Para generar los IDs de Account
 //--------------------------------------------------------------------------------
 
 export async function createAppointment(payload) {
+    payload = { ...payload, businessId: await assertBusinessId(payload?.businessId) };
     // const session = await auth();
     // if (!session?.user) throw new Error("No autenticado");
 
@@ -53,6 +55,7 @@ export async function createAppointment(payload) {
 }
 
 export async function getAppointmentPrisma(businessId, id) {
+    businessId = await assertBusinessId(businessId);
     const appointment = await prisma.appointment.findFirst({
         where: {
             businessId: businessId,
@@ -89,6 +92,7 @@ export async function getAppointmentPrisma(businessId, id) {
 }
 
 export async function getAppointmentsPrisma(businessId) {
+    businessId = await assertBusinessId(businessId);
     const appointment = await prisma.appointment.findMany({
         where: { businessId: businessId, active: true },
         include: {
@@ -121,6 +125,7 @@ export async function getAppointmentsPrisma(businessId) {
 }
 
 export async function getAppointmentsByDatePrisma(businessId, start) {
+    businessId = await assertBusinessId(businessId);
 
     // Forzamos el inicio del día con el desfase de UTC-6
     const startDate = new Date(`${start}T00:00:00.000-06:00`);
@@ -161,6 +166,7 @@ export async function getAppointmentsByDatePrisma(businessId, start) {
 }
 
 export async function updateAppointment(payload, appointmentId) {
+    const sessionBusinessId = await assertBusinessId(payload?.businessId);
     // Validación básica
     if (!appointmentId) throw new Error("Se requiere el ID de la cita para actualizar");
 
@@ -178,11 +184,13 @@ export async function updateAppointment(payload, appointmentId) {
 
     await prisma.appointment.update({
         where: {
-            id: appointmentId, active: true
+            // El businessId es obligatorio en el where: sin el, cualquier
+            // usuario autenticado podia editar la cita de otro negocio.
+            id: appointmentId, businessId: sessionBusinessId, active: true
         },
         data: {
             // 1. Actualizamos los datos planos de la Cita
-            businessId: payload.businessId,
+            businessId: sessionBusinessId,
             employeeId: payload.employeeId, // Ojo: asegúrate que tu payload traiga el objeto o el string directo
             title: payload.title,
             start: payload.start,
@@ -213,12 +221,16 @@ export async function updateAppointment(payload, appointmentId) {
 }
 
 export async function deleteAppointmentPrisma(appointmentId) {
+    const { business } = await requireSession();
     // Validación básica
     if (!appointmentId) throw new Error("Se requiere el ID de la cita para eliminar");
 
     await prisma.appointment.update({
         where: {
             id: appointmentId,
+            // Sin businessId cualquier usuario autenticado podia borrar la
+            // cita de otro negocio conociendo solo su id.
+            businessId: business.id,
             active: true
         },
         data: {
@@ -234,6 +246,7 @@ export async function deleteAppointmentPrisma(appointmentId) {
 //--------------------------------------------------------------------------------
 
 export async function seed() {
+    await requireSession(["ADMIN"]);
     return await prisma.business.create({
         data: {
             name: "Evora Salon",
@@ -249,14 +262,10 @@ export async function seed() {
 //-------------------------Business-------------------------------------
 //--------------------------------------------------------------------------------
 
-export async function getBusinessPrisma(slug) {
-
-    const business = await prisma.business.findUnique({
-        where: { slug, active: true },
-    })
-
-    return business
-}
+// getBusinessPrisma se movio a src/lib/getBusiness.js: este archivo es
+// "use server", por lo que exportarla la convertia en un Server Action publico
+// que devolvia el registro completo del negocio -tokens de MercadoPago
+// incluidos- a cualquiera que pasara un slug.
 
 //--------------------------------------------------------------------------------
 //-------------------------ServiceCategory-------------------------------------
@@ -264,6 +273,7 @@ export async function getBusinessPrisma(slug) {
 
 
 export async function createServiceCategoryPrisma(businessId, name, order, active) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const serviceCategory = await prisma.serviceCategory.create({
         data: {
             businessId,
@@ -277,6 +287,7 @@ export async function createServiceCategoryPrisma(businessId, name, order, activ
 }
 
 export async function getServiceCategoryPrisma(businessId, name) {
+    businessId = await assertBusinessId(businessId);
     const serviceCategory = await prisma.serviceCategory.findFirst({
         where: {
             businessId: businessId,
@@ -289,6 +300,7 @@ export async function getServiceCategoryPrisma(businessId, name) {
 }
 
 export async function getServicesCategoriesPrisma(businessId) {
+    businessId = await assertBusinessId(businessId);
     const serviceCategories = await prisma.serviceCategory.findMany({
         where: {
             businessId: businessId,
@@ -300,6 +312,7 @@ export async function getServicesCategoriesPrisma(businessId) {
 }
 
 export async function updateServiceCategoryPrisma(id, businessId, name, order, active) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const serviceCategory = await prisma.serviceCategory.update({
         where: {
             id: id,
@@ -317,6 +330,7 @@ export async function updateServiceCategoryPrisma(id, businessId, name, order, a
 }
 
 export async function deleteServiceCategoryPrisma(id, businessId) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const serviceCategory = await prisma.serviceCategory.delete({
         where: {
             id: id,
@@ -334,6 +348,7 @@ export async function deleteServiceCategoryPrisma(id, businessId) {
 //--------------------------------------------------------------------------------
 
 export async function createServicePrisma(businessId, categoryId, name, description, descriptionTicket, duration, price) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const service = await prisma.service.create({
         data: {
             businessId,
@@ -350,6 +365,7 @@ export async function createServicePrisma(businessId, categoryId, name, descript
 }
 
 export async function getServicePrisma(businessId, name) {
+    businessId = await assertBusinessId(businessId);
 
     const service = await prisma.service.findFirst({
         where: {
@@ -363,6 +379,7 @@ export async function getServicePrisma(businessId, name) {
 }
 
 export async function getServicesPrisma(businessId) {
+    businessId = await assertBusinessId(businessId);
 
     const services = await prisma.service.findMany({
         where: {
@@ -375,6 +392,7 @@ export async function getServicesPrisma(businessId) {
 }
 
 export async function getServicesByCategoryPrisma(businessId, categoryId) {
+    businessId = await assertBusinessId(businessId);
 
     const servicesCategories = await prisma.service.findMany({
         where: {
@@ -388,6 +406,7 @@ export async function getServicesByCategoryPrisma(businessId, categoryId) {
 }
 
 export async function updateServicePrisma(id, businessId, categoryId, name, description, descriptionTicket, duration, price) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const service = await prisma.service.update({
         where: {
             id: id,
@@ -408,6 +427,7 @@ export async function updateServicePrisma(id, businessId, categoryId, name, desc
 }
 
 export async function deleteServicePrisma(id, businessId) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const service = await prisma.service.delete({
         where: {
             id: id,
@@ -440,6 +460,7 @@ export async function deleteServicePrisma(id, businessId) {
 // }
 
 export async function createEmployeePrisma(businessId, userId, phone, bio, commission, rating) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
 
     // commission = parseFloat(commission);
     // rating = parseFloat(rating);
@@ -463,6 +484,7 @@ export async function createEmployeePrisma(businessId, userId, phone, bio, commi
 }
 
 export async function getEmployeePrisma(businessId, userId) {
+    businessId = await assertBusinessId(businessId);
     const employee = await prisma.employee.findFirst({
         where: {
             businessId: businessId,
@@ -484,6 +506,7 @@ export async function getEmployeePrisma(businessId, userId) {
 }
 
 export async function getEmployeesPrisma(businessId) {
+    businessId = await assertBusinessId(businessId);
     // const employees = await prisma.employee.findMany({
     //     where: {
     //         businessId: businessId,
@@ -510,6 +533,7 @@ export async function getEmployeesPrisma(businessId) {
 }
 
 export async function updateEmployeePrisma(id, businessId, userId, phone, bio, commission, rating) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const employee = await prisma.employee.update({
         where: {
             id: id,
@@ -529,6 +553,7 @@ export async function updateEmployeePrisma(id, businessId, userId, phone, bio, c
 }
 
 export async function deleteEmployeePrisma(id, businessId) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const employee = await prisma.employee.delete({
         where: {
             id: id,
@@ -545,6 +570,7 @@ export async function deleteEmployeePrisma(id, businessId) {
 //--------------------------------------------------------------------------------
 
 export async function createUserPrisma(businessId, name, lastName, username, email, password, role) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const passwordHash = await hashPassword(password)
 
     const user = await prisma.user.create({
@@ -563,6 +589,7 @@ export async function createUserPrisma(businessId, name, lastName, username, ema
 }
 
 export async function getUserPrisma(username, businessId) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
 
     const user = await prisma.user.findFirst({
         where: {
@@ -576,6 +603,7 @@ export async function getUserPrisma(username, businessId) {
 }
 
 export async function updateUserPrisma(id, businessId, name, username, lastName, password, role) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const user = await prisma.user.update({
         where: {
             id: id,
@@ -595,6 +623,7 @@ export async function updateUserPrisma(id, businessId, name, username, lastName,
 }
 
 export async function deleteUserPrisma(id, businessId) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const user = await prisma.user.delete({
         where: {
             id: id,
@@ -611,6 +640,7 @@ export async function deleteUserPrisma(id, businessId) {
 //--------------------------------------------------------------------------------
 
 export async function createClientPrisma(businessId, name, phone, email, notes, employeeId) {
+    businessId = await assertBusinessId(businessId);
 
     if (name == '' || phone == '') return
     // 1. VALIDACIÓN: Buscar si ya existe un cliente con ese teléfono en ese negocio
@@ -648,6 +678,7 @@ export async function createClientPrisma(businessId, name, phone, email, notes, 
 }
 
 export async function getClientPrisma(businessId, phone) {
+    businessId = await assertBusinessId(businessId);
     const client = await prisma.client.findFirst({
         where: {
             businessId: businessId,
@@ -673,6 +704,7 @@ export async function getClientPrisma(businessId, phone) {
 }
 
 export async function getClientsPrisma(businessId) {
+    businessId = await assertBusinessId(businessId);
     const clients = await prisma.client.findMany({
         where: {
             businessId: businessId,
@@ -700,6 +732,7 @@ export async function getClientsPrisma(businessId) {
 }
 
 export async function updateClientPrisma(id, businessId, name, phone, email, notes, employeeId) {
+    businessId = await assertBusinessId(businessId);
     const client = await prisma.client.update({
         where: {
             id: id,
@@ -719,6 +752,7 @@ export async function updateClientPrisma(id, businessId, name, phone, email, not
 }
 
 export async function deleteClientPrisma(id, businessId) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const client = await prisma.client.delete({
         where: {
             id: id,
@@ -735,6 +769,7 @@ export async function deleteClientPrisma(id, businessId) {
 //--------------------------------------------------------------------------------
 
 export async function createPaymentPrisma(businessId, appointmentId, amount, method, status, externalId) {
+    businessId = await assertBusinessId(businessId);
     const payment = await prisma.payment.create({
         data: {
             businessId,
@@ -750,6 +785,7 @@ export async function createPaymentPrisma(businessId, appointmentId, amount, met
 }
 
 export async function getPaymentPrisma(businessId, appointmentId) {
+    businessId = await assertBusinessId(businessId);
     const payment = await prisma.payment.findFirst({
         where: {
             appointmentId: appointmentId,
@@ -762,6 +798,7 @@ export async function getPaymentPrisma(businessId, appointmentId) {
 }
 
 export async function getPaymentsPrisma(businessId) {
+    businessId = await assertBusinessId(businessId);
     const payments = await prisma.payment.findMany({
         where: {
             businessId: businessId,
@@ -773,6 +810,7 @@ export async function getPaymentsPrisma(businessId) {
 }
 
 export async function updatePaymentPrisma(businessId, id, amount, method, status, externalId) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const payment = await prisma.payment.update({
         where: {
             id: id,
@@ -791,6 +829,7 @@ export async function updatePaymentPrisma(businessId, id, amount, method, status
 }
 
 export async function deletePaymentPrisma(businessId, id) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const payment = await prisma.payment.delete({
         where: {
             id: id,
@@ -932,6 +971,7 @@ export const createSalePrisma = async (data) => {
 };
 
 export async function getSalePrisma(businessId, id) {
+    businessId = await assertBusinessId(businessId);
     const sale = await prisma.sale.findFirst({
         where: {
             id: id,
@@ -944,6 +984,7 @@ export async function getSalePrisma(businessId, id) {
 }
 
 export async function getSalesPrisma(businessId) {
+    businessId = await assertBusinessId(businessId);
     const sales = await prisma.sale.findMany({
         where: {
             businessId: businessId,
@@ -991,6 +1032,7 @@ export async function getSalesPrisma(businessId) {
 }
 
 export async function getSaleByAppointmentPrisma(businessId, appointmentId) {
+    businessId = await assertBusinessId(businessId);
     const sale = await prisma.sale.findFirst({
         where: {
             businessId,
@@ -1023,6 +1065,7 @@ export async function getSaleByAppointmentPrisma(businessId, appointmentId) {
 }
 
 export async function updateSalePrisma(id, businessId, clientId, employeeId, appointmentId, subtotal, discount, total, status, notes) {
+    businessId = await assertBusinessId(businessId);
     const sale = await prisma.sale.update({
         where: {
             id: id,
@@ -1038,6 +1081,7 @@ export async function updateSalePrisma(id, businessId, clientId, employeeId, app
 }
 
 export async function deleteSalePrisma(businessId, id) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const sale = await prisma.sale.delete({
         where: {
             id: id,
@@ -1054,6 +1098,7 @@ export async function deleteSalePrisma(businessId, id) {
 //--------------------------------------------------------------------------------  
 
 export async function createSaleItemPrisma(saleId, serviceId, description, price, quantity) {
+    await requireSession();
     const saleItem = await prisma.saleItem.create({
         data: {
             saleId, serviceId, description, price, quantity
@@ -1064,6 +1109,7 @@ export async function createSaleItemPrisma(saleId, serviceId, description, price
 }
 
 export async function getSaleItemPrisma(businessId, saleId) {
+    businessId = await assertBusinessId(businessId);
     const saleItem = await prisma.saleItem.findFirst({
         where: {
             saleId: saleId,
@@ -1076,6 +1122,7 @@ export async function getSaleItemPrisma(businessId, saleId) {
 }
 
 export async function updateSaleItemPrisma(id, saleId, serviceId, description, price, quantity) {
+    await requireSession();
     const saleItem = await prisma.saleItem.update({
         where: {
             id: id,
@@ -1090,6 +1137,7 @@ export async function updateSaleItemPrisma(id, saleId, serviceId, description, p
 }
 
 export async function deleteSaleItemPrisma(businessId, id) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const saleItem = await prisma.saleItem.delete({
         where: {
             id: id,
@@ -1106,6 +1154,7 @@ export async function deleteSaleItemPrisma(businessId, id) {
 //--------------------------------------------------------------------------------  
 
 export async function createReviewPrisma(businessId, clientId, rating, comment) {
+    businessId = await assertBusinessId(businessId);
     const review = await prisma.review.create({
         data: {
             businessId, clientId, rating, comment
@@ -1116,6 +1165,7 @@ export async function createReviewPrisma(businessId, clientId, rating, comment) 
 }
 
 export async function getReviewPrisma(businessId, id) {
+    businessId = await assertBusinessId(businessId);
     const review = await prisma.review.findFirst({
         where: {
             id: id,
@@ -1128,6 +1178,7 @@ export async function getReviewPrisma(businessId, id) {
 }
 
 export async function updateReviewPrisma(id, businessId, clientId, rating, comment) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const review = await prisma.review.update({
         where: {
             id: id,
@@ -1142,6 +1193,7 @@ export async function updateReviewPrisma(id, businessId, clientId, rating, comme
 }
 
 export async function deleteReviewPrisma(businessId, id) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     const review = await prisma.review.delete({
         where: {
             id: id,
@@ -1156,6 +1208,7 @@ export async function deleteReviewPrisma(businessId, id) {
 
 //corte de caja
 export async function getCashCloseSummary(businessId) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     // A. Buscar el último corte
     const lastClose = await prisma.cashClose.findFirst({
         where: { businessId, active: true },
@@ -1215,6 +1268,8 @@ export async function getCashCloseSummary(businessId) {
 
 // 2. Guardar el corte de caja en la base de datos
 export async function createCashClose(data) {
+    const { userId: sessionUserId, business } = await requireSession();
+    data = { ...data, businessId: business.id, userId: sessionUserId };
     const difference = data.cashActual - data.cashExpected
 
     const cashClose = await prisma.cashClose.create({
@@ -1234,6 +1289,7 @@ export async function createCashClose(data) {
 }
 
 export async function getDailySummary(businessId, start) {
+    businessId = await assertBusinessId(businessId, ["ADMIN", "RECEPTION"]);
     if (!businessId) return
     // Rango de fechas para "Hoy" (desde las 00:00:00 hasta las 23:59:59)
     // const today = new Date()
@@ -1361,6 +1417,7 @@ export async function getDailySummary(businessId, start) {
 
 
 export async function MigrateToBetterAuth() {
+    await requireSession(["ADMIN"]);
     console.log("Iniciando migración de contraseñas...");
 
     // 1. Buscamos todos los usuarios que tengan una contraseña en la tabla vieja
