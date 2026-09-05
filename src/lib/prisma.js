@@ -1238,8 +1238,18 @@ export async function getCashCloseSummary(businessId) {
         : new Date(new Date().setHours(0, 0, 0, 0))
     const closingDate = new Date()
 
-    // B. Buscar ventas y sus pagos completados
-    const sales = await prisma.sale.findMany({
+    // B. Los pagos recibidos en el periodo.
+    //
+    // Se consultan los PAGOS por su propia fecha, no las ventas por la suya.
+    // Antes se listaban las ventas COMPLETED creadas en el rango y se sumaban
+    // sus pagos, lo que atribuia el dinero al dia en que se creo la venta y no
+    // al dia en que entro a la caja. Con anticipos eso falla siempre: el
+    // anticipo entra un dia y el resto otro.
+    //
+    // Se excluyen los pagos de ventas canceladas o devueltas; los de una venta
+    // todavia abierta -un anticipo- SI cuentan, porque ese dinero ya esta en
+    // el cajon.
+    const payments = await prisma.payment.findMany({
         where: {
             businessId,
             status: 'COMPLETED',
@@ -1248,30 +1258,28 @@ export async function getCashCloseSummary(businessId) {
                 gte: openingDate,
                 lte: closingDate,
             },
+            sale: {
+                active: true,
+                status: { notIn: ['CANCELLED', 'REFUNDED'] },
+            },
         },
-        include: {
-            payments: {
-                where: {
-                    status: 'COMPLETED', // Fundamental: solo sumar pagos exitosos
-                    active: true
-                }
-            }
-        }
+        select: { method: true, amount: true, saleId: true },
     })
 
-    // C. Clasificar los totales por método de pago
+    // C. Clasificar los totales por metodo de pago
     let cashExpected = 0
     let cardTotal = 0
     let transferTotal = 0
 
-    sales.forEach(sale => {
-        sale.payments.forEach(payment => {
-            // Ajusta 'payment.amount' por el nombre real de tu campo de monto en el modelo Payment
-            if (payment.method === 'CASH') cashExpected += payment.amount
-            if (payment.method === 'CARD') cardTotal += payment.amount
-            if (payment.method === 'TRANSFER') transferTotal += payment.amount
-        })
+    payments.forEach(payment => {
+        if (payment.method === 'CASH') cashExpected += payment.amount
+        if (payment.method === 'CARD') cardTotal += payment.amount
+        if (payment.method === 'TRANSFER') transferTotal += payment.amount
     })
+
+    // Ventas distintas tocadas en el periodo, no numero de pagos: un ticket
+    // pagado mitad en efectivo y mitad con tarjeta sigue siendo una venta.
+    const salesCount = new Set(payments.map(p => p.saleId)).size
 
     return {
         openingDate,
@@ -1280,7 +1288,7 @@ export async function getCashCloseSummary(businessId) {
         cardTotal,
         transferTotal,
         totalSales: cashExpected + cardTotal + transferTotal,
-        salesCount: sales.length,
+        salesCount,
     }
 }
 
