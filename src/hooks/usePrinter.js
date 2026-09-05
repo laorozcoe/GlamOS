@@ -1,8 +1,16 @@
 'use client'
 import { useState, useEffect } from 'react';
 import EscPosEncoder from 'esc-pos-encoder';
+import { useBusiness } from '@/context/BusinessContext';
 
 export const usePrinter = () => {
+    const business = useBusiness();
+    // Cada salon tiene su propio logo de ticket en /public/<slug>/. Si no lo
+    // subieron todavia, processImageOnCanvas devuelve null y el ticket sale
+    // sin logo: nunca se imprime el de otro negocio.
+    const rutaLogoTicket = business?.slug
+        ? `/${business.slug}/logo_ticket-bw.png`
+        : null;
     const [device, setDevice] = useState(null);
     const [isPrinting, setIsPrinting] = useState(false);
     const [printerError, setPrinterError] = useState('');
@@ -124,7 +132,10 @@ export const usePrinter = () => {
             // Asegurar conexión antes de imprimir
             let currentDevice = device;
             if (!currentDevice || !currentDevice.opened) {
-                const devices = await navigator.usb.getDevices();
+                // WebUSB no existe en Firefox ni en iOS. Sin este guardia,
+                // `navigator.usb.getDevices()` lanzaba un TypeError que se
+                // reportaba como si la impresora hubiera fallado.
+                const devices = navigator.usb ? await navigator.usb.getDevices() : [];
                 for (const d of devices) {
                     const success = await connectToDevice(d);
                     if (success) {
@@ -134,9 +145,16 @@ export const usePrinter = () => {
                 }
             }
 
-            if (!currentDevice) throw new Error("Impresora no encontrada. Por favor, conéctala manualmente.");
+            // Que el salon no tenga impresora NO es un error: la venta ya se
+            // guardo. Se avisa por el estado del hook -el foquito- y se sale
+            // sin ruido, en vez de lanzar y ensuciar la consola en cada cobro.
+            if (!currentDevice) {
+                setStatus('offline');
+                setPrinterError('Sin impresora conectada');
+                return false;
+            }
 
-            const imgCanvas = await processImageOnCanvas('/brillartebloom/logo_ticket-bw.png');
+            const imgCanvas = rutaLogoTicket ? await processImageOnCanvas(rutaLogoTicket) : null;
             const encoder = new EscPosEncoder({ width: 32, imageMode: 'raster', codepageMapping: 'xprinter' });
 
             let printJob = encoder.initialize().codepage('cp850').raw([0x1B, 0x33, 20]);
@@ -184,8 +202,12 @@ export const usePrinter = () => {
 
             printJob = printJob
                 .newline().align('center')
-                .text('Gracias por confiar en mis manos\n')
-                .text('  para hacer brillar las tuyas  \n')
+                // TODO: este cierre deberia ser un campo del negocio.
+                // Mientras tanto, el verso solo sale en el salon para el que
+                // se escribio; los demas llevan un cierre neutro.
+                .text(business?.slug === 'brillartebloom'
+                    ? 'Gracias por confiar en mis manos\n  para hacer brillar las tuyas  \n'
+                    : '\u00a1Gracias por su compra!\n')
                 .newline().newline().newline()
                 .cut().pulse();
 

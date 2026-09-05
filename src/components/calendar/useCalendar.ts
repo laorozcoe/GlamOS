@@ -774,7 +774,7 @@ export const useCalendarLogic = () => {
     const printSaleTicket = async (saleResult: any, paymentData: any, itemsList: any[]) => {
         try {
             const ticketData = {
-                businessName: business?.name || "Brillarte Bloom",
+                businessName: business?.name || "",
                 folio: saleResult.sale.folio,
                 total: paymentData.total,
                 paymentMethod: paymentData.method,
@@ -853,7 +853,7 @@ export const useCalendarLogic = () => {
             const totalFallback = ticketItems.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
 
             const ticketData = {
-                businessName: business?.name || "Brillarte Bloom",
+                businessName: business?.name || "",
                 folio: sale?.folio || selectedEvent.id?.slice(-6) || "REPRINT",
                 total: Number(sale?.total ?? selectedEvent.totalAmount ?? totalFallback),
                 paymentMethod: completedPayment?.method || "N/A",

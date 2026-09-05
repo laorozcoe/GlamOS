@@ -41,7 +41,7 @@ export default function SalesTable({ sales }: any) {
             const createdAt = new Date(sale.createdAt || new Date());
 
             await printTicket({
-                businessName: business?.name || "Brillarte Bloom",
+                businessName: business?.name || "",
                 folio: sale.folio || sale.id?.slice(-6) || "SALE",
                 total: Number(sale.total ?? totalFallback),
                 paymentMethod: completedPayment?.method || "N/A",
