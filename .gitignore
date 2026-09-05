@@ -44,3 +44,11 @@ next-env.d.ts
 
 # Claude Code local config
 .claude/
+
+# respaldos de la base
+# Un volcado de produccion trae tokens de MercadoPago, hashes de contrasena y
+# los datos de todos los clientes. No debe acabar en GitHub por un `git add -A`.
+backup-*.json
+/backups/
+*.dump
+*.sql.gz
