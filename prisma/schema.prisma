@@ -47,6 +47,8 @@ model Business {
   weekStartDay      Int      @default(1) // 0 = Domingo, 1 = Lunes, etc.
   /// Minutos de gracia antes de que una entrada cuente como retardo.
   lateToleranceMinutes Int   @default(10)
+  /// Si al guardar una cita se pregunta por el anticipo.
+  askDepositOnBooking  Boolean @default(false)
   themeColors       Json?    // CSS custom property overrides: { "--color-brand-500": "#66bb6a", ... }
 
   // 💳 Configuración Mercado Pago
@@ -511,6 +513,9 @@ model Payment {
   method         PaymentMethod // CASH, CARD, TRANSFER
   status         PaymentStatus @default(COMPLETED)
   active         Boolean       @default(true) // <-- NUEVO
+  /// Anticipo, no pago final. Distingue los dos pagos de una misma venta
+  /// cuando ya se cobro el resto.
+  isDeposit      Boolean       @default(false)
   // Datos para el ticket y auditoría
   amountReceived Float? // Útil para calcular el cambio en efectivo
   changeReturned Float?
@@ -576,6 +581,10 @@ model LoyaltyPoint {
 }
 
 enum SaleStatus {
+  /// Venta abierta: se agendo y hay anticipo, pero el servicio no se ha dado.
+  /// Queda fuera de reportes, nomina y comisiones, que filtran por COMPLETED:
+  /// la comision se gana cuando se hace el trabajo, no cuando se aparta.
+  PENDING
   COMPLETED
   CANCELLED
   REFUNDED
